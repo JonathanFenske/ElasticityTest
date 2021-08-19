@@ -50,9 +50,13 @@ namespace elasticity
 {
   using namespace dealii;
 
-  double E  = 210.e9;
-  double nu = 0.3;
+  // Currently parameter values for steel. Note that the mass density that is
+  // needed for the force density of the body forces must also modified if
+  // another material is simulated.
+  double E  = 210.e9; // Young modulus
+  double nu = 0.3;  // Poisson ratio
 
+  // class for the density of the surface force in N/m^2
   template <int dim>
   class SurfaceForce : public Function<dim>
   {
@@ -72,7 +76,7 @@ namespace elasticity
     return 0;
   }
 
-
+  // class for the first Lamé parameter of linear elasticity
   template <int dim>
   class lambda : public Function<dim>
   {
@@ -90,7 +94,7 @@ namespace elasticity
     // return -(std::sin(M_PI*p(0)/15)+2);//(-0.1 * p(0) + 2.5) * 1e9;////*;
   }
 
-
+  // class for the second Lamé parameter/shear modulus in linear elasticity
   template <int dim>
   class mu : public Function<dim>
   {
@@ -104,12 +108,13 @@ namespace elasticity
   double
   mu<dim>::value(const Point<dim> &p, const unsigned int) const
   {
-    int fr = 10;
+    int fr = 100;
+
     return E * nu / ((1 + nu) * (1 - 2 * nu)) *
-           (0.1 * std::sin(2 * fr * M_PI * p(0) / 20) + 1); //(-0.025*p(0)+0.75)
+           (0.5 * std::sin(2 * fr * M_PI * p(0) / 20) + 1); //(-0.025*p(0)+0.75)
   }
 
-
+  // function that rotates a point -90° or -(pi/2) around the y axis
   template <int dim>
   const Point<dim>
   roty(const Point<dim> &p)
@@ -129,7 +134,7 @@ namespace elasticity
       }
   }
 
-
+  // function that rotates a point +90° or +(pi/2) around the y axis
   template <int dim>
   const Point<dim>
   backroty(const Point<dim> &p)
@@ -150,6 +155,62 @@ namespace elasticity
   }
 
 
+  // Class that enables the output of the linearized strain tensor.
+  // Taken from the documentation for the deal.ii class DataPostprocessorTensor.
+  template <int dim>
+  class StrainPostprocessor : public DataPostprocessorTensor<dim>
+  {
+  public:
+    StrainPostprocessor ()
+      :
+      DataPostprocessorTensor<dim> ("strain",
+                                    update_gradients)
+    {}
+
+    virtual
+    void
+    evaluate_vector_field
+    (const DataPostprocessorInputs::Vector<dim> &input_data,
+    std::vector<Vector<double> > &computed_quantities) const override;
+
+    virtual
+    std::vector<DataComponentInterpretation::DataComponentInterpretation>
+    get_data_component_interpretation() const override;
+  };
+
+  // function that computes the linearized strain
+  template <int dim>
+  void StrainPostprocessor<dim>::evaluate_vector_field
+    (const DataPostprocessorInputs::Vector<dim> &input_data,
+    std::vector<Vector<double> > &computed_quantities) const
+  {
+    AssertDimension (input_data.solution_gradients.size(),
+                    computed_quantities.size());
+    for (unsigned int p=0; p<input_data.solution_gradients.size(); ++p)
+      {
+        AssertDimension (computed_quantities[p].size(),
+                        (Tensor<2,dim>::n_independent_components));
+        for (unsigned int d=0; d<dim; ++d)
+          for (unsigned int e=0; e<dim; ++e)
+            computed_quantities[p][Tensor<2,dim>::component_to_unrolled_index(TableIndices<2>(d,e))]
+              = (input_data.solution_gradients[p][d][e]
+                +
+                input_data.solution_gradients[p][e][d]) / 2;
+      }
+  }
+
+  // function that specifies how many entries of the strain 
+  // belong to the tensor representing the strain
+  template <int dim>
+  std::vector<DataComponentInterpretation::DataComponentInterpretation>
+  StrainPostprocessor<dim>::get_data_component_interpretation() const
+  {
+    return std::vector<DataComponentInterpretation::DataComponentInterpretation>
+      (dim*dim, DataComponentInterpretation::component_is_part_of_tensor);
+  }
+
+  // class that enables the parallel computation of linear elasticity problems
+  // which is based on the step-8 and step-40 tutorials of deal.ii
   template <int dim>
   class ElaProblem
   {
@@ -162,6 +223,8 @@ namespace elasticity
     std::tuple<Point<dim>, Point<dim>>
     get_init_vert(std::vector<double> p) const;
     void
+    set_dirichlet_id(Point<dim> p1, Point<dim> p2, unsigned int face_id, unsigned int id);
+    void
     setup_system();
     void
     assemble_system();
@@ -170,7 +233,8 @@ namespace elasticity
     void
     refine_grid();
     void
-                                              output_results(const unsigned int cycle) const;
+    output_results(const unsigned int cycle) const;
+
     MPI_Comm                                  mpi_communicator;
     parallel::distributed::Triangulation<dim> triangulation;
     FESystem<dim>                             fe;
@@ -203,7 +267,7 @@ namespace elasticity
                       pcout,
                       TimerOutput::summary,
                       TimerOutput::wall_times)
-    , direct_solver(false)
+    , direct_solver(true) //If true, a direct solver will be used in ElaProblem::solve().
   {}
 
 
@@ -217,6 +281,29 @@ namespace elasticity
     return {p1_tmp, p2_tmp};
   }
 
+  //Sets the boundary_id for all boundary faces with boundary_id face_id to id
+  //whose center lies in the open interval (p1,p2) with component-wise comparison of the vectors.
+  template<int dim>
+  void
+  ElaProblem<dim>::set_dirichlet_id(Point<dim> p1, Point<dim> p2, unsigned int face_id, unsigned int id)
+  {
+    for (auto &face : triangulation.active_face_iterators())
+    {
+      if (dim == 3)
+        {
+          if (face->at_boundary() && (face->boundary_id() == face_id)
+            && (face->center()[0] > p1[0]) && (face->center()[0] < p2[0])
+            && (face->center()[1] > p1[1]) && (face->center()[1] < p2[1]) 
+            && (face->center()[2] > p1[2]) && (face->center()[2] < p2[2]))
+          face->set_boundary_id(id);
+        }
+      else
+        if (face->at_boundary() && (face->boundary_id() == face_id)
+            && (face->center()[0] > p1[0]) && (face->center()[0] < p2[0])
+            && (face->center()[1] > p1[1]) && (face->center()[1] < p2[1]))
+          face->set_boundary_id(id);
+    }
+  }
 
   template <int dim>
   void
@@ -234,16 +321,12 @@ namespace elasticity
     constraints.reinit(locally_relevant_dofs);
     DoFTools::make_hanging_node_constraints(dof_handler, constraints);
 
-    // for (auto &face : triangulation.active_face_iterators())
-    //   {
-    //     if (face->at_boundary() && (face->center()[0] < 1) &&
-    //     (face->center()[0] > -1)
-    //           && (face->center()[1] < 1) && (face->center()[1] > -1) &&
-    //           (face->boundary_id() == 1))
-    //     {
-    //       face->set_boundary_id(100);
-    //     }
-    //   }
+    //The next part is used if a Dirichlet boundary condition is only on a part of a face applied.
+
+    // {
+    //   Point<dim> p1 = {-1, -1, -0.1}, p2 = {1, 1, 0.1};
+    //   set_dirichlet_id(p1, p2, 4, 100);
+    // }
 
 
     VectorTools::interpolate_boundary_values(dof_handler,
@@ -475,27 +558,8 @@ namespace elasticity
   {
     DataOut<dim> data_out;
     data_out.attach_dof_handler(dof_handler);
-    std::vector<std::string> solution_names;
-    switch (dim)
-      {
-        case 1:
-          solution_names.emplace_back("displacement");
-          break;
-        case 2:
-          solution_names.emplace_back("x_displacement");
-          solution_names.emplace_back("y_displacement");
-          break;
-        case 3:
-          solution_names.emplace_back("x_displacement");
-          solution_names.emplace_back("y_displacement");
-          solution_names.emplace_back("z_displacement");
-          break;
-        default:
-          Assert(false, ExcNotImplemented());
-      }
 
-    data_out.add_data_vector(locally_relevant_solution, solution_names);
-
+    // add the displacement to the output
     std::vector<std::string> solution_name(dim, "displacement");
     std::vector<DataComponentInterpretation::DataComponentInterpretation>
       interpretation(dim,
@@ -506,13 +570,19 @@ namespace elasticity
                              DataOut<dim>::type_dof_data,
                              interpretation);
 
+    // add the partition of the domain to the output
     Vector<float> subdomain(triangulation.n_active_cells());
     for (unsigned int i = 0; i < subdomain.size(); ++i)
       subdomain(i) = triangulation.locally_owned_subdomain();
     data_out.add_data_vector(subdomain, "subdomain");
 
+    // add the linearized strain tensor to the output
+    StrainPostprocessor<dim> strain_postproc;
+    data_out.add_data_vector(locally_relevant_solution, strain_postproc);
+
     data_out.build_patches();
 
+    // write the output files
     const std::string filename =
       ("solution-" + Utilities::int_to_string(cycle, 2) + "." +
        Utilities::int_to_string(triangulation.locally_owned_subdomain(), 4) +
@@ -546,13 +616,23 @@ namespace elasticity
           << " MPI rank(s)..." << std::endl;
 
     const auto [p1, p2]         = get_init_vert({-10, 0, 0, 10, 1, 1});
-    const unsigned int n_cycles = 1;
+    const unsigned int n_cycles = 4;
     for (unsigned int cycle = 0; cycle < n_cycles; ++cycle)
       {
         pcout << "Cycle " << cycle << ':' << std::endl;
         if (cycle == 0)
           {
-            const std::vector<unsigned int> repetitions = {20, 1, 1};
+            std::vector<unsigned int> a = {(unsigned int) (p2[0]-p1[0]),
+                  (unsigned int) (p2[1]-p1[1]), (unsigned int) (p2[2]-p1[2])};
+            std::vector<unsigned int> b = {(unsigned int) (p2[0]-p1[0]),
+                  (unsigned int) (p2[1]-p1[1])};
+            const std::vector<unsigned int> repetitions =
+              (dim > 2 ? a : b);
+            
+            AssertDimension(dim, repetitions.size());
+
+            pcout << repetitions[0] << repetitions[1] << repetitions[2] << std::endl;
+
             GridGenerator::subdivided_hyper_rectangle(
               triangulation, repetitions, p1, p2, true);
 
