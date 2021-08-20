@@ -90,7 +90,8 @@ namespace elasticity
   double
   lambda<dim>::value(const Point<dim> &p, const unsigned int) const
   {
-    return E / (2 * (1 + nu));
+    int fr = 80;
+    return E / (2 * (1 + nu));// * (std::sin(2 * fr * M_PI * p(0) / 20) + 1);
     // return -(std::sin(M_PI*p(0)/15)+2);//(-0.1 * p(0) + 2.5) * 1e9;////*;
   }
 
@@ -108,10 +109,10 @@ namespace elasticity
   double
   mu<dim>::value(const Point<dim> &p, const unsigned int) const
   {
-    int fr = 100;
-
-    return E * nu / ((1 + nu) * (1 - 2 * nu)) *
-           (0.5 * std::sin(2 * fr * M_PI * p(0) / 20) + 1); //(-0.025*p(0)+0.75)
+    int fr = 80;
+    return E * nu / ((1 + nu) * (1 - 2 * nu)) * (std::sin(2 * fr * M_PI * p(0) / 20) + 1);
+    //return E * nu / ((1 + nu) * (1 - 2 * nu)) * (0.5 * std::sin(2 * fr * M_PI * p(0) / 20) +1);//* 
+            //std::sin(2 * fr * M_PI * p(1) / 20) + 1);
   }
 
   // function that rotates a point -90° or -(pi/2) around the y axis
@@ -176,6 +177,9 @@ namespace elasticity
     virtual
     std::vector<DataComponentInterpretation::DataComponentInterpretation>
     get_data_component_interpretation() const override;
+
+    virtual
+    std::vector<std::string> get_names 	() const override;
   };
 
   // function that computes the linearized strain
@@ -209,7 +213,13 @@ namespace elasticity
       (dim*dim, DataComponentInterpretation::component_is_part_of_tensor);
   }
 
-  // class that enables the parallel computation of linear elasticity problems
+  template <int dim>
+  std::vector<std::string> StrainPostprocessor<dim>::get_names() 	const
+  {
+    return std::vector<std::string>(dim*dim, "strain");
+  }
+
+  // class that enables solving linear elasticity problems in parallel
   // which is based on the step-8 and step-40 tutorials of deal.ii
   template <int dim>
   class ElaProblem
@@ -622,28 +632,26 @@ namespace elasticity
         pcout << "Cycle " << cycle << ':' << std::endl;
         if (cycle == 0)
           {
-            std::vector<unsigned int> a = {(unsigned int) (p2[0]-p1[0]),
-                  (unsigned int) (p2[1]-p1[1]), (unsigned int) (p2[2]-p1[2])};
-            std::vector<unsigned int> b = {(unsigned int) (p2[0]-p1[0]),
-                  (unsigned int) (p2[1]-p1[1])};
-            const std::vector<unsigned int> repetitions =
-              (dim > 2 ? a : b);
-            
-            AssertDimension(dim, repetitions.size());
-
-            pcout << repetitions[0] << repetitions[1] << repetitions[2] << std::endl;
+            std::list<double> side_length_list;
+            for (unsigned int i = 0; i < dim; ++i)
+              side_length_list.push_back(p2[i]-p1[i]);
+            double cell_length = *(std::min_element(side_length_list.begin(),side_length_list.end()));
+            std::vector<unsigned int> repetitions;
+            for (auto it : side_length_list)
+              repetitions.push_back((unsigned int)(it/cell_length));
 
             GridGenerator::subdivided_hyper_rectangle(
               triangulation, repetitions, p1, p2, true);
 
             // GridGenerator::cylinder(triangulation, 10., 0.1);
 
-            triangulation.refine_global(2);
+            triangulation.refine_global(1);
           }
         else
           {
             // GridTools::transform(backroty<dim>, triangulation);
-            refine_grid();
+            // refine_grid();
+            triangulation.refine_global(1);
           }
 
         // GridTools::transform(roty<dim>, triangulation);
