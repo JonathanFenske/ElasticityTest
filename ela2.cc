@@ -3,6 +3,7 @@
 #include <deal.II/base/function.h>
 #include <deal.II/base/index_set.h>
 #include <deal.II/base/logstream.h>
+#include <deal.II/base/multithread_info.h>
 #include <deal.II/base/quadrature_lib.h>
 #include <deal.II/base/timer.h>
 #include <deal.II/base/utilities.h>
@@ -54,7 +55,7 @@ namespace elasticity
   // needed for the force density of the body forces must also modified if
   // another material is simulated.
   double E  = 210.e9; // Young modulus
-  double nu = 0.3;  // Poisson ratio
+  double nu = 0.3;    // Poisson ratio
 
   // class for the density of the surface force in N/m^2
   template <int dim>
@@ -91,7 +92,7 @@ namespace elasticity
   lambda<dim>::value(const Point<dim> &p, const unsigned int) const
   {
     int fr = 80;
-    return E / (2 * (1 + nu));// * (std::sin(2 * fr * M_PI * p(0) / 20) + 1);
+    return E / (2 * (1 + nu)); // * (std::sin(2 * fr * M_PI * p(0) / 20) + 1);
     // return -(std::sin(M_PI*p(0)/15)+2);//(-0.1 * p(0) + 2.5) * 1e9;////*;
   }
 
@@ -110,9 +111,10 @@ namespace elasticity
   mu<dim>::value(const Point<dim> &p, const unsigned int) const
   {
     int fr = 40;
-    return E * nu / ((1 + nu) * (1 - 2 * nu)) * (std::sin(2 * fr * M_PI * p(0) / 20) + 1);
-    //return E * nu / ((1 + nu) * (1 - 2 * nu)) * (0.5 * std::sin(2 * fr * M_PI * p(0) / 20) +1);//* 
-            //std::sin(2 * fr * M_PI * p(1) / 20) + 1);
+    return E * nu / ((1 + nu) * (1 - 2 * nu)) *
+           (std::sin(2 * fr * M_PI * p(0) / 20) + 1);
+    // return E * nu / ((1 + nu) * (1 - 2 * nu)) * (0.5 * std::sin(2 * fr * M_PI
+    // * p(0) / 20) +1);//* std::sin(2 * fr * M_PI * p(1) / 20) + 1);
   }
 
   // function that rotates a point -90° or -(pi/2) around the y axis
@@ -164,104 +166,107 @@ namespace elasticity
   class StrainPostprocessor : public DataPostprocessor<dim>
   {
   public:
-    virtual
-    void
-    evaluate_vector_field
-    (const DataPostprocessorInputs::Vector<dim> &input_data,
-    std::vector<Vector<double> > &computed_quantities) const override;
+    virtual void
+    evaluate_vector_field(
+      const DataPostprocessorInputs::Vector<dim> &input_data,
+      std::vector<Vector<double>> &computed_quantities) const override;
 
-    virtual
-    std::vector<DataComponentInterpretation::DataComponentInterpretation>
+    virtual std::vector<
+      DataComponentInterpretation::DataComponentInterpretation>
     get_data_component_interpretation() const override;
 
-    virtual
-    std::vector<std::string> get_names 	() const override;
+    virtual std::vector<std::string>
+    get_names() const override;
 
-    virtual
-    UpdateFlags get_needed_update_flags() const override;
+    virtual UpdateFlags
+    get_needed_update_flags() const override;
   };
 
   // function that computes the linearized strain
   template <int dim>
-  void StrainPostprocessor<dim>::evaluate_vector_field
-    (const DataPostprocessorInputs::Vector<dim> &input_data,
-    std::vector<Vector<double> > &computed_quantities) const
+  void
+  StrainPostprocessor<dim>::evaluate_vector_field(
+    const DataPostprocessorInputs::Vector<dim> &input_data,
+    std::vector<Vector<double>> &               computed_quantities) const
   {
-    AssertDimension (input_data.solution_gradients.size(),
+    AssertDimension(input_data.solution_gradients.size(),
                     computed_quantities.size());
-        // mu<dim> mu;
-        // lambda<dim> lambda;
-        // std::vector<double> mu_values(input_data.evaluation_points.size()), lambda_values(input_data.evaluation_points.size());
-        // mu.value_list(input_data.evaluation_points, mu_values);
-        // lambda.value_list(input_data.evaluation_points, lambda_values);
-    for (unsigned int p=0; p<input_data.solution_gradients.size(); ++p)
+    // mu<dim> mu;
+    // lambda<dim> lambda;
+    // std::vector<double> mu_values(input_data.evaluation_points.size()),
+    // lambda_values(input_data.evaluation_points.size());
+    // mu.value_list(input_data.evaluation_points, mu_values);
+    // lambda.value_list(input_data.evaluation_points, lambda_values);
+    for (unsigned int p = 0; p < input_data.solution_gradients.size(); ++p)
       {
-        AssertDimension (computed_quantities[p].size(),
-                        (Tensor<2,dim>::n_independent_components));        
-        for (unsigned int d=0; d<dim; ++d)
-        {
-          for (unsigned int e=0; e<dim; ++e)
+        AssertDimension(computed_quantities[p].size(),
+                        (Tensor<2, dim>::n_independent_components));
+        for (unsigned int d = 0; d < dim; ++d)
           {
-            computed_quantities[p][
-              Tensor<2,dim>::component_to_unrolled_index(
-                TableIndices<2>(d,e))]
-              = (input_data.solution_gradients[p][d][e]
-                +
-                input_data.solution_gradients[p][e][d]) / 2;
-            // if (d == e)
-            // {
-            //   computed_quantities[p][
-            //       Tensor<2,dim>::component_to_unrolled_index(
-            //         TableIndices<2>(dim+d,dim+e))]
-            //     = (lambda_values[p] + 2*mu_values[p])
-            //       * input_data.solution_gradients[p][d][e];
-            //     for (unsigned int i=1; i<dim; ++i)
-            //     {
-            //       computed_quantities[p][
-            //         Tensor<2,dim>::component_to_unrolled_index(
-            //           TableIndices<2>(dim+d,dim+e))]
-            //         += lambda_values[p]
-            //           * input_data.solution_gradients[p][(d+i)%dim][(e+i)%dim];
-            //     }
-            // }
-            // else
-            // {
-            //   //std::cout << p << " : " << dim+d << "," << dim+e << std::endl;
-            //   computed_quantities[p][
-            //       Tensor<2,dim>::component_to_unrolled_index(
-            //         TableIndices<2>(dim+d,dim+e))]
-            //     = mu_values[p]
-            //       * (input_data.solution_gradients[p][d][e]
-            //         + input_data.solution_gradients[p][e][d]);
-            // }
+            for (unsigned int e = 0; e < dim; ++e)
+              {
+                computed_quantities[p]
+                                   [Tensor<2, dim>::component_to_unrolled_index(
+                                     TableIndices<2>(d, e))] =
+                                     (input_data.solution_gradients[p][d][e] +
+                                      input_data.solution_gradients[p][e][d]) /
+                                     2;
+                // if (d == e)
+                // {
+                //   computed_quantities[p][
+                //       Tensor<2,dim>::component_to_unrolled_index(
+                //         TableIndices<2>(dim+d,dim+e))]
+                //     = (lambda_values[p] + 2*mu_values[p])
+                //       * input_data.solution_gradients[p][d][e];
+                //     for (unsigned int i=1; i<dim; ++i)
+                //     {
+                //       computed_quantities[p][
+                //         Tensor<2,dim>::component_to_unrolled_index(
+                //           TableIndices<2>(dim+d,dim+e))]
+                //         += lambda_values[p]
+                //           * input_data.solution_gradients[p][(d+i)%dim][(e+i)%dim];
+                //     }
+                // }
+                // else
+                // {
+                //   //std::cout << p << " : " << dim+d << "," << dim+e <<
+                //   std::endl; computed_quantities[p][
+                //       Tensor<2,dim>::component_to_unrolled_index(
+                //         TableIndices<2>(dim+d,dim+e))]
+                //     = mu_values[p]
+                //       * (input_data.solution_gradients[p][d][e]
+                //         + input_data.solution_gradients[p][e][d]);
+                // }
+              }
           }
-        }
       }
   }
 
-  // function that specifies how many entries of the strain 
+  // function that specifies how many entries of the strain
   // belong to the tensor representing the strain
   template <int dim>
   std::vector<DataComponentInterpretation::DataComponentInterpretation>
   StrainPostprocessor<dim>::get_data_component_interpretation() const
   {
-    
-    return std::vector<DataComponentInterpretation::DataComponentInterpretation>
-      (dim*dim, DataComponentInterpretation::component_is_part_of_tensor);
+    return std::vector<
+      DataComponentInterpretation::DataComponentInterpretation>(
+      dim * dim, DataComponentInterpretation::component_is_part_of_tensor);
   }
 
   template <int dim>
-  std::vector<std::string> StrainPostprocessor<dim>::get_names() 	const
+  std::vector<std::string>
+  StrainPostprocessor<dim>::get_names() const
   {
     // std::vector<std::string> names(dim*dim, "strain");
     // std::vector<std::string> stress(dim*dim, "stress");
     // names.insert(names.end(), stress.begin(), stress.end());
     // return names;
-    return std::vector<std::string>(dim*dim, "strain");
+    return std::vector<std::string>(dim * dim, "strain");
   }
 
-  template<int dim>
-  UpdateFlags StrainPostprocessor<dim>::get_needed_update_flags() const
+  template <int dim>
+  UpdateFlags
+  StrainPostprocessor<dim>::get_needed_update_flags() const
   {
     return update_gradients;
   }
@@ -272,88 +277,93 @@ namespace elasticity
   class StressPostprocessor : public DataPostprocessor<dim>
   {
   public:
-    virtual
-    void
-    evaluate_vector_field
-    (const DataPostprocessorInputs::Vector<dim> &input_data,
-    std::vector<Vector<double> > &computed_quantities) const override;
+    virtual void
+    evaluate_vector_field(
+      const DataPostprocessorInputs::Vector<dim> &input_data,
+      std::vector<Vector<double>> &computed_quantities) const override;
 
-    virtual
-    std::vector<DataComponentInterpretation::DataComponentInterpretation>
+    virtual std::vector<
+      DataComponentInterpretation::DataComponentInterpretation>
     get_data_component_interpretation() const override;
 
-    virtual
-    std::vector<std::string> get_names 	() const override;
+    virtual std::vector<std::string>
+    get_names() const override;
 
-    virtual
-    UpdateFlags get_needed_update_flags() const override;
+    virtual UpdateFlags
+    get_needed_update_flags() const override;
   };
 
   // function that computes the linearized stress (Hooke's law)
   template <int dim>
-  void StressPostprocessor<dim>::evaluate_vector_field
-    (const DataPostprocessorInputs::Vector<dim> &input_data,
-    std::vector<Vector<double> > &computed_quantities) const
+  void
+  StressPostprocessor<dim>::evaluate_vector_field(
+    const DataPostprocessorInputs::Vector<dim> &input_data,
+    std::vector<Vector<double>> &               computed_quantities) const
   {
-    AssertDimension (input_data.solution_gradients.size(),
+    AssertDimension(input_data.solution_gradients.size(),
                     computed_quantities.size());
-        mu<dim> mu;
-        lambda<dim> lambda;
-        std::vector<double> mu_values(input_data.evaluation_points.size()), lambda_values(input_data.evaluation_points.size());
-        mu.value_list(input_data.evaluation_points, mu_values);
-        lambda.value_list(input_data.evaluation_points, lambda_values);
-    for (unsigned int p=0; p<input_data.solution_gradients.size(); ++p)
+    mu<dim>             mu;
+    lambda<dim>         lambda;
+    std::vector<double> mu_values(input_data.evaluation_points.size()),
+      lambda_values(input_data.evaluation_points.size());
+    mu.value_list(input_data.evaluation_points, mu_values);
+    lambda.value_list(input_data.evaluation_points, lambda_values);
+    for (unsigned int p = 0; p < input_data.solution_gradients.size(); ++p)
       {
-        AssertDimension (computed_quantities[p].size(),
-                        (Tensor<2,dim>::n_independent_components));        
-        for (unsigned int d=0; d<dim; ++d)
-          for (unsigned int e=0; e<dim; ++e)
-          {
-            if (d == e)
+        AssertDimension(computed_quantities[p].size(),
+                        (Tensor<2, dim>::n_independent_components));
+        for (unsigned int d = 0; d < dim; ++d)
+          for (unsigned int e = 0; e < dim; ++e)
             {
-              computed_quantities[p][
-                  Tensor<2,dim>::component_to_unrolled_index(
-                    TableIndices<2>(d,e))]
-                = (lambda_values[p] + 2*mu_values[p])
-                  * input_data.solution_gradients[p][d][e];
-                for (unsigned int i=1; i<dim; ++i)
-                  computed_quantities[p][
-                    Tensor<2,dim>::component_to_unrolled_index(
-                      TableIndices<2>(d,e))]
-                    += lambda_values[p]
-                      * input_data.solution_gradients[p][(d+i)%dim][(e+i)%dim];
+              if (d == e)
+                {
+                  computed_quantities
+                    [p][Tensor<2, dim>::component_to_unrolled_index(
+                      TableIndices<2>(d, e))] =
+                      (lambda_values[p] + 2 * mu_values[p]) *
+                      input_data.solution_gradients[p][d][e];
+                  for (unsigned int i = 1; i < dim; ++i)
+                    computed_quantities
+                      [p][Tensor<2, dim>::component_to_unrolled_index(
+                        TableIndices<2>(d, e))] +=
+                      lambda_values[p] *
+                      input_data
+                        .solution_gradients[p][(d + i) % dim][(e + i) % dim];
+                }
+              else
+                {
+                  computed_quantities
+                    [p][Tensor<2, dim>::component_to_unrolled_index(
+                      TableIndices<2>(d, e))] =
+                      mu_values[p] * (input_data.solution_gradients[p][d][e] +
+                                      input_data.solution_gradients[p][e][d]);
+                }
             }
-            else
-            {
-              computed_quantities[p][
-                  Tensor<2,dim>::component_to_unrolled_index(
-                    TableIndices<2>(d,e))]
-                = mu_values[p]
-                  * (input_data.solution_gradients[p][d][e]
-                    + input_data.solution_gradients[p][e][d]);
-            }
-          }
       }
   }
 
-  // function that specifies how many entries of the stress 
+  // function that specifies how many entries of the stress
   // belong to the tensor representing the stress
   template <int dim>
   std::vector<DataComponentInterpretation::DataComponentInterpretation>
   StressPostprocessor<dim>::get_data_component_interpretation() const
   {
-    return std::vector<DataComponentInterpretation::DataComponentInterpretation>
-      (dim*dim, DataComponentInterpretation::component_is_part_of_tensor);
+    return std::vector<
+      DataComponentInterpretation::DataComponentInterpretation>(
+      dim * dim, DataComponentInterpretation::component_is_part_of_tensor);
   }
 
   template <int dim>
-  std::vector<std::string> StressPostprocessor<dim>::get_names() 	const
+  std::vector<std::string>
+  StressPostprocessor<dim>::get_names() const
   {
-    return std::vector<std::string>(dim*dim, "stress");;
+    return std::vector<std::string>(dim * dim, "stress");
+    ;
   }
 
-  template<int dim>
-  UpdateFlags StressPostprocessor<dim>::get_needed_update_flags() const
+  template <int dim>
+  UpdateFlags
+  StressPostprocessor<dim>::get_needed_update_flags() const
   {
     return update_gradients | update_quadrature_points;
   }
@@ -372,7 +382,10 @@ namespace elasticity
     std::tuple<Point<dim>, Point<dim>>
     get_init_vert(std::vector<double> p) const;
     void
-    set_dirichlet_id(Point<dim> p1, Point<dim> p2, unsigned int face_id, unsigned int id);
+    set_dirichlet_id(Point<dim>   p1,
+                     Point<dim>   p2,
+                     unsigned int face_id,
+                     unsigned int id);
     void
     setup_system();
     void
@@ -416,7 +429,8 @@ namespace elasticity
                       pcout,
                       TimerOutput::summary,
                       TimerOutput::wall_times)
-    , direct_solver(true) //If true, a direct solver will be used to solve the problem.
+    , direct_solver(
+        true) // If true, a direct solver will be used to solve the problem.
   {}
 
 
@@ -430,28 +444,31 @@ namespace elasticity
     return {p1_tmp, p2_tmp};
   }
 
-  //Sets the boundary_id for all boundary faces with boundary_id face_id to id
-  //whose center lies in the open interval (p1,p2) with component-wise comparison of the vectors.
-  template<int dim>
+  // Sets the boundary_id for all boundary faces with boundary_id face_id to id
+  // whose center lies in the open interval (p1,p2) with component-wise
+  // comparison of the vectors.
+  template <int dim>
   void
-  ElaProblem<dim>::set_dirichlet_id(Point<dim> p1, Point<dim> p2, unsigned int face_id, unsigned int id)
+  ElaProblem<dim>::set_dirichlet_id(Point<dim>   p1,
+                                    Point<dim>   p2,
+                                    unsigned int face_id,
+                                    unsigned int id)
   {
     for (auto &face : triangulation.active_face_iterators())
-    {
-      if (dim == 3)
-        {
-          if (face->at_boundary() && (face->boundary_id() == face_id)
-            && (face->center()[0] > p1[0]) && (face->center()[0] < p2[0])
-            && (face->center()[1] > p1[1]) && (face->center()[1] < p2[1]) 
-            && (face->center()[2] > p1[2]) && (face->center()[2] < p2[2]))
+      {
+        if (dim == 3)
+          {
+            if (face->at_boundary() && (face->boundary_id() == face_id) &&
+                (face->center()[0] > p1[0]) && (face->center()[0] < p2[0]) &&
+                (face->center()[1] > p1[1]) && (face->center()[1] < p2[1]) &&
+                (face->center()[2] > p1[2]) && (face->center()[2] < p2[2]))
+              face->set_boundary_id(id);
+          }
+        else if (face->at_boundary() && (face->boundary_id() == face_id) &&
+                 (face->center()[0] > p1[0]) && (face->center()[0] < p2[0]) &&
+                 (face->center()[1] > p1[1]) && (face->center()[1] < p2[1]))
           face->set_boundary_id(id);
-        }
-      else
-        if (face->at_boundary() && (face->boundary_id() == face_id)
-            && (face->center()[0] > p1[0]) && (face->center()[0] < p2[0])
-            && (face->center()[1] > p1[1]) && (face->center()[1] < p2[1]))
-          face->set_boundary_id(id);
-    }
+      }
   }
 
   template <int dim>
@@ -470,7 +487,8 @@ namespace elasticity
     constraints.reinit(locally_relevant_dofs);
     DoFTools::make_hanging_node_constraints(dof_handler, constraints);
 
-    //The next part is used if a Dirichlet boundary condition is only applied on a part of a face.
+    // The next part is used if a Dirichlet boundary condition is only applied
+    // on a part of a face.
 
     // {
     //   Point<dim> p1 = {-1, -1, -0.1}, p2 = {1, 1, 0.1};
@@ -777,11 +795,12 @@ namespace elasticity
           {
             std::list<double> side_length_list;
             for (unsigned int i = 0; i < dim; ++i)
-              side_length_list.push_back(p2[i]-p1[i]);
-            double cell_length = *(std::min_element(side_length_list.begin(),side_length_list.end()));
+              side_length_list.push_back(p2[i] - p1[i]);
+            double cell_length = *(std::min_element(side_length_list.begin(),
+                                                    side_length_list.end()));
             std::vector<unsigned int> repetitions;
             for (auto it : side_length_list)
-              repetitions.push_back((unsigned int)(it/cell_length));
+              repetitions.push_back((unsigned int)(it / cell_length));
 
             GridGenerator::subdivided_hyper_rectangle(
               triangulation, repetitions, p1, p2, true);
@@ -828,8 +847,41 @@ main(int argc, char *argv[])
 
       deallog.depth_console(2);
 
-      Utilities::MPI::MPI_InitFinalize mpi_initialization(
+      // For debugging or if we use PetSc it may be nice to limit the threads on
+      // each process.
+#if DEBUG
+      dealii::MultithreadInfo::set_thread_limit(1);
+      dealii::Utilities::MPI::MPI_InitFinalize mpi_initialization(
+        argc, argv, /* max_threads */ 1);
+
+#else
+      dealii::Utilities::MPI::MPI_InitFinalize mpi_initialization(
         argc, argv, dealii::numbers::invalid_unsigned_int);
+#endif
+
+      const bool say_hello_from_cluster =
+#if DEBUG
+        true;
+#else
+        false;
+#endif
+
+      if (say_hello_from_cluster)
+        {
+          char processor_name[MPI_MAX_PROCESSOR_NAME];
+          int  name_len;
+          MPI_Get_processor_name(processor_name, &name_len);
+
+          std::string proc_name(processor_name, name_len);
+
+          std::cout << "Hello from   " << proc_name << "   Rank:   "
+                    << dealii::Utilities::MPI::this_mpi_process(MPI_COMM_WORLD)
+                    << "   out of   "
+                    << dealii::Utilities::MPI::n_mpi_processes(MPI_COMM_WORLD)
+                    << "   | cores = " << dealii::MultithreadInfo::n_cores()
+                    << "   | threads = " << dealii::MultithreadInfo::n_threads()
+                    << std::endl;
+        }
 
       ElaProblem<3> Ela_problem_3d;
       Ela_problem_3d.run();
