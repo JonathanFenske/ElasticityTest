@@ -19,8 +19,11 @@ include_directories(${MsELA_INCLUDE_DIR})
 set(MsELA_LIBRARY_SRC
 	mytools.cc
   ela_std.cc
+  ela_basis.cc
+  ela_ms.cc
   forces_and_parameters.cc
-  postprocessing.cc)
+  postprocessing.cc
+  basis_funs.cc)
 
 print_all_args (
 	${MsELA_LIBRARY_SRC}

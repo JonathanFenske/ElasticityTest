@@ -10,6 +10,13 @@ namespace Elasticity
   /****************************************************************************/
   /* Forces and parameters */
 
+  // Currently parameter values for steel. Note that the mass density that is
+  // needed for the force density of the body forces must also modified if
+  // another material is simulated.
+  const double E  = 210.e9; // Young modulus
+  const double nu = 0.3;    // Poisson ratio
+
+
   template <int dim>
   double
   SurfaceForce<dim>::value(const Point<dim> &p, const unsigned int) const
@@ -28,7 +35,7 @@ namespace Elasticity
   {   
     const double grav = 9.81; // Gravitational acceleration
     const double rho = 7.85e3; // Mass density (of steel)
-    return ((component == dim - 1) ? (grav * rho) : 0.);
+    return ((component == dim - 1) ? (-grav * rho) : 0.);
   }
 
 
@@ -49,7 +56,7 @@ namespace Elasticity
   double
   lambda<dim>::value(const Point<dim> &p, const unsigned int) const
   {
-    int fr = 80;
+    //int fr = 80;
     return E / (2 * (1 + nu)); // * (std::sin(2 * fr * M_PI * p(0) / 20) + 1);
     // return -(std::sin(M_PI*p(0)/15)+2);//(-0.1 * p(0) + 2.5) * 1e9;////*;
   }

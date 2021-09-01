@@ -1,6 +1,6 @@
 // Deal.II
-#ifndef _INCLUDE_ELA_STD_H_
-#define _INCLUDE_ELA_STD_H_
+#ifndef _INCLUDE_ELA_MS_H_
+#define _INCLUDE_ELA_MS_H_
 
 #include <deal.II/base/conditional_ostream.h>
 #include <deal.II/base/function.h>
@@ -46,11 +46,14 @@
 #include "forces_and_parameters.h"
 #include "postprocessing.h"
 #include "mytools.h"
+#include "ela_basis.h"
 
 // STL
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <map>
+#include <memory>
 
 
 namespace Elasticity
@@ -63,10 +66,10 @@ namespace Elasticity
   // class that enables solving linear elasticity problems in parallel
   // which is based on the step-8 and step-40 tutorials of deal.ii
   template <int dim>
-  class ElaStd
+  class ElaMs
   {
   public:
-    ElaStd(const bool direct_solver, const bool neumann_bc);
+    ElaMs(const bool direct_solver, const bool neumann_bc);
     void
     run();
 
@@ -76,13 +79,15 @@ namespace Elasticity
     void
     setup_system();
     void
+    initialize_and_compute_basis();
+    void
     assemble_system();
     void
     solve();
     void
     refine_grid();
     void
-    output_results(const unsigned int cycle) const;
+    output_results() const;
 
     MPI_Comm                                  mpi_communicator;
     parallel::distributed::Triangulation<dim> triangulation;
@@ -95,6 +100,7 @@ namespace Elasticity
     TrilinosWrappers::SparseMatrix            preconditioner_matrix;
     TrilinosWrappers::MPI::Vector             locally_relevant_solution;
     TrilinosWrappers::MPI::Vector             system_rhs;
+    std::map<CellId, ElaBasis<dim>>           cell_basis_map;
     ConditionalOStream                        pcout;
     TimerOutput                               computing_timer;
     const bool                                direct_solver;
@@ -103,9 +109,9 @@ namespace Elasticity
 
 
   // template <int dim>
-  // class ElaStd : public ElaStd<dim>
+  // class ElaMs : public ElaMs<dim>
   // {
   // };
 } // namespace Elasticity
 
-#endif // _INCLUDE_ELA_STD_H_
+#endif // _INCLUDE_ELA_MS_H_

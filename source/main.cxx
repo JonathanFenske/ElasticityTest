@@ -1,4 +1,5 @@
 #include "ela_std.h"
+#include "ela_ms.h"
 
 int main (int argc, char *argv[])
 {
@@ -44,8 +45,14 @@ int main (int argc, char *argv[])
                     << "   | threads = " << dealii::MultithreadInfo::n_threads()
                     << std::endl;
         }
-      ElaStd<3> Ela_problem_3d;
-      Ela_problem_3d.run();
+      const bool direct_solver = true;
+      const bool neumann_bc = false;
+
+      // ElaStd<3> ela_std(direct_solver, neumann_bc);
+      // ela_std.run();
+
+      ElaMs<3> ela_ms(direct_solver, neumann_bc);
+      ela_ms.run();
     }
   catch (std::exception &exc)
     {

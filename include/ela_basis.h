@@ -1,6 +1,5 @@
-// Deal.II
-#ifndef _INCLUDE_ELA_STD_H_
-#define _INCLUDE_ELA_STD_H_
+#ifndef _INCLUDE_ELA_BASIS_H_
+#define _INCLUDE_ELA_BASIS_H_
 
 #include <deal.II/base/conditional_ostream.h>
 #include <deal.II/base/function.h>
@@ -23,14 +22,18 @@
 
 #include <deal.II/grid/grid_generator.h>
 #include <deal.II/grid/grid_tools.h>
+#include <deal.II/grid/tria.h>
 
 #include <deal.II/lac/affine_constraints.h>
 #include <deal.II/lac/dynamic_sparsity_pattern.h>
 #include <deal.II/lac/full_matrix.h>
+#include <deal.II/lac/precondition.h>
 #include <deal.II/lac/solver_bicgstab.h>
 #include <deal.II/lac/solver_cg.h>
 #include <deal.II/lac/solver_gmres.h>
 #include <deal.II/lac/sparsity_tools.h>
+#include <deal.II/lac/sparse_matrix.h>
+#include <deal.II/lac/sparse_direct.h>
 #include <deal.II/lac/trilinos_block_sparse_matrix.h>
 #include <deal.II/lac/trilinos_parallel_block_vector.h>
 #include <deal.II/lac/trilinos_precondition.h>
@@ -46,6 +49,7 @@
 #include "forces_and_parameters.h"
 #include "postprocessing.h"
 #include "mytools.h"
+#include "basis_funs.h"
 
 // STL
 #include <cmath>
@@ -63,49 +67,59 @@ namespace Elasticity
   // class that enables solving linear elasticity problems in parallel
   // which is based on the step-8 and step-40 tutorials of deal.ii
   template <int dim>
-  class ElaStd
+  class ElaBasis
   {
   public:
-    ElaStd(const bool direct_solver, const bool neumann_bc);
+    ElaBasis(typename Triangulation<dim>::active_cell_iterator &global_cell,
+              unsigned int local_subdomain,
+              MPI_Comm     mpi_communicator,
+              const bool   direct_solver);
+    ElaBasis(const ElaBasis<dim> &other);
+
     void
     run();
+    const FullMatrix<double> &
+    get_global_element_matrix() const;
+    const Vector<double> &
+    get_global_element_rhs() const;
 
   private:
-    const std::tuple<Point<dim>, Point<dim>>
-    get_init_vert(std::vector<double> p) const;
     void
     setup_system();
     void
     assemble_system();
     void
-    solve();
+    solve(unsigned int q_point);
     void
-    refine_grid();
-    void
-    output_results(const unsigned int cycle) const;
+    assemble_global_element_matrix();
 
     MPI_Comm                                  mpi_communicator;
-    parallel::distributed::Triangulation<dim> triangulation;
+    Triangulation<dim>                        triangulation;
     FESystem<dim>                             fe;
     DoFHandler<dim>                           dof_handler;
-    IndexSet                                  locally_owned_dofs;
-    IndexSet                                  locally_relevant_dofs;
-    AffineConstraints<double>                 constraints;
-    TrilinosWrappers::SparseMatrix            system_matrix;
-    TrilinosWrappers::SparseMatrix            preconditioner_matrix;
-    TrilinosWrappers::MPI::Vector             locally_relevant_solution;
-    TrilinosWrappers::MPI::Vector             system_rhs;
+    std::vector<AffineConstraints<double>>    constraints_vector;
+    std::vector<Point<dim>>                   corner_points;
+    std::vector<Vector<double>>               solution_vector;
+    SparsityPattern                           sparsity_pattern;
+    Vector<double>                            assembled_cell_rhs;
+    SparseMatrix<double>                      assembled_cell_matrix;
+    Vector<double>                            global_element_rhs;
+    FullMatrix<double>                        global_element_matrix;
+    Vector<double>                            system_rhs;
+    SparseMatrix<double>                      system_matrix;
+    Vector<double>                            global_solution;
+    const CellId                              global_cell_id;
+    const unsigned int                        local_subdomain;
+    BasisFun::BasisQ1Grad<dim>                basis_q1_grad;
     ConditionalOStream                        pcout;
-    TimerOutput                               computing_timer;
-    const bool                                direct_solver;
-    const bool                                neumann_bc;
+    const bool                                direct_solver;        
   };
 
 
   // template <int dim>
-  // class ElaStd : public ElaStd<dim>
+  // class ElaBasis : public ElaBasis<dim>
   // {
   // };
 } // namespace Elasticity
 
-#endif // _INCLUDE_ELA_STD_H_
+#endif // _INCLUDE_ELA_BASIS_H_
