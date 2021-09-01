@@ -25,7 +25,7 @@ namespace Elasticity
     , dof_handler(triangulation)
     , constraints_vector(GeometryInfo<dim>::vertices_per_cell)
     , corner_points(GeometryInfo<dim>::vertices_per_cell)
-    , solution_vector(fe.dofs_per_cell)
+    , solution_vector(GeometryInfo<dim>::vertices_per_cell)
     , global_element_rhs(fe.dofs_per_cell)
     , global_element_matrix(fe.dofs_per_cell, fe.dofs_per_cell)
     , global_cell_id(global_cell->id())
