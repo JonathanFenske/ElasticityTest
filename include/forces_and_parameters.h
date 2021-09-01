@@ -8,7 +8,7 @@ namespace Elasticity
   using namespace dealii;
   
   /****************************************************************************/
-  /* Parameters and boundary conditions */
+  /* Forces and parameters */
 
   // Class for the density of the surface force in N/m^2
   template <int dim>

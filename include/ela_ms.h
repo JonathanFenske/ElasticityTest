@@ -61,7 +61,8 @@ namespace Elasticity
   using namespace dealii;
 
   /****************************************************************************/
-  /* The main class*/
+ /* Class for the coarse scale part of the multiscale implementation for 
+    linear elasticity problems */
 
   // class that enables solving linear elasticity problems in parallel
   // which is based on the step-8 and step-40 tutorials of deal.ii

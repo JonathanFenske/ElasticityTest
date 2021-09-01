@@ -3,9 +3,6 @@
 
 namespace MyTools
 {
-  /****************************************************************************/
-  /* Tools */
-
   template const Point<2> roty(const Point<2> &p);
   template const Point<3> roty(const Point<3> &p);
 

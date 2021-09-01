@@ -9,7 +9,8 @@ namespace Elasticity
   using namespace dealii;
 
   /****************************************************************************/
-  /* The main class*/
+  /* Class for the fine scale part of the multiscale implementation for 
+     linear elasticity problems */
 
   // The constructor
   template <int dim>

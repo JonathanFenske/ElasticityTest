@@ -3,9 +3,6 @@
 
 namespace Elasticity
 {
-  /****************************************************************************/
-  /* Forces and parameters */
-
   template class SurfaceForce<2>;
   template class SurfaceForce<3>;
 

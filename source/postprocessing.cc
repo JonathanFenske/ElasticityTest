@@ -3,9 +3,6 @@
 
 namespace Elasticity
 {
-  /****************************************************************************/
-  /* Postprocessing */
-
   template class StrainPostprocessor<2>;
   template class StrainPostprocessor<3>;
 

@@ -8,6 +8,9 @@ namespace MyTools
 {
   using namespace dealii;
 
+  /****************************************************************************/
+  /* Tools */
+
   // Function that rotates a point -90° or -(pi/2) around the y axis
   template <int dim>
   const Point<dim>
