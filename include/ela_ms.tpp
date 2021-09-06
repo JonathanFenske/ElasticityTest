@@ -449,7 +449,7 @@ namespace Elasticity
 
     // GridGenerator::cylinder(triangulation, 10., 0.1);
 
-    triangulation.refine_global(1);
+    triangulation.refine_global(2);
 
     // GridTools::transform(MyTools::roty<dim>, triangulation);
     setup_system();

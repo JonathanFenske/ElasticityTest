@@ -19,6 +19,8 @@
 #include <deal.II/fe/fe_q.h>
 #include <deal.II/fe/fe_system.h>
 #include <deal.II/fe/fe_values.h>
+#include <deal.II/fe/fe_values_extractors.h>
+#include <deal.II/fe/component_mask.h>
 
 #include <deal.II/grid/grid_generator.h>
 #include <deal.II/grid/grid_tools.h>
@@ -111,16 +113,10 @@ namespace Elasticity
     Vector<double>                            global_solution;
     const CellId                              global_cell_id;
     const unsigned int                        local_subdomain;
-    BasisFun::BasisQ1Grad<dim>                basis_q1_grad;
+    BasisFun::BasisQ1<dim>                    basis_q1;
     ConditionalOStream                        pcout;
     const bool                                direct_solver;        
   };
-
-
-  // template <int dim>
-  // class ElaBasis : public ElaBasis<dim>
-  // {
-  // };
 } // namespace Elasticity
 
 #endif // _INCLUDE_ELA_BASIS_H_

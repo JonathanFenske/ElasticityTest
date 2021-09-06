@@ -23,14 +23,14 @@ namespace Elasticity
     , triangulation()
     , fe(FE_Q<dim>(1), dim)
     , dof_handler(triangulation)
-    , constraints_vector(GeometryInfo<dim>::vertices_per_cell)
+    , constraints_vector(fe.dofs_per_cell)
     , corner_points(GeometryInfo<dim>::vertices_per_cell)
-    , solution_vector(GeometryInfo<dim>::vertices_per_cell)
+    , solution_vector(fe.dofs_per_cell)
     , global_element_rhs(fe.dofs_per_cell)
     , global_element_matrix(fe.dofs_per_cell, fe.dofs_per_cell)
     , global_cell_id(global_cell->id())
     , local_subdomain(local_subdomain)
-    , basis_q1_grad(global_cell)
+    , basis_q1(global_cell)
     , pcout(std::cout,
             (Utilities::MPI::this_mpi_process(mpi_communicator) == 0))
     // If true, a direct solver will be used to solve the problem.
@@ -59,7 +59,7 @@ namespace Elasticity
     , global_element_matrix(other.global_element_matrix)
     , global_cell_id(other.global_cell_id)
     , local_subdomain(other.local_subdomain)
-    , basis_q1_grad(other.basis_q1_grad)
+    , basis_q1(other.basis_q1)
     , pcout(std::cout,
             (Utilities::MPI::this_mpi_process(mpi_communicator) == 0))
     // If true, a direct solver will be used to solve the problem.
@@ -73,23 +73,31 @@ namespace Elasticity
   {
     dof_handler.distribute_dofs(fe);
     DynamicSparsityPattern     dsp(dof_handler.n_dofs());
-
     for (unsigned int q_point = 0;
-         q_point < GeometryInfo<dim>::vertices_per_cell;
-         ++q_point)
+                    q_point < GeometryInfo<dim>::vertices_per_cell;
+                    ++q_point)
       {
-        basis_q1_grad.set_q_point(q_point);
+        basis_q1.set_index(q_point);
 
-        constraints_vector[q_point].clear();
-        DoFTools::make_hanging_node_constraints(
-          dof_handler, constraints_vector[q_point]);
+        for (unsigned int i = 0; i < dim; ++i)
+        {
+          unsigned int q_index(q_point * dim + i);
+          constraints_vector[q_index].clear();
+          DoFTools::make_hanging_node_constraints(
+            dof_handler, constraints_vector[q_index]);
 
-        VectorTools::interpolate_boundary_values(
-          dof_handler,
-          /*boundary id*/ 0,
-          basis_q1_grad,
-          constraints_vector[q_point]);
-        constraints_vector[q_point].close();
+          FEValuesExtractors::Scalar component(i);
+          ComponentMask component_mask = fe.component_mask(component);
+
+          VectorTools::interpolate_boundary_values(
+            dof_handler,
+            /*boundary id*/ 0,
+            basis_q1,
+            constraints_vector[q_index],
+            component_mask);
+          constraints_vector[q_index].close();
+        }
+        
       }
 
     DoFTools::make_sparsity_pattern(
@@ -103,11 +111,11 @@ namespace Elasticity
     assembled_cell_matrix.reinit(sparsity_pattern);
     system_matrix.reinit(sparsity_pattern);
 
-    for (unsigned int q_point = 0;
-         q_point < GeometryInfo<dim>::vertices_per_cell;
-         ++q_point)
+    for (unsigned int q_index = 0;
+         q_index < fe.dofs_per_cell;
+         ++q_index)
       {
-        solution_vector[q_point].reinit(dof_handler.n_dofs());
+        solution_vector[q_index].reinit(dof_handler.n_dofs());
       }
     assembled_cell_rhs.reinit(dof_handler.n_dofs());
     system_rhs.reinit(dof_handler.n_dofs());
@@ -299,53 +307,35 @@ namespace Elasticity
               << global_cell_id.to_string() << "   [machine: " << proc_name
               << " | rank: "
               << Utilities::MPI::this_mpi_process(MPI_COMM_WORLD)
-              << "]   ....." << std::endl;
+              << "]   .....";
     timer.restart();
 
     GridGenerator::general_cell(triangulation,
                                   corner_points,
                                   /* colorize faces */ false);
-    triangulation.refine_global(1);
+    triangulation.refine_global(2);
     
     setup_system();
     
     assemble_system();
     
-    for (unsigned int q_point = 0;
-          q_point < GeometryInfo<dim>::vertices_per_cell;
-          ++q_point)
+    for (unsigned int q_index = 0;
+          q_index < fe.dofs_per_cell;
+          ++q_index)
       {
         
-        system_rhs.reinit(solution_vector[q_point].size());
+        system_rhs.reinit(solution_vector[q_index].size());
         system_matrix.reinit(sparsity_pattern);
 
         system_matrix.copy_from(assembled_cell_matrix);
 
-        constraints_vector[q_point].condense(system_matrix, system_rhs);
+        constraints_vector[q_index].condense(system_matrix, system_rhs);
                       
-        solve(q_point);
+        solve(q_index);
         
       }
     
     assemble_global_element_matrix();
-
-    // pcout << "in cell " << global_cell_id << 
-    //     "number of entries: " << global_element_rhs.size() << std::endl;       
-    //     for (unsigned int j = 0; j < global_element_rhs.size(); ++j)
-    //       if (global_element_rhs(j) != 0)
-    //         pcout << j << " : "
-    //         << global_element_rhs(j) <<std::endl;
-
-    // pcout << "in cell " << global_cell_id << 
-    //     "number of rows: " << global_element_matrix.m() <<
-    //     "number of colomns: " << global_element_matrix.n() <<  std::endl;
-    //     for (unsigned int i = 0; i < global_element_matrix.m(); ++i)
-    //       {
-    //         for (unsigned int j = 0; j < global_element_matrix.n(); ++j)
-    //           if (global_element_matrix(i,j) != 0)
-    //             pcout << "(" << i << "," << j << "): "
-    //             << global_element_matrix(i,j) <<std::endl;
-          // }
 
     {
       // Free memory as much as possible

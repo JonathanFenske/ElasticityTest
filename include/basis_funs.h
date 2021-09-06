@@ -1,6 +1,7 @@
 #ifndef _BASIS_FUNS_h_
 #define _BASIS_FUNS_h_
 
+// Deal.ii
 #include <deal.II/base/function.h>
 #include <deal.II/base/tensor.h>
 #include <deal.II/grid/tria.h>
@@ -9,83 +10,94 @@
 #include <deal.II/lac/full_matrix.h>
 #include <deal.II/lac/vector.h>
 
+// STL
+#include <cmath>
+#include <fstream>
+
+// My Headers
+
+/*!
+ * @namespace ShapeFun
+ *
+ * @brief contains tools to evaluate standard finite element shape functions on arbitrary cells in
+ * various spaces that are approximated conformally.
+ */
 namespace BasisFun
 {
   using namespace dealii;
 
   /*!
-   * @class BasisQ1Grad
+   * @class BasisQ1
    *
-   * @brief Gradient of \f$Q_1\f$ basis on given cell
+   * @brief \f$Q_1\f$ basis on given cell
    *
-   * Class implements curls of vectorial Nedelec basis for a given
+   * Class implements scalar \f$Q_1\f$-basis functions for a given
    * quadrilateral.
-   *
-   * @note The gradients of \f$H(\mathrm{grad})\f$ conforming functions are in \f$H(\mathrm{curl})\f$.
-   * So we need covariant transforms to guarantee \f$H(\mathrm{curl})\f$
-   * conformity.
    */
   template <int dim>
-  class BasisQ1Grad : public Function<dim>
+  class BasisQ1 : public Function<dim>
   {
   public:
-    BasisQ1Grad() = delete;
+    BasisQ1() = delete;
 
     /*!
-     * Constructor.
-     *
+     * Constructor. Template specialization \f$dim=2\f$.
      * @param cell
+     *
+     * For dim=2 build up coefficient matrix \f$A=(a_{ij})\f$ for basis
+     * polynomial \f$\varphi_i(x,y)=a_i^0 + a_i^1 x + a_i^2 y + a_i^3 xy \f$.
+     * For dim=3 build up coefficient matrix \f$A=(a_{ij})\f$ for basis
+     * polynomial \f$\varphi_i(x,y)=a_i^0 + a_i^1 x + a_i^2 y + a_i^3 xy \f$.
+     * The \f$i\f$-th column of the matrix hence contains the coefficients for
+     * the \f$i\f$-th basis associated to the \f$i\f$-th vertex.
      */
-    BasisQ1Grad(const typename Triangulation<dim>::active_cell_iterator &cell);
+    BasisQ1(const typename Triangulation<dim>::active_cell_iterator &cell);
 
     /*!
      * Copy constructor.
      */
-    BasisQ1Grad(const BasisQ1Grad<dim> &);
+    BasisQ1(const BasisQ1<dim> &);
 
     /*!
-     * Set the q_point of the basis function to be evaluated.
+     * Set the index of the basis function to be evaluated.
      *
-     * @param q_point
+     * @param index
      */
     void
-      set_q_point(unsigned int q_point);
+      set_index(unsigned int index);
 
     /*!
-     * Compute the gradient of a Q1 function.
+     * Evaluate a basis function with a preset index at one given point in 2D or
+     * 3D.
      *
      * @param p
-     * @param value
+     * @param component
      */
     virtual void
-      vector_value(const Point<dim> &p, Vector<double> &value) const override;
+      vector_value(const Point<dim> & p,
+            Vector<double> &vector_value) const override;
 
     /*!
-     * Compute the gradient of a Q1 function for a list of points.
+     * Evaluate a basis function with a preset index at given point list in 2D
+     * and 3D.
      *
      * @param[in] points
      * @param[out] values
+     * @param component
      */
     virtual void
       vector_value_list(const std::vector<Point<dim>> &points,
                         std::vector<Vector<double>> &  values) const override;
 
-    /*!
-     * Compute the gradient of a Q1 function for a list of points. Return
-     * tensors.
-     *
-     * @param[in] points
-     * @param[out] values
-     */
     void
       tensor_value_list(const std::vector<Point<dim>> &points,
                         std::vector<Tensor<1, dim>> &  values) const;
 
   private:
     /*!
-     * q_point of current basis function to be evaluated.
+     * Index of current basis function to be evaluated.
      */
-    unsigned int q_point;
+    unsigned int index_basis;
 
     /*!
      * Matrix columns hold coefficients of basis functions.
@@ -93,51 +105,53 @@ namespace BasisFun
     FullMatrix<double> coeff_matrix;
   };
 
+
   // declare specializations
   template <>
-  BasisQ1Grad<2>::BasisQ1Grad(
+  BasisQ1<2>::BasisQ1(
     const typename Triangulation<2>::active_cell_iterator &cell);
 
   template <>
-  BasisQ1Grad<3>::BasisQ1Grad(
+  BasisQ1<3>::BasisQ1(
     const typename Triangulation<3>::active_cell_iterator &cell);
 
   template <>
   void
-    BasisQ1Grad<2>::vector_value(const Point<2> &p,
+    BasisQ1<2>::vector_value(const Point<2> &p,
                                  Vector<double> &value) const;
 
   template <>
   void
-    BasisQ1Grad<3>::vector_value(const Point<3> &p,
+    BasisQ1<3>::vector_value(const Point<3> &p,
                                  Vector<double> &value) const;
 
   template <>
   void
-    BasisQ1Grad<2>::vector_value_list(
+    BasisQ1<2>::vector_value_list(
       const std::vector<Point<2>> &points,
       std::vector<Vector<double>> &values) const;
 
   template <>
   void
-    BasisQ1Grad<3>::vector_value_list(
+    BasisQ1<3>::vector_value_list(
       const std::vector<Point<3>> &points,
       std::vector<Vector<double>> &values) const;
 
-
   template <>
   void
-    BasisQ1Grad<2>::tensor_value_list(const std::vector<Point<2>> &points,
+    BasisQ1<2>::tensor_value_list(const std::vector<Point<2>> &points,
                                       std::vector<Tensor<1, 2>> &values) const;
 
   template <>
   void
-    BasisQ1Grad<3>::tensor_value_list(const std::vector<Point<3>> &points,
+    BasisQ1<3>::tensor_value_list(const std::vector<Point<3>> &points,
                                       std::vector<Tensor<1, 3>> &values) const;
 
+
   // exernal template instantiations
-  extern template class BasisQ1Grad<2>;
-  extern template class BasisQ1Grad<3>;
+  extern template class BasisQ1<2>;
+  extern template class BasisQ1<3>;
+
 }
 
 #endif // _BASIS_FUNS_h_

@@ -8,18 +8,18 @@ namespace BasisFun
   using namespace dealii;
 
   template <int dim>
-  BasisQ1Grad<dim>::BasisQ1Grad(const BasisQ1Grad<dim> &other)
+  BasisQ1<dim>::BasisQ1(const BasisQ1<dim> &basis)
     : Function<dim>(dim)
-    , q_point(0)
-    , coeff_matrix(other.coeff_matrix)
+    , index_basis(0)
+    , coeff_matrix(basis.coeff_matrix)
   {}
 
 
   template <>
-  BasisQ1Grad<2>::BasisQ1Grad(
+  BasisQ1<2>::BasisQ1(
     const typename Triangulation<2>::active_cell_iterator &cell)
     : Function<2>(2)
-    , q_point(0)
+    , index_basis(0)
     , coeff_matrix(4, 4)
   {
     FullMatrix<double> point_matrix(4, 4);
@@ -40,10 +40,10 @@ namespace BasisFun
 
 
   template <>
-  BasisQ1Grad<3>::BasisQ1Grad(
+  BasisQ1<3>::BasisQ1(
     const typename Triangulation<3>::active_cell_iterator &cell)
     : Function<3>(3)
-    , q_point(0)
+    , index_basis(0)
     , coeff_matrix(8, 8)
   {
     FullMatrix<double> point_matrix(8, 8);
@@ -69,45 +69,50 @@ namespace BasisFun
 
   template <int dim>
   void
-    BasisQ1Grad<dim>::set_q_point(unsigned int q_point)
+    BasisQ1<dim>::set_index(unsigned int index)
   {
-    q_point = q_point;
+    index_basis = index;
   }
 
 
   template <>
   void
-    BasisQ1Grad<2>::vector_value(const Point<2> &p, Vector<double> &value) const
+    BasisQ1<2>::vector_value(const Point<2> &p,
+                      Vector<double> &vector_value) const
   {
-    value(0) =
-      coeff_matrix(1, q_point) + coeff_matrix(3, q_point) * p(1);
-    value(1) =
-      coeff_matrix(2, q_point) + coeff_matrix(3, q_point) * p(0);
+    double value = coeff_matrix(0, index_basis) +
+                   coeff_matrix(1, index_basis) * p(0) +
+                   coeff_matrix(2, index_basis) * p(1) +
+                   coeff_matrix(3, index_basis) * p(0) * p(1);
+                
+    vector_value(0) = value;
+    vector_value(1) = value;
   }
 
 
   template <>
   void
-    BasisQ1Grad<3>::vector_value(const Point<3> &p, Vector<double> &value) const
+    BasisQ1<3>::vector_value(const Point<3> &p,
+                      Vector<double> &vector_value) const
   {
-    value(0) = coeff_matrix(1, q_point) +
-               coeff_matrix(4, q_point) * p(1) +
-               coeff_matrix(6, q_point) * p(2) +
-               coeff_matrix(7, q_point) * p(1) * p(2);
-    value(1) = coeff_matrix(2, q_point) +
-               coeff_matrix(4, q_point) * p(0) +
-               coeff_matrix(5, q_point) * p(2) +
-               coeff_matrix(7, q_point) * p(0) * p(2);
-    value(2) = coeff_matrix(3, q_point) +
-               coeff_matrix(5, q_point) * p(1) +
-               coeff_matrix(6, q_point) * p(0) +
-               coeff_matrix(7, q_point) * p(0) * p(1);
+    double value = coeff_matrix(0, index_basis) +
+                   coeff_matrix(1, index_basis) * p(0) +
+                   coeff_matrix(2, index_basis) * p(1) +
+                   coeff_matrix(3, index_basis) * p(2) +
+                   coeff_matrix(4, index_basis) * p(0) * p(1) +
+                   coeff_matrix(5, index_basis) * p(1) * p(2) +
+                   coeff_matrix(6, index_basis) * p(0) * p(2) +
+                   coeff_matrix(7, index_basis) * p(0) * p(1) * p(2);
+
+    vector_value(0) = value;
+    vector_value(1) = value;
+    vector_value(2) = value;
   }
 
 
   template <>
   void
-    BasisQ1Grad<2>::vector_value_list(const std::vector<Point<2>> &points,
+    BasisQ1<2>::vector_value_list(const std::vector<Point<2>> &points,
                                       std::vector<Vector<double>> &values) const
   {
     Assert(points.size() == values.size(),
@@ -122,7 +127,7 @@ namespace BasisFun
 
   template <>
   void
-    BasisQ1Grad<3>::vector_value_list(const std::vector<Point<3>> &points,
+    BasisQ1<3>::vector_value_list(const std::vector<Point<3>> &points,
                                       std::vector<Vector<double>> &values) const
   {
     Assert(points.size() == values.size(),
@@ -137,7 +142,7 @@ namespace BasisFun
 
   template <>
   void
-    BasisQ1Grad<2>::tensor_value_list(const std::vector<Point<2>> &points,
+    BasisQ1<2>::tensor_value_list(const std::vector<Point<2>> &points,
                                       std::vector<Tensor<1, 2>> &  values) const
   {
     Assert(points.size() == values.size(),
@@ -157,7 +162,7 @@ namespace BasisFun
 
   template <>
   void
-    BasisQ1Grad<3>::tensor_value_list(const std::vector<Point<3>> &points,
+    BasisQ1<3>::tensor_value_list(const std::vector<Point<3>> &points,
                                       std::vector<Tensor<1, 3>> &  values) const
   {
     Assert(points.size() == values.size(),
