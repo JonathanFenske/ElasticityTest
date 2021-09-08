@@ -88,6 +88,10 @@ namespace Elasticity
                          dsp,
                          mpi_communicator);
 
+    // std::filesystem::create_directories("output/basis_output/");
+    std::filesystem::create_directory("output/global_basis_output/");
+    std::filesystem::create_directory("output/coarse/");
+
     // preconditioner_matrix.clear();
     // preconditioner_matrix.reinit(locally_owned_dofs, dsp, mpi_communicator);
   }
@@ -349,6 +353,31 @@ namespace Elasticity
   }
 
 
+  template <int dim>
+  void
+  ElaMs<dim>::send_global_weights_to_cell()
+  {
+    // For each cell we get dofs_per_cell values
+    const unsigned int                   dofs_per_cell = fe.dofs_per_cell;
+    std::vector<types::global_dof_index> local_dof_indices(dofs_per_cell);
+
+    for (const auto &cell : dof_handler.active_cell_iterators())
+      {
+        if (cell->is_locally_owned())
+          {
+            cell->get_dof_indices(local_dof_indices);
+            std::vector<double> extracted_weights(dofs_per_cell, 0);
+            locally_relevant_solution.extract_subvector_to(local_dof_indices,
+                                                           extracted_weights);
+
+            typename std::map<CellId, ElaBasis<dim>>::iterator
+              it_basis = cell_basis_map.find(cell->id());
+            (it_basis->second).set_global_weights(extracted_weights);
+          }
+      } // end ++cell
+  }
+
+
   // Adaptive refinement of the grid
   template <int dim>
   void
@@ -370,7 +399,7 @@ namespace Elasticity
 
   template <int dim>
   void
-  ElaMs<dim>::output_results() const
+  ElaMs<dim>::output_results()
   {
     DataOut<dim> data_out;
     data_out.attach_dof_handler(dof_handler);
@@ -407,7 +436,7 @@ namespace Elasticity
       ("ms_solution-" +
        Utilities::int_to_string(triangulation.locally_owned_subdomain(), 4) +
        ".vtu");
-    std::ofstream output(filename);
+    std::ofstream output("output/coarse/" + filename);
     data_out.write_vtu(output);
 
     if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0)
@@ -416,12 +445,31 @@ namespace Elasticity
         for (unsigned int i = 0;
              i < Utilities::MPI::n_mpi_processes(mpi_communicator);
              ++i)
-          filenames.push_back("ms_solution-" + 
+        {
+          filenames.push_back("coarse/ms_solution-" + 
                               Utilities::int_to_string(i, 4) + ".vtu");
+        }
 
         std::ofstream master_output(
-          "ms_solution.pvtu");
+          "output/ms_solution.pvtu");
         data_out.write_pvtu_record(master_output, filenames);
+
+        std::vector<std::string> basis_filenames;
+        typename std::map<CellId, ElaBasis<dim>>::iterator it_basis =
+                                                  cell_basis_map.begin(),
+                                                it_endbasis =
+                                                  cell_basis_map.end();
+
+        for (; it_basis != it_endbasis; ++it_basis)
+        {
+          (it_basis->second).output_global_solution_in_cell();
+          basis_filenames.push_back((it_basis->second).get_filename());
+        }
+
+        std::ofstream fine_master_output(
+          "output/fine_ms_solution.pvtu");
+        data_out.write_pvtu_record(fine_master_output,
+          basis_filenames);
       }
   }
 
@@ -449,7 +497,7 @@ namespace Elasticity
 
     // GridGenerator::cylinder(triangulation, 10., 0.1);
 
-    triangulation.refine_global(2);
+    triangulation.refine_global(1);
 
     // GridTools::transform(MyTools::roty<dim>, triangulation);
     setup_system();
@@ -460,6 +508,7 @@ namespace Elasticity
     initialize_and_compute_basis();
     assemble_system();
     solve();
+    send_global_weights_to_cell();
     if (Utilities::MPI::n_mpi_processes(mpi_communicator) <= 32)
       {
         TimerOutput::Scope t(computing_timer, "output");

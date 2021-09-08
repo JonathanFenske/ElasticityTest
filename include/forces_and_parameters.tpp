@@ -114,9 +114,9 @@ namespace Elasticity
   double
   mu<dim>::value(const Point<dim> &p, const unsigned int) const
   {
-    int fr = 80;
-    return E * nu / ((1 + nu) * (1 - 2 * nu)) *
-           (std::sin(2 * fr * M_PI * p(0) / 20) + 1);
+    // int fr = 40;
+    return E * nu / ((1 + nu) * (1 - 2 * nu)); // *
+          //  (std::sin(2 * fr * M_PI * p(0) / 20) + 1);
     // return E * nu / ((1 + nu) * (1 - 2 * nu)) * (0.5 * std::sin(2 * fr * M_PI
     // * p(0) / 20) +1);//* std::sin(2 * fr * M_PI * p(1) / 20) + 1);
   }
