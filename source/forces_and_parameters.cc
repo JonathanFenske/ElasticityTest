@@ -1,4 +1,5 @@
 #include "forces_and_parameters.h"
+
 #include "forces_and_parameters.tpp"
 
 namespace Elasticity
@@ -14,4 +15,4 @@ namespace Elasticity
 
   template class lambda<2>;
   template class lambda<3>;
-}
+} // namespace Elasticity
