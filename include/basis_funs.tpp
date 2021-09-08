@@ -69,32 +69,47 @@ namespace BasisFun
 
   template <int dim>
   void
-    BasisQ1<dim>::set_index(unsigned int index)
+  BasisQ1<dim>::set_index(unsigned int index)
   {
-    index_basis = index;
+    Assert(
+      index <=
+        static_cast<unsigned int>(GeometryInfo<dim>::vertices_per_cell * dim),
+      ExcMessage(
+        "Index of basis function must be smaller than dim * numer of corner points."));
+
+    // This is integer division (returns only the integer part)
+    index_basis = index / dim;
+
+    // This is modulo division (returns only the rest)
+    component_basis = index % GeometryInfo<dim>::vertices_per_cell;
   }
 
 
   template <>
   void
-    BasisQ1<2>::vector_value(const Point<2> &p,
-                      Vector<double> &vector_value) const
+  BasisQ1<2>::vector_value(const Point<2> &p,
+                           Vector<double> &vector_value) const
   {
+    // set every component to zero
+    vector_value = 0;
+
     double value = coeff_matrix(0, index_basis) +
                    coeff_matrix(1, index_basis) * p(0) +
                    coeff_matrix(2, index_basis) * p(1) +
                    coeff_matrix(3, index_basis) * p(0) * p(1);
-                
-    vector_value(0) = value;
-    vector_value(1) = value;
+
+    vector_value(component_basis) = value;
   }
 
 
   template <>
   void
-    BasisQ1<3>::vector_value(const Point<3> &p,
-                      Vector<double> &vector_value) const
+  BasisQ1<3>::vector_value(const Point<3> &p,
+                           Vector<double> &vector_value) const
   {
+    // set every component to zero
+    vector_value = 0;
+
     double value = coeff_matrix(0, index_basis) +
                    coeff_matrix(1, index_basis) * p(0) +
                    coeff_matrix(2, index_basis) * p(1) +
@@ -104,16 +119,14 @@ namespace BasisFun
                    coeff_matrix(6, index_basis) * p(0) * p(2) +
                    coeff_matrix(7, index_basis) * p(0) * p(1) * p(2);
 
-    vector_value(0) = value;
-    vector_value(1) = value;
-    vector_value(2) = value;
+    vector_value(component_basis) = value;
   }
 
 
   template <>
   void
-    BasisQ1<2>::vector_value_list(const std::vector<Point<2>> &points,
-                                      std::vector<Vector<double>> &values) const
+  BasisQ1<2>::vector_value_list(const std::vector<Point<2>> &points,
+                                std::vector<Vector<double>> &values) const
   {
     Assert(points.size() == values.size(),
            ExcDimensionMismatch(points.size(), values.size()));
@@ -127,8 +140,8 @@ namespace BasisFun
 
   template <>
   void
-    BasisQ1<3>::vector_value_list(const std::vector<Point<3>> &points,
-                                      std::vector<Vector<double>> &values) const
+  BasisQ1<3>::vector_value_list(const std::vector<Point<3>> &points,
+                                std::vector<Vector<double>> &values) const
   {
     Assert(points.size() == values.size(),
            ExcDimensionMismatch(points.size(), values.size()));
@@ -138,47 +151,6 @@ namespace BasisFun
         vector_value(points[p], values[p]);
       } // end ++p
   }
-
-
-  template <>
-  void
-    BasisQ1<2>::tensor_value_list(const std::vector<Point<2>> &points,
-                                      std::vector<Tensor<1, 2>> &  values) const
-  {
-    Assert(points.size() == values.size(),
-           ExcDimensionMismatch(points.size(), values.size()));
-
-    Vector<double> value_tmp(2);
-    for (unsigned int p = 0; p < points.size(); ++p)
-      {
-        value_tmp = 0;
-        vector_value(points[p], value_tmp);
-
-        values[p][0] = value_tmp(0);
-        values[p][1] = value_tmp(1);
-      } // end ++p
-  }
-
-
-  template <>
-  void
-    BasisQ1<3>::tensor_value_list(const std::vector<Point<3>> &points,
-                                      std::vector<Tensor<1, 3>> &  values) const
-  {
-    Assert(points.size() == values.size(),
-           ExcDimensionMismatch(points.size(), values.size()));
-
-    Vector<double> value_tmp(3);
-    for (unsigned int p = 0; p < points.size(); ++p)
-      {
-        value_tmp = 0;
-        vector_value(points[p], value_tmp);
-
-        values[p][0] = value_tmp(0);
-        values[p][1] = value_tmp(1);
-        values[p][2] = value_tmp(2);
-      } // end ++p
-  }
-}
+} // namespace BasisFun
 
 #endif // _BASIS_FUNS_TPP_

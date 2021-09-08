@@ -6,7 +6,7 @@
 namespace Elasticity
 {
   using namespace dealii;
-  
+
   /****************************************************************************/
   /* Forces and parameters */
 
@@ -19,7 +19,7 @@ namespace Elasticity
 
   template <int dim>
   double
-  SurfaceForce<dim>::value(const Point<dim> &p, const unsigned int) const
+  SurfaceForce<dim>::value(const Point<dim> & /*p*/, const unsigned int) const
   {
     // if(p(0) > 4)
     //   return -100;//-100 *fabs(std::sin(M_PI*p(0)/5));
@@ -29,34 +29,82 @@ namespace Elasticity
   }
 
 
+
   template <int dim>
   double
-  BodyForce<dim>::value(const Point<dim> &p, const unsigned int component) const
-  {   
-    const double grav = 9.81; // Gravitational acceleration
-    const double rho = 7.85e3; // Mass density (of steel)
-    return ((component == dim - 1) ? (-grav * rho) : 0.);
+  BodyForce<dim>::value(const Point<dim> & /*p*/,
+                        const unsigned int component) const
+  {
+    if (component == dim - 1)
+      {
+        return -grav * rho;
+      }
+    else
+      {
+        return 0.0;
+      }
   }
 
 
   template <int dim>
   void
-  BodyForce<dim>::vector_value_list(
-    const std::vector<Point<dim>> &       points,
-    std::vector<Vector<double>> &value_list) const
+  BodyForce<dim>::value_list(const std::vector<Point<dim>> &points,
+                             std::vector<double> &          values,
+                             const unsigned int             component) const
   {
-    const unsigned int n_points(points.size());
-    for (unsigned int i = 0; i < n_points; ++i)
-      for (unsigned int j = 0; j < dim; ++j)
-        value_list[i][j] = value(points[i],j);
+    Assert(points.size() == values.size(),
+           ExcDimensionMismatch(points.size(), values.size()));
+
+    Assert(component <= dim, ExcDimensionMismatch(component, dim));
+
+    if (component == dim - 1)
+      {
+        for (unsigned int i = 0; i < points.size(); ++i)
+          {
+            for (unsigned int j = 0; j < dim; ++j)
+              {
+                values[i] = -grav * rho;
+              }
+          }
+      }
+    else
+      {
+        std::fill(values.begin(), values.end(), 0.0);
+      }
   }
 
 
   template <int dim>
-  double
-  lambda<dim>::value(const Point<dim> &p, const unsigned int) const
+  void
+  BodyForce<dim>::vector_value(const Point<dim> & /*p*/,
+                               Vector<double> &value) const
   {
-    //int fr = 80;
+    value          = 0.0;
+    value[dim - 1] = -grav * rho;
+  }
+
+
+  template <int dim>
+  void
+  BodyForce<dim>::vector_value_list(const std::vector<Point<dim>> &points,
+                                    std::vector<Vector<double>> &  values) const
+  {
+    Assert(points.size() == values.size(),
+           ExcDimensionMismatch(points.size(), values.size()));
+
+    for (unsigned int i = 0; i < points.size(); ++i)
+      {
+        vector_value(points[i], values[i]);
+      }
+  }
+
+
+
+  template <int dim>
+  double
+  lambda<dim>::value(const Point<dim> & /*p*/, const unsigned int) const
+  {
+    // int fr = 80;
     return E / (2 * (1 + nu)); // * (std::sin(2 * fr * M_PI * p(0) / 20) + 1);
     // return -(std::sin(M_PI*p(0)/15)+2);//(-0.1 * p(0) + 2.5) * 1e9;////*;
   }
@@ -72,6 +120,6 @@ namespace Elasticity
     // return E * nu / ((1 + nu) * (1 - 2 * nu)) * (0.5 * std::sin(2 * fr * M_PI
     // * p(0) / 20) +1);//* std::sin(2 * fr * M_PI * p(1) / 20) + 1);
   }
-}
+} // namespace Elasticity
 
 #endif // _INCLUDE_FORCES_AND_PARAMETERS_TPP_

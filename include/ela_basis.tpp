@@ -9,16 +9,16 @@ namespace Elasticity
   using namespace dealii;
 
   /****************************************************************************/
-  /* Class for the fine scale part of the multiscale implementation for 
+  /* Class for the fine scale part of the multiscale implementation for
      linear elasticity problems */
 
   // The constructor
   template <int dim>
-  ElaBasis<dim>::ElaBasis(typename Triangulation<dim>::active_cell_iterator 
-                          &global_cell,
-                          unsigned int local_subdomain,
-                          MPI_Comm     mpi_communicator,
-                          const bool   direct_solver)
+  ElaBasis<dim>::ElaBasis(
+    typename Triangulation<dim>::active_cell_iterator &global_cell,
+    unsigned int                                       local_subdomain,
+    MPI_Comm                                           mpi_communicator,
+    const bool                                         direct_solver)
     : mpi_communicator(mpi_communicator)
     , triangulation()
     , fe(FE_Q<dim>(1), dim)
@@ -72,32 +72,36 @@ namespace Elasticity
   ElaBasis<dim>::setup_system()
   {
     dof_handler.distribute_dofs(fe);
-    DynamicSparsityPattern     dsp(dof_handler.n_dofs());
+
+    DynamicSparsityPattern dsp(dof_handler.n_dofs());
+
     for (unsigned int q_point = 0;
-                    q_point < GeometryInfo<dim>::vertices_per_cell;
-                    ++q_point)
+         q_point < GeometryInfo<dim>::vertices_per_cell;
+         ++q_point)
       {
         basis_q1.set_index(q_point);
 
         for (unsigned int i = 0; i < dim; ++i)
-        {
-          unsigned int q_index(q_point * dim + i);
-          constraints_vector[q_index].clear();
-          DoFTools::make_hanging_node_constraints(
-            dof_handler, constraints_vector[q_index]);
+          {
+            unsigned int q_index(q_point * dim + i);
 
-          FEValuesExtractors::Scalar component(i);
-          ComponentMask component_mask = fe.component_mask(component);
+            constraints_vector[q_index].clear();
 
-          VectorTools::interpolate_boundary_values(
-            dof_handler,
-            /*boundary id*/ 0,
-            basis_q1,
-            constraints_vector[q_index],
-            component_mask);
-          constraints_vector[q_index].close();
-        }
-        
+            DoFTools::make_hanging_node_constraints(
+              dof_handler, constraints_vector[q_index]);
+
+            FEValuesExtractors::Scalar component(i);
+            ComponentMask component_mask = fe.component_mask(component);
+
+            VectorTools::interpolate_boundary_values(
+              dof_handler,
+              /*boundary id*/ 0,
+              basis_q1,
+              constraints_vector[q_index],
+              component_mask);
+
+            constraints_vector[q_index].close();
+          }
       }
 
     DoFTools::make_sparsity_pattern(
@@ -111,12 +115,11 @@ namespace Elasticity
     assembled_cell_matrix.reinit(sparsity_pattern);
     system_matrix.reinit(sparsity_pattern);
 
-    for (unsigned int q_index = 0;
-         q_index < fe.dofs_per_cell;
-         ++q_index)
+    for (unsigned int q_index = 0; q_index < fe.dofs_per_cell; ++q_index)
       {
         solution_vector[q_index].reinit(dof_handler.n_dofs());
       }
+
     assembled_cell_rhs.reinit(dof_handler.n_dofs());
     system_rhs.reinit(dof_handler.n_dofs());
   }
@@ -126,24 +129,24 @@ namespace Elasticity
   void
   ElaBasis<dim>::assemble_system()
   {
-    const QGauss<dim>     quadrature_formula(fe.degree + 1);
-    FEValues<dim>         fe_values(fe,
+    const QGauss<dim>  quadrature_formula(fe.degree + 1);
+    FEValues<dim>      fe_values(fe,
                             quadrature_formula,
                             update_values | update_gradients |
                               update_quadrature_points | update_JxW_values);
-    const unsigned int    dofs_per_cell   = fe.n_dofs_per_cell();
-    const unsigned int    n_q_points      = quadrature_formula.size();
-    
-    lambda<dim>           lambda;
-    mu<dim>               mu;
-    BodyForce<dim>        body_force;
-    std::vector<Vector<double>>   body_force_values(n_q_points);
+    const unsigned int dofs_per_cell = fe.n_dofs_per_cell();
+    const unsigned int n_q_points    = quadrature_formula.size();
+
+    lambda<dim>                 lambda;
+    mu<dim>                     mu;
+    BodyForce<dim>              body_force;
+    std::vector<Vector<double>> body_force_values(n_q_points);
     for (unsigned int i = 0; i < n_q_points; ++i)
       body_force_values[i].reinit(dim);
-    std::vector<double>   lambda_values(n_q_points), mu_values(n_q_points);
+    std::vector<double> lambda_values(n_q_points), mu_values(n_q_points);
 
-    FullMatrix<double>    local_cell_matrix(dofs_per_cell, dofs_per_cell);
-    Vector<double>        local_cell_rhs(dofs_per_cell);
+    FullMatrix<double> local_cell_matrix(dofs_per_cell, dofs_per_cell);
+    Vector<double>     local_cell_rhs(dofs_per_cell);
 
     std::vector<types::global_dof_index> local_dof_indices(dofs_per_cell);
     for (const auto &cell : dof_handler.active_cell_iterators())
@@ -153,8 +156,8 @@ namespace Elasticity
         fe_values.reinit(cell);
         lambda.value_list(fe_values.get_quadrature_points(), lambda_values);
         mu.value_list(fe_values.get_quadrature_points(), mu_values);
-        body_force.vector_value_list(fe_values.get_quadrature_points()
-                                      , body_force_values);
+        body_force.vector_value_list(fe_values.get_quadrature_points(),
+                                     body_force_values);
         for (unsigned int q_index = 0; q_index < n_q_points; ++q_index)
           {
             for (unsigned int i = 0; i < dofs_per_cell; ++i)
@@ -169,13 +172,13 @@ namespace Elasticity
                       ((fe_values.shape_grad(i, q_index)[component_i] *
                         fe_values.shape_grad(j, q_index)[component_j] *
                         lambda_values[q_index]) +
-                        (fe_values.shape_grad(i, q_index)[component_j] *
+                       (fe_values.shape_grad(i, q_index)[component_j] *
                         fe_values.shape_grad(j, q_index)[component_i] *
                         mu_values[q_index]) +
-                        ((component_i == component_j) ?
+                       ((component_i == component_j) ?
                           (fe_values.shape_grad(i, q_index) *
-                            fe_values.shape_grad(j, q_index) *
-                            mu_values[q_index]) :
+                           fe_values.shape_grad(j, q_index) *
+                           mu_values[q_index]) :
                           0)) *
                       fe_values.JxW(q_index);
                   }
@@ -187,16 +190,15 @@ namespace Elasticity
           }
         cell->get_dof_indices(local_dof_indices);
         for (unsigned int i = 0; i < dofs_per_cell; ++i)
-        {
-          for (unsigned int j = 0; j < dofs_per_cell; ++j)
           {
-            assembled_cell_matrix.add(local_dof_indices[i],
-                              local_dof_indices[j],
-                              local_cell_matrix(i,j));
+            for (unsigned int j = 0; j < dofs_per_cell; ++j)
+              {
+                assembled_cell_matrix.add(local_dof_indices[i],
+                                          local_dof_indices[j],
+                                          local_cell_matrix(i, j));
+              }
+            assembled_cell_rhs(local_dof_indices[i]) += local_cell_rhs(i);
           }
-          assembled_cell_rhs(local_dof_indices[i]) += local_cell_rhs(i);
-        }
-              
       }
   }
 
@@ -231,9 +233,9 @@ namespace Elasticity
         try
           {
             solver.solve(system_matrix,
-                 solution_vector[q_point],
-                 system_rhs,
-                 preconditioner);
+                         solution_vector[q_point],
+                         system_rhs,
+                         preconditioner);
           }
         catch (std::exception &e)
           {
@@ -241,16 +243,16 @@ namespace Elasticity
           }
 
         std::cout << "   "
-                << "(cell   " << global_cell_id.to_string() << ") "
-                << "(basis   " << q_point << ")   "
-                << solver_control.last_step()
-                << " fine CG iterations needed to obtain convergence."
-                << std::endl;
+                  << "(cell   " << global_cell_id.to_string() << ") "
+                  << "(basis   " << q_point << ")   "
+                  << solver_control.last_step()
+                  << " fine CG iterations needed to obtain convergence."
+                  << std::endl;
       }
   }
 
 
-  template<int dim>
+  template <int dim>
   void
   ElaBasis<dim>::assemble_global_element_matrix()
   {
@@ -303,59 +305,53 @@ namespace Elasticity
     MPI_Get_processor_name(processor_name, &name_len);
     std::string proc_name(processor_name, name_len);
 
-    std::cout << "	Solving for basis in cell   "
-              << global_cell_id.to_string() << "   [machine: " << proc_name
-              << " | rank: "
-              << Utilities::MPI::this_mpi_process(MPI_COMM_WORLD)
+    std::cout << "	Solving for basis in cell   " << global_cell_id.to_string()
+              << "   [machine: " << proc_name
+              << " | rank: " << Utilities::MPI::this_mpi_process(MPI_COMM_WORLD)
               << "]   .....";
     timer.restart();
 
     GridGenerator::general_cell(triangulation,
-                                  corner_points,
-                                  /* colorize faces */ false);
+                                corner_points,
+                                /* colorize faces */ false);
     triangulation.refine_global(2);
-    
+
     setup_system();
-    
+
     assemble_system();
-    
-    for (unsigned int q_index = 0;
-          q_index < fe.dofs_per_cell;
-          ++q_index)
+
+    for (unsigned int q_index = 0; q_index < fe.dofs_per_cell; ++q_index)
       {
-        
         system_rhs.reinit(solution_vector[q_index].size());
         system_matrix.reinit(sparsity_pattern);
 
         system_matrix.copy_from(assembled_cell_matrix);
 
         constraints_vector[q_index].condense(system_matrix, system_rhs);
-                      
+
         solve(q_index);
-        
       }
-    
+
     assemble_global_element_matrix();
 
     {
       // Free memory as much as possible
       system_matrix.clear();
       for (unsigned int i = 0; i < GeometryInfo<3>::vertices_per_cell; ++i)
-      {
-        constraints_vector[i].clear();
-      }
+        {
+          constraints_vector[i].clear();
+        }
 
       if (true)
-      {
-        timer.stop();
+        {
+          timer.stop();
 
-        std::cout << "done in   " << timer.cpu_time() << "   seconds."
-                  << std::endl;
-      }
+          std::cout << "done in   " << timer.cpu_time() << "   seconds."
+                    << std::endl;
+        }
     }
   }
 
-  
 
 
   template <int dim>

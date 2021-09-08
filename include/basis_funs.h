@@ -4,9 +4,11 @@
 // Deal.ii
 #include <deal.II/base/function.h>
 #include <deal.II/base/tensor.h>
+
 #include <deal.II/grid/tria.h>
 #include <deal.II/grid/tria_accessor.h>
 #include <deal.II/grid/tria_iterator.h>
+
 #include <deal.II/lac/full_matrix.h>
 #include <deal.II/lac/vector.h>
 
@@ -64,7 +66,7 @@ namespace BasisFun
      * @param index
      */
     void
-      set_index(unsigned int index);
+    set_index(unsigned int index);
 
     /*!
      * Evaluate a basis function with a preset index at one given point in 2D or
@@ -74,8 +76,8 @@ namespace BasisFun
      * @param component
      */
     virtual void
-      vector_value(const Point<dim> & p,
-            Vector<double> &vector_value) const override;
+    vector_value(const Point<dim> &p,
+                 Vector<double> &  vector_value) const override;
 
     /*!
      * Evaluate a basis function with a preset index at given point list in 2D
@@ -86,18 +88,23 @@ namespace BasisFun
      * @param component
      */
     virtual void
-      vector_value_list(const std::vector<Point<dim>> &points,
-                        std::vector<Vector<double>> &  values) const override;
+    vector_value_list(const std::vector<Point<dim>> &points,
+                      std::vector<Vector<double>> &  values) const override;
 
-    void
-      tensor_value_list(const std::vector<Point<dim>> &points,
-                        std::vector<Tensor<1, dim>> &  values) const;
+    // void
+    // tensor_value_list(const std::vector<Point<dim>> &points,
+    //                   std::vector<Tensor<1, dim>> &  values) const;
 
   private:
     /*!
-     * Index of current basis function to be evaluated.
+     * Index of current basis function.
      */
     unsigned int index_basis;
+
+    /*!
+     * Component of current basis function.
+     */
+    unsigned int component_basis;
 
     /*!
      * Matrix columns hold coefficients of basis functions.
@@ -117,41 +124,26 @@ namespace BasisFun
 
   template <>
   void
-    BasisQ1<2>::vector_value(const Point<2> &p,
-                                 Vector<double> &value) const;
+  BasisQ1<2>::vector_value(const Point<2> &p, Vector<double> &value) const;
 
   template <>
   void
-    BasisQ1<3>::vector_value(const Point<3> &p,
-                                 Vector<double> &value) const;
+  BasisQ1<3>::vector_value(const Point<3> &p, Vector<double> &value) const;
 
   template <>
   void
-    BasisQ1<2>::vector_value_list(
-      const std::vector<Point<2>> &points,
-      std::vector<Vector<double>> &values) const;
+  BasisQ1<2>::vector_value_list(const std::vector<Point<2>> &points,
+                                std::vector<Vector<double>> &values) const;
 
   template <>
   void
-    BasisQ1<3>::vector_value_list(
-      const std::vector<Point<3>> &points,
-      std::vector<Vector<double>> &values) const;
-
-  template <>
-  void
-    BasisQ1<2>::tensor_value_list(const std::vector<Point<2>> &points,
-                                      std::vector<Tensor<1, 2>> &values) const;
-
-  template <>
-  void
-    BasisQ1<3>::tensor_value_list(const std::vector<Point<3>> &points,
-                                      std::vector<Tensor<1, 3>> &values) const;
-
+  BasisQ1<3>::vector_value_list(const std::vector<Point<3>> &points,
+                                std::vector<Vector<double>> &values) const;
 
   // exernal template instantiations
   extern template class BasisQ1<2>;
   extern template class BasisQ1<3>;
 
-}
+} // namespace BasisFun
 
 #endif // _BASIS_FUNS_h_
