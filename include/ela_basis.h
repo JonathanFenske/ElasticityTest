@@ -57,6 +57,7 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <filesystem>
 
 
 namespace Elasticity
@@ -85,6 +86,12 @@ namespace Elasticity
     get_global_element_matrix() const;
     const Vector<double> &
     get_global_element_rhs() const;
+    void
+    set_global_weights(const std::vector<double> &global_weights);
+    void
+    output_global_solution_in_cell();
+    const std::string
+    get_filename() const;
 
   private:
     void
@@ -95,6 +102,8 @@ namespace Elasticity
     solve(unsigned int q_point);
     void
     assemble_global_element_matrix();
+    // void
+    // output_basis();
 
     MPI_Comm                                  mpi_communicator;
     Triangulation<dim>                        triangulation;
@@ -108,11 +117,13 @@ namespace Elasticity
     SparseMatrix<double>                      assembled_cell_matrix;
     Vector<double>                            global_element_rhs;
     FullMatrix<double>                        global_element_matrix;
+    std::vector<double>                       global_weights;
     Vector<double>                            system_rhs;
     SparseMatrix<double>                      system_matrix;
     Vector<double>                            global_solution;
     const CellId                              global_cell_id;
     const unsigned int                        local_subdomain;
+    std::string                               filename;
     BasisFun::BasisQ1<dim>                    basis_q1;
     ConditionalOStream                        pcout;
     const bool                                direct_solver;        

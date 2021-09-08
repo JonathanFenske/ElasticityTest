@@ -54,6 +54,7 @@
 #include <iostream>
 #include <map>
 #include <memory>
+#include <filesystem>
 
 
 namespace Elasticity
@@ -86,9 +87,11 @@ namespace Elasticity
     void
     solve();
     void
+    send_global_weights_to_cell();
+    void
     refine_grid();
     void
-    output_results() const;
+    output_results();
 
     MPI_Comm                                  mpi_communicator;
     parallel::distributed::Triangulation<dim> triangulation;

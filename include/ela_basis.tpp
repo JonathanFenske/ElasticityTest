@@ -28,6 +28,7 @@ namespace Elasticity
     , solution_vector(fe.dofs_per_cell)
     , global_element_rhs(fe.dofs_per_cell)
     , global_element_matrix(fe.dofs_per_cell, fe.dofs_per_cell)
+    , global_weights(fe.dofs_per_cell)
     , global_cell_id(global_cell->id())
     , local_subdomain(local_subdomain)
     , basis_q1(global_cell)
@@ -57,6 +58,7 @@ namespace Elasticity
     , solution_vector(other.solution_vector)
     , global_element_rhs(other.global_element_rhs)
     , global_element_matrix(other.global_element_matrix)
+    , global_weights(other.global_weights)
     , global_cell_id(other.global_cell_id)
     , local_subdomain(other.local_subdomain)
     , basis_q1(other.basis_q1)
@@ -313,7 +315,7 @@ namespace Elasticity
     GridGenerator::general_cell(triangulation,
                                   corner_points,
                                   /* colorize faces */ false);
-    triangulation.refine_global(2);
+    triangulation.refine_global(1);
     
     setup_system();
     
@@ -353,6 +355,17 @@ namespace Elasticity
                   << std::endl;
       }
     }
+
+    // try
+    // {
+    //   output_basis();
+    // }
+    // catch(const std::exception& e)
+    // {
+    //   std::cerr << e.what() << '\n';
+    // }
+    
+    
   }
 
   
@@ -371,6 +384,127 @@ namespace Elasticity
   ElaBasis<dim>::get_global_element_rhs() const
   {
     return global_element_rhs;
+  }
+
+
+  template <int dim>
+  void
+  ElaBasis<dim>::set_global_weights(const std::vector<double> &weights)
+  {
+    // Copy assignment of global weights
+    global_weights = weights;
+
+    // reinitialize the global solution on this cell
+    global_solution.reinit(dof_handler.n_dofs());
+
+    const unsigned int dofs_per_cell = fe.n_dofs_per_cell();
+
+    // Set global solution using the weights and the local basis.
+    for (unsigned int index_basis = 0; index_basis < dofs_per_cell;
+         ++index_basis)
+      {
+        // global_solution = 1*global_solution +
+        // global_weights[index_basis]*solution_vector[index_basis]
+        global_solution.sadd(1,
+                             global_weights[index_basis],
+                             solution_vector[index_basis]);
+      }
+  }
+
+
+  // template <int dim>
+  // void
+  // ElaBasis<dim>::output_basis()
+  // {
+  //   Timer timer;
+  //   DataOut<dim> data_out;
+  //   data_out.attach_dof_handler(dof_handler);
+
+  //   for (unsigned int n_basis = 0; n_basis < fe.dofs_per_cell;
+  //        ++n_basis)
+  //     {
+  //       Vector<double> &basis_solution = solution_vector[n_basis];
+
+  //       // add the displacement to the output
+  //       std::vector<std::string> solution_name(dim, "displacement");
+  //       std::vector<DataComponentInterpretation::DataComponentInterpretation>
+  //         interpretation(
+  //           dim, DataComponentInterpretation::component_is_part_of_vector);
+
+  //       data_out.add_data_vector(basis_solution,
+  //                               solution_name,
+  //                               DataOut<dim>::type_dof_data,
+  //                               interpretation);
+
+  //       // add the linearized strain tensor to the output
+  //       StrainPostprocessor<dim> strain_postproc;
+  //       data_out.add_data_vector(basis_solution, strain_postproc);
+
+  //       // add the linearized stress tensor to the output
+  //       StressPostprocessor<dim> stress_postproc;
+  //       data_out.add_data_vector(basis_solution, stress_postproc);
+
+  //       data_out.build_patches();
+
+  //       // filename
+  //       filename = "ela_basis";
+  //       filename += "." + Utilities::int_to_string(local_subdomain, 5);
+  //       filename += ".cell-" + global_cell_id.to_string();
+  //       filename += ".index-";
+  //       filename += Utilities::int_to_string(n_basis, 2);
+  //       filename += ".vtu";
+
+  //       std::ofstream output("output/basis_output/" + filename);
+  //       data_out.write_vtu(output);
+  //     }
+  // }
+
+
+  template <int dim>
+  void
+  ElaBasis<dim>::output_global_solution_in_cell()
+  {
+    DataOut<dim> data_out;
+    data_out.attach_dof_handler(dof_handler);
+
+    // add the displacement to the output
+    std::vector<std::string> solution_name(dim, "displacement");
+    std::vector<DataComponentInterpretation::DataComponentInterpretation>
+      interpretation(
+        dim, DataComponentInterpretation::component_is_part_of_vector);
+
+    data_out.add_data_vector(global_solution,
+                            solution_name,
+                            DataOut<dim>::type_dof_data,
+                            interpretation);
+
+    // add the linearized strain tensor to the output
+    StrainPostprocessor<dim> strain_postproc;
+    data_out.add_data_vector(global_solution, strain_postproc);
+
+    // add the linearized stress tensor to the output
+    StressPostprocessor<dim> stress_postproc;
+    data_out.add_data_vector(global_solution, stress_postproc);
+
+    data_out.build_patches();
+
+    // filename
+    filename = std::string("global_basis_output/");
+    filename += std::string("basis_solution");
+    filename += "." + Utilities::int_to_string(local_subdomain, 5);
+    filename += std::string(".cell-") + global_cell_id.to_string();
+    filename += std::string(".vtu");
+
+    std::ofstream output("output/" + filename);
+    data_out.write_vtu(output);
+  }
+
+
+  template <int dim>
+  const std::string
+  ElaBasis<dim>::get_filename() const
+  {
+    return filename;
   }
 } // namespace Elasticity
 
