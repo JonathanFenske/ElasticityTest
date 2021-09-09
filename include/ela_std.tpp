@@ -86,6 +86,8 @@ namespace Elasticity
                          dsp,
                          mpi_communicator);
 
+    std::filesystem::create_directories("output/std_partitioned");
+
     preconditioner_matrix.clear();
     preconditioner_matrix.reinit(locally_owned_dofs, dsp, mpi_communicator);
   }
@@ -315,12 +317,6 @@ namespace Elasticity
                              DataOut<dim>::type_dof_data,
                              interpretation);
 
-    // add the partition of the domain to the output
-    Vector<float> subdomain(triangulation.n_active_cells());
-    for (unsigned int i = 0; i < subdomain.size(); ++i)
-      subdomain(i) = triangulation.locally_owned_subdomain();
-    data_out.add_data_vector(subdomain, "subdomain");
-
     // add the linearized strain tensor to the output
     StrainPostprocessor<dim> strain_postproc;
     data_out.add_data_vector(locally_relevant_solution, strain_postproc);
@@ -333,7 +329,8 @@ namespace Elasticity
 
     // write the output files
     const std::string filename =
-      ("std_solution-" + Utilities::int_to_string(cycle, 2) + "." +
+      ("output/std_partitioned/std_solution-" + 
+       Utilities::int_to_string(cycle, 2) + "." +
        Utilities::int_to_string(triangulation.locally_owned_subdomain(), 4) +
        ".vtu");
     std::ofstream output(filename);
@@ -345,11 +342,13 @@ namespace Elasticity
         for (unsigned int i = 0;
              i < Utilities::MPI::n_mpi_processes(mpi_communicator);
              ++i)
-          filenames.push_back("std_solution-" + Utilities::int_to_string(cycle, 2) +
+          filenames.push_back("std_partitioned/std_solution-" + 
+                              Utilities::int_to_string(cycle, 2) +
                               "." + Utilities::int_to_string(i, 4) + ".vtu");
 
         std::ofstream master_output(
-          "std_solution-" + Utilities::int_to_string(cycle, 2) + ".pvtu");
+          "output/std_solution-" + Utilities::int_to_string(cycle, 2) +
+          ".pvtu");
         data_out.write_pvtu_record(master_output, filenames);
       }
   }

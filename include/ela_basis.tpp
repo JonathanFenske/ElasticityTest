@@ -77,33 +77,22 @@ namespace Elasticity
 
     DynamicSparsityPattern dsp(dof_handler.n_dofs());
 
-    for (unsigned int q_point = 0;
-         q_point < GeometryInfo<dim>::vertices_per_cell;
-         ++q_point)
+    for (unsigned int q_index = 0; q_index < fe.dofs_per_cell; ++q_index)
       {
-        basis_q1.set_index(q_point);
+        basis_q1.set_index(q_index);
 
-        for (unsigned int i = 0; i < dim; ++i)
-          {
-            unsigned int q_index(q_point * dim + i);
+        constraints_vector[q_index].clear();
 
-            constraints_vector[q_index].clear();
+        DoFTools::make_hanging_node_constraints(
+          dof_handler, constraints_vector[q_index]);
 
-            DoFTools::make_hanging_node_constraints(
-              dof_handler, constraints_vector[q_index]);
+        VectorTools::interpolate_boundary_values(
+          dof_handler,
+          /*boundary id*/ 0,
+          basis_q1,
+          constraints_vector[q_index]);
 
-            FEValuesExtractors::Scalar component(i);
-            ComponentMask component_mask = fe.component_mask(component);
-
-            VectorTools::interpolate_boundary_values(
-              dof_handler,
-              /*boundary id*/ 0,
-              basis_q1,
-              constraints_vector[q_index],
-              component_mask);
-
-            constraints_vector[q_index].close();
-          }
+        constraints_vector[q_index].close();
       }
 
     DoFTools::make_sparsity_pattern(
@@ -316,7 +305,7 @@ namespace Elasticity
     GridGenerator::general_cell(triangulation,
                                   corner_points,
                                   /* colorize faces */ false);
-    triangulation.refine_global(1);
+    triangulation.refine_global(2);
     
     setup_system();
 

@@ -81,7 +81,7 @@ namespace BasisFun
     index_basis = index / dim;
 
     // This is modulo division (returns only the rest)
-    component_basis = index % GeometryInfo<dim>::vertices_per_cell;
+    component_basis = index % dim;
   }
 
 

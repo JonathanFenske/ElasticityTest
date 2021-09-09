@@ -48,8 +48,8 @@ int main (int argc, char *argv[])
       const bool direct_solver = true;
       const bool neumann_bc = false;
 
-      // ElaStd<3> ela_std(direct_solver, neumann_bc);
-      // ela_std.run();
+      ElaStd<3> ela_std(direct_solver, neumann_bc);
+      ela_std.run();
 
       ElaMs<3> ela_ms(direct_solver, neumann_bc);
       ela_ms.run();

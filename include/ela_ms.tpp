@@ -119,8 +119,6 @@ namespace Elasticity
             std::pair<typename std::map<CellId, ElaBasis<dim>>::iterator, bool> 
               result;
 
-            // result = cell_basis_map.emplace(cell->id(), current_cell_problem);
-
             result = cell_basis_map.insert(
               std::make_pair(cell->id(), current_cell_problem));
 
@@ -414,12 +412,6 @@ namespace Elasticity
                              solution_name,
                              DataOut<dim>::type_dof_data,
                              interpretation);
-
-    // add the partition of the domain to the output
-    Vector<float> subdomain(triangulation.n_active_cells());
-    for (unsigned int i = 0; i < subdomain.size(); ++i)
-      subdomain(i) = triangulation.locally_owned_subdomain();
-    data_out.add_data_vector(subdomain, "subdomain");
 
     // add the linearized strain tensor to the output
     StrainPostprocessor<dim> strain_postproc;

@@ -51,6 +51,7 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <filesystem>
 
 
 namespace Elasticity
