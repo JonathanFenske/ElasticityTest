@@ -16,10 +16,12 @@ namespace Elasticity
   template <int dim>
   ElaBasis<dim>::ElaBasis(
     typename Triangulation<dim>::active_cell_iterator &global_cell,
+    typename Triangulation<dim>::active_cell_iterator &first_cell,
     unsigned int                                       local_subdomain,
     MPI_Comm                                           mpi_communicator,
     const bool                                         direct_solver)
     : mpi_communicator(mpi_communicator)
+    , first_cell(first_cell)
     , triangulation()
     , fe(FE_Q<dim>(1), dim)
     , dof_handler(triangulation)
@@ -50,6 +52,7 @@ namespace Elasticity
   template <int dim>
   ElaBasis<dim>::ElaBasis(const ElaBasis<dim> &other)
     : mpi_communicator(other.mpi_communicator)
+    , first_cell(other.first_cell)
     , triangulation()
     , fe(FE_Q<dim>(1), dim)
     , dof_handler(triangulation)
@@ -305,7 +308,7 @@ namespace Elasticity
     GridGenerator::general_cell(triangulation,
                                   corner_points,
                                   /* colorize faces */ false);
-    triangulation.refine_global(2);
+    triangulation.refine_global(4);
     
     setup_system();
 
@@ -341,15 +344,8 @@ namespace Elasticity
                     << std::endl;
         }
     }
-
-    // try
-    // {
-    //   output_basis();
-    // }
-    // catch(const std::exception& e)
-    // {
-    //   std::cerr << e.what() << '\n';
-    // }
+    if (global_cell_id == first_cell->id())
+      output_basis();
     
     
   }
@@ -397,52 +393,57 @@ namespace Elasticity
   }
 
 
-  // template <int dim>
-  // void
-  // ElaBasis<dim>::output_basis()
-  // {
-  //   Timer timer;
-  //   DataOut<dim> data_out;
-  //   data_out.attach_dof_handler(dof_handler);
+  template <int dim>
+  void
+  ElaBasis<dim>::output_basis()
+  {
+    Timer timer;
+    DataOut<dim> data_out;
+    data_out.attach_dof_handler(dof_handler);
+    unsigned int dofs_per_cell = fe.dofs_per_cell;
+    std::vector<StrainPostprocessor<dim>> strain_proc_vector(dofs_per_cell);
+    std::vector<StressPostprocessor<dim>> stress_proc_vector(dofs_per_cell);
+    std::vector<
+    std::vector<DataComponentInterpretation::DataComponentInterpretation>>
+    interpretation_vector(dofs_per_cell);
 
-  //   for (unsigned int n_basis = 0; n_basis < fe.dofs_per_cell;
-  //        ++n_basis)
-  //     {
-  //       Vector<double> &basis_solution = solution_vector[n_basis];
+    for (unsigned int n_basis = 0; n_basis < dofs_per_cell;
+         ++n_basis)
+      {
+        Vector<double> &basis_solution = solution_vector[n_basis];
 
-  //       // add the displacement to the output
-  //       std::vector<std::string> solution_name(dim, "displacement");
-  //       std::vector<DataComponentInterpretation::DataComponentInterpretation>
-  //         interpretation(
-  //           dim, DataComponentInterpretation::component_is_part_of_vector);
+        // add the displacement to the output
+        std::vector<std::string> solution_name(dim, "displacement" +
+                                    Utilities::int_to_string(n_basis,2));
+        interpretation_vector[n_basis] =
+        std::vector<DataComponentInterpretation::DataComponentInterpretation>
+          (dim, DataComponentInterpretation::component_is_part_of_vector);
 
-  //       data_out.add_data_vector(basis_solution,
-  //                               solution_name,
-  //                               DataOut<dim>::type_dof_data,
-  //                               interpretation);
+        data_out.add_data_vector(basis_solution,
+                                solution_name,
+                                DataOut<dim>::type_dof_data,
+                                interpretation_vector[n_basis]);
 
-  //       // add the linearized strain tensor to the output
-  //       StrainPostprocessor<dim> strain_postproc;
-  //       data_out.add_data_vector(basis_solution, strain_postproc);
+        // add the linearized strain tensor to the output
+        strain_proc_vector[n_basis] = StrainPostprocessor<dim>(n_basis);
+        data_out.add_data_vector(basis_solution, strain_proc_vector[n_basis]);
 
-  //       // add the linearized stress tensor to the output
-  //       StressPostprocessor<dim> stress_postproc;
-  //       data_out.add_data_vector(basis_solution, stress_postproc);
+        // add the linearized stress tensor to the output
+        stress_proc_vector[n_basis] = StressPostprocessor<dim>(n_basis);
+        data_out.add_data_vector(basis_solution, stress_proc_vector[n_basis]);
+      }
 
-  //       data_out.build_patches();
+      data_out.build_patches();
 
-  //       // filename
-  //       filename = "ela_basis";
-  //       filename += "." + Utilities::int_to_string(local_subdomain, 5);
-  //       filename += ".cell-" + global_cell_id.to_string();
-  //       filename += ".index-";
-  //       filename += Utilities::int_to_string(n_basis, 2);
-  //       filename += ".vtu";
+      // filename
+      filename = "ela_basis";
+      filename += "." + Utilities::int_to_string(local_subdomain, 5);
+      filename += ".cell-" + global_cell_id.to_string();
+      filename += ".vtu";
 
-  //       std::ofstream output("output/basis_output/" + filename);
-  //       data_out.write_vtu(output);
-  //     }
-  // }
+      std::ofstream output("output/basis_output/" + filename);
+      data_out.write_vtu(output);
+  }
 
 
   template <int dim>

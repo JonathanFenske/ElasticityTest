@@ -2,6 +2,7 @@
 #define _INCLUDE_ELA_MS_TPP_
 
 #include "ela_ms.h"
+#include "directory.h"
 
 namespace Elasticity
 {
@@ -89,8 +90,20 @@ namespace Elasticity
                          mpi_communicator);
 
     // std::filesystem::create_directories("output/basis_output/");
-    std::filesystem::create_directory("output/global_basis_output/");
-    std::filesystem::create_directory("output/coarse/");
+    // std::filesystem::create_directory("output/global_basis_output/");
+    // std::filesystem::create_directory("output/coarse/");
+
+    try
+        {
+          Tools::create_data_directory("output/basis_output/");
+          Tools::create_data_directory("output/global_basis_output/");
+          Tools::create_data_directory("output/coarse/");
+        }
+      catch (std::runtime_error &e)
+        {
+          // No exception handling here.
+        }
+    
 
     // preconditioner_matrix.clear();
     // preconditioner_matrix.reinit(locally_owned_dofs, dsp, mpi_communicator);
@@ -103,8 +116,9 @@ namespace Elasticity
     TimerOutput::Scope t(computing_timer,
                          "basis initialization and computation");
 
-    typename Triangulation<dim>::active_cell_iterator cell = dof_handler
+    typename Triangulation<dim>::active_cell_iterator first_cell = dof_handler
                                                              .begin_active(),
+                                                    cell = first_cell,
                                                     endc = dof_handler.end();
 
     for (; cell != endc; ++cell)
@@ -112,6 +126,7 @@ namespace Elasticity
         if (cell->is_locally_owned())
           {
             ElaBasis<dim> current_cell_problem(cell,
+                                        first_cell,
                                         triangulation.locally_owned_subdomain(),
                                         mpi_communicator,
                                         direct_solver);

@@ -1,6 +1,8 @@
 #ifndef _INCLUDE_POSTPROCESSING_H_
 #define _INCLUDE_POSTPROCESSING_H_
 
+#include <deal.II/base/utilities.h>
+
 #include <deal.II/numerics/data_postprocessor.h>
 
 namespace Elasticity
@@ -18,6 +20,18 @@ namespace Elasticity
   class StrainPostprocessor : public DataPostprocessor<dim>
   {
   public:
+    StrainPostprocessor(unsigned int basis_index) :
+      basis_str("_" + Utilities::int_to_string(basis_index,2))
+      {}
+
+    StrainPostprocessor() :
+      basis_str("")
+      {}
+
+    StrainPostprocessor(const StrainPostprocessor<dim> &other) :
+      basis_str(other.basis_str)
+      {}
+
     virtual void
     evaluate_vector_field(
       const DataPostprocessorInputs::Vector<dim> &input_data,
@@ -32,6 +46,9 @@ namespace Elasticity
 
     virtual UpdateFlags
     get_needed_update_flags() const override;
+
+  private:
+    std::string basis_str;
   };
 
 
@@ -41,6 +58,18 @@ namespace Elasticity
   class StressPostprocessor : public DataPostprocessor<dim>
   {
   public:
+    StressPostprocessor(unsigned int basis_index) :
+      basis_str("_" + Utilities::int_to_string(basis_index,2))
+      {}
+
+    StressPostprocessor() :
+      basis_str("")
+      {}
+
+    StressPostprocessor(const StressPostprocessor<dim> &other) :
+      basis_str(other.basis_str)
+      {}
+    
     virtual void
     evaluate_vector_field(
       const DataPostprocessorInputs::Vector<dim> &input_data,
@@ -55,6 +84,9 @@ namespace Elasticity
 
     virtual UpdateFlags
     get_needed_update_flags() const override;
+
+    private:
+    std::string basis_str;
   };
 }
 

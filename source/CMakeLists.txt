@@ -23,7 +23,8 @@ set(MsELA_LIBRARY_SRC
   ela_ms.cc
   forces_and_parameters.cc
   postprocessing.cc
-  basis_funs.cc)
+  basis_funs.cc
+  directory.cc)
 
 print_all_args (
 	${MsELA_LIBRARY_SRC}

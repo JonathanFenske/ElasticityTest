@@ -34,3 +34,7 @@ documentation/
 *.exe
 *.out
 *.app
+
+build/
+
+output/

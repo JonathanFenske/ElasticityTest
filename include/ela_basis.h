@@ -75,6 +75,7 @@ namespace Elasticity
   {
   public:
     ElaBasis(typename Triangulation<dim>::active_cell_iterator &global_cell,
+              typename Triangulation<dim>::active_cell_iterator &first_cell,
               unsigned int local_subdomain,
               MPI_Comm     mpi_communicator,
               const bool   direct_solver);
@@ -102,10 +103,11 @@ namespace Elasticity
     solve(unsigned int q_point);
     void
     assemble_global_element_matrix();
-    // void
-    // output_basis();
+    void
+    output_basis();
 
     MPI_Comm                                  mpi_communicator;
+    typename Triangulation<dim>::active_cell_iterator  first_cell;
     Triangulation<dim>                        triangulation;
     FESystem<dim>                             fe;
     DoFHandler<dim>                           dof_handler;

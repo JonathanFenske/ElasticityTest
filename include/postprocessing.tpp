@@ -91,7 +91,7 @@ namespace Elasticity
     // std::vector<std::string> stress(dim*dim, "stress");
     // names.insert(names.end(), stress.begin(), stress.end());
     // return names;
-    return std::vector<std::string>(dim * dim, "strain");
+    return std::vector<std::string>(dim * dim, "strain" + basis_str);
   }
 
 
@@ -169,8 +169,7 @@ namespace Elasticity
   std::vector<std::string>
   StressPostprocessor<dim>::get_names() const
   {
-    return std::vector<std::string>(dim * dim, "stress");
-    ;
+    return std::vector<std::string>(dim * dim, "stress" + basis_str);
   }
 
 

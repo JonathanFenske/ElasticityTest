@@ -2,6 +2,7 @@
 #define _INCLUDE_ELA_STD_TPP_
 
 #include "ela_std.h"
+#include "directory.h"
 
 namespace Elasticity
 {
@@ -86,7 +87,16 @@ namespace Elasticity
                          dsp,
                          mpi_communicator);
 
-    std::filesystem::create_directories("output/std_partitioned");
+    // std::filesystem::create_directories("output/std_partitioned");
+
+    try
+        {
+          Tools::create_data_directory("output/std_partitioned/");
+        }
+      catch (std::runtime_error &e)
+        {
+          // No exception handling here.
+        }
 
     preconditioner_matrix.clear();
     preconditioner_matrix.reinit(locally_owned_dofs, dsp, mpi_communicator);
