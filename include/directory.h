@@ -19,7 +19,7 @@ namespace Tools
    * @param dir_name
    */
   void
-    create_data_directory(std::string dir_name);
+  create_data_directory(const char *dir_name);
 } // namespace Tools
 
 #endif /* INCLUDE_OHER_TOOLS_H_ */

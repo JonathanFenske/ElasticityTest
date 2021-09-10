@@ -86,14 +86,13 @@ namespace Elasticity
 
         constraints_vector[q_index].clear();
 
-        DoFTools::make_hanging_node_constraints(
-          dof_handler, constraints_vector[q_index]);
+        DoFTools::make_hanging_node_constraints(dof_handler,
+                                                constraints_vector[q_index]);
 
-        VectorTools::interpolate_boundary_values(
-          dof_handler,
-          /*boundary id*/ 0,
-          basis_q1,
-          constraints_vector[q_index]);
+        VectorTools::interpolate_boundary_values(dof_handler,
+                                                 /*boundary id*/ 0,
+                                                 basis_q1,
+                                                 constraints_vector[q_index]);
 
         constraints_vector[q_index].close();
       }
@@ -306,10 +305,10 @@ namespace Elasticity
     timer.restart();
 
     GridGenerator::general_cell(triangulation,
-                                  corner_points,
-                                  /* colorize faces */ false);
+                                corner_points,
+                                /* colorize faces */ false);
     triangulation.refine_global(4);
-    
+
     setup_system();
 
     assemble_system();
@@ -346,8 +345,6 @@ namespace Elasticity
     }
     if (global_cell_id == first_cell->id())
       output_basis();
-    
-    
   }
 
 
@@ -397,32 +394,31 @@ namespace Elasticity
   void
   ElaBasis<dim>::output_basis()
   {
-    Timer timer;
+    Timer        timer;
     DataOut<dim> data_out;
     data_out.attach_dof_handler(dof_handler);
-    unsigned int dofs_per_cell = fe.dofs_per_cell;
+    unsigned int                          dofs_per_cell = fe.dofs_per_cell;
     std::vector<StrainPostprocessor<dim>> strain_proc_vector(dofs_per_cell);
     std::vector<StressPostprocessor<dim>> stress_proc_vector(dofs_per_cell);
     std::vector<
-    std::vector<DataComponentInterpretation::DataComponentInterpretation>>
-    interpretation_vector(dofs_per_cell);
+      std::vector<DataComponentInterpretation::DataComponentInterpretation>>
+      interpretation_vector(dofs_per_cell);
 
-    for (unsigned int n_basis = 0; n_basis < dofs_per_cell;
-         ++n_basis)
+    for (unsigned int n_basis = 0; n_basis < dofs_per_cell; ++n_basis)
       {
         Vector<double> &basis_solution = solution_vector[n_basis];
 
         // add the displacement to the output
-        std::vector<std::string> solution_name(dim, "displacement" +
-                                    Utilities::int_to_string(n_basis,2));
+        std::vector<std::string> solution_name(
+          dim, "displacement" + Utilities::int_to_string(n_basis, 2));
         interpretation_vector[n_basis] =
-        std::vector<DataComponentInterpretation::DataComponentInterpretation>
-          (dim, DataComponentInterpretation::component_is_part_of_vector);
+          std::vector<DataComponentInterpretation::DataComponentInterpretation>(
+            dim, DataComponentInterpretation::component_is_part_of_vector);
 
         data_out.add_data_vector(basis_solution,
-                                solution_name,
-                                DataOut<dim>::type_dof_data,
-                                interpretation_vector[n_basis]);
+                                 solution_name,
+                                 DataOut<dim>::type_dof_data,
+                                 interpretation_vector[n_basis]);
 
         // add the linearized strain tensor to the output
         strain_proc_vector[n_basis] = StrainPostprocessor<dim>(n_basis);
@@ -433,16 +429,16 @@ namespace Elasticity
         data_out.add_data_vector(basis_solution, stress_proc_vector[n_basis]);
       }
 
-      data_out.build_patches();
+    data_out.build_patches();
 
-      // filename
-      filename = "ela_basis";
-      filename += "." + Utilities::int_to_string(local_subdomain, 5);
-      filename += ".cell-" + global_cell_id.to_string();
-      filename += ".vtu";
+    // filename
+    filename = "ela_basis";
+    filename += "." + Utilities::int_to_string(local_subdomain, 5);
+    filename += ".cell-" + global_cell_id.to_string();
+    filename += ".vtu";
 
-      std::ofstream output("output/basis_output/" + filename);
-      data_out.write_vtu(output);
+    std::ofstream output("output/basis_output/" + filename);
+    data_out.write_vtu(output);
   }
 
 
@@ -456,13 +452,13 @@ namespace Elasticity
     // add the displacement to the output
     std::vector<std::string> solution_name(dim, "displacement");
     std::vector<DataComponentInterpretation::DataComponentInterpretation>
-      interpretation(
-        dim, DataComponentInterpretation::component_is_part_of_vector);
+      interpretation(dim,
+                     DataComponentInterpretation::component_is_part_of_vector);
 
     data_out.add_data_vector(global_solution,
-                            solution_name,
-                            DataOut<dim>::type_dof_data,
-                            interpretation);
+                             solution_name,
+                             DataOut<dim>::type_dof_data,
+                             interpretation);
 
     // add the linearized strain tensor to the output
     StrainPostprocessor<dim> strain_postproc;

@@ -22,12 +22,12 @@ int main (int argc, char *argv[])
         argc, argv, dealii::numbers::invalid_unsigned_int);
 #endif
 
-      const bool say_hello_from_cluster =
-#if DEBUG
-        true;
-#else
-        false;
-#endif
+      const bool say_hello_from_cluster = true;
+// #if DEBUG
+//         true;
+// #else
+//         false;
+// #endif
 
       if (say_hello_from_cluster)
         {

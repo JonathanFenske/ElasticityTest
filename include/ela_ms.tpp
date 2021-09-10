@@ -1,15 +1,15 @@
 #ifndef _INCLUDE_ELA_MS_TPP_
 #define _INCLUDE_ELA_MS_TPP_
 
-#include "ela_ms.h"
 #include "directory.h"
+#include "ela_ms.h"
 
 namespace Elasticity
 {
   using namespace dealii;
 
   /****************************************************************************/
-  /* Class for the coarse scale part of the multiscale implementation for 
+  /* Class for the coarse scale part of the multiscale implementation for
      linear elasticity problems */
 
   // The constructor
@@ -21,7 +21,7 @@ namespace Elasticity
                       Triangulation<dim>::smoothing_on_refinement |
                       Triangulation<dim>::smoothing_on_coarsening))
     , fe(FE_Q<dim>(1), dim)
-    , dof_handler(triangulation)        
+    , dof_handler(triangulation)
     , cell_basis_map()
     , pcout(std::cout,
             (Utilities::MPI::this_mpi_process(mpi_communicator) == 0))
@@ -94,16 +94,17 @@ namespace Elasticity
     // std::filesystem::create_directory("output/coarse/");
 
     try
-        {
-          Tools::create_data_directory("output/basis_output/");
-          Tools::create_data_directory("output/global_basis_output/");
-          Tools::create_data_directory("output/coarse/");
-        }
-      catch (std::runtime_error &e)
-        {
-          // No exception handling here.
-        }
-    
+      {
+        Tools::create_data_directory("output");
+        Tools::create_data_directory("output/basis_output/");
+        Tools::create_data_directory("output/global_basis_output/");
+        Tools::create_data_directory("output/coarse/");
+      }
+    catch (std::runtime_error &e)
+      {
+        // No exception handling here.
+      }
+
 
     // preconditioner_matrix.clear();
     // preconditioner_matrix.reinit(locally_owned_dofs, dsp, mpi_communicator);
@@ -111,27 +112,28 @@ namespace Elasticity
 
 
   template <int dim>
-  void ElaMs<dim>::initialize_and_compute_basis()
+  void
+  ElaMs<dim>::initialize_and_compute_basis()
   {
     TimerOutput::Scope t(computing_timer,
                          "basis initialization and computation");
 
-    typename Triangulation<dim>::active_cell_iterator first_cell = dof_handler
-                                                             .begin_active(),
-                                                    cell = first_cell,
-                                                    endc = dof_handler.end();
+    typename Triangulation<dim>::active_cell_iterator
+      first_cell = dof_handler.begin_active(),
+      cell = first_cell, endc = dof_handler.end();
 
     for (; cell != endc; ++cell)
       {
         if (cell->is_locally_owned())
           {
-            ElaBasis<dim> current_cell_problem(cell,
-                                        first_cell,
-                                        triangulation.locally_owned_subdomain(),
-                                        mpi_communicator,
-                                        direct_solver);
+            ElaBasis<dim> current_cell_problem(
+              cell,
+              first_cell,
+              triangulation.locally_owned_subdomain(),
+              mpi_communicator,
+              direct_solver);
 
-            std::pair<typename std::map<CellId, ElaBasis<dim>>::iterator, bool> 
+            std::pair<typename std::map<CellId, ElaBasis<dim>>::iterator, bool>
               result;
 
             result = cell_basis_map.insert(
@@ -150,9 +152,10 @@ namespace Elasticity
      * We need to compute them on each node and do so in
      * a locally threaded way.
      */
-    typename std::map<CellId, ElaBasis<dim>>::iterator 
-      it_basis = cell_basis_map.begin(),
-      it_endbasis = cell_basis_map.end();
+    typename std::map<CellId, ElaBasis<dim>>::iterator it_basis =
+                                                         cell_basis_map.begin(),
+                                                       it_endbasis =
+                                                         cell_basis_map.end();
     for (; it_basis != it_endbasis; ++it_basis)
       {
         (it_basis->second).run();
@@ -167,59 +170,60 @@ namespace Elasticity
     TimerOutput::Scope    t(computing_timer, "assembly");
     const QGauss<dim - 1> face_quadrature_formula(fe.degree + 1);
     FEFaceValues<dim>     fe_face_values(fe,
-                                    face_quadrature_formula,
-                                    update_values |
-                                      update_quadrature_points |
-                                      update_normal_vectors |
-                                      update_JxW_values);
-    
-    const unsigned int    n_face_q_points = face_quadrature_formula.size();
-    SurfaceForce<dim>     surface_force;
-    std::vector<double>   surface_force_values(n_face_q_points);
+                                     face_quadrature_formula,
+                                     update_values | update_quadrature_points |
+                                       update_normal_vectors |
+                                       update_JxW_values);
 
-    const unsigned int    dofs_per_cell   = fe.n_dofs_per_cell();
-    FullMatrix<double>    cell_matrix(dofs_per_cell, dofs_per_cell);
-    Vector<double>        cell_rhs(dofs_per_cell);
-    Vector<double>        cell_rhs_tmp(dofs_per_cell);
+    const unsigned int  n_face_q_points = face_quadrature_formula.size();
+    SurfaceForce<dim>   surface_force;
+    std::vector<double> surface_force_values(n_face_q_points);
+
+    const unsigned int dofs_per_cell = fe.n_dofs_per_cell();
+    FullMatrix<double> cell_matrix(dofs_per_cell, dofs_per_cell);
+    Vector<double>     cell_rhs(dofs_per_cell);
+    Vector<double>     cell_rhs_tmp(dofs_per_cell);
 
     std::vector<types::global_dof_index> local_dof_indices(dofs_per_cell);
     for (const auto &cell : dof_handler.active_cell_iterators())
       {
         if (cell->is_locally_owned())
           {
-            typename std::map<CellId, ElaBasis<dim>>::iterator
-              it_basis = cell_basis_map.find(cell->id());
+            typename std::map<CellId, ElaBasis<dim>>::iterator it_basis =
+              cell_basis_map.find(cell->id());
 
             cell_matrix = 0.;
             cell_rhs    = 0.;
-            
+
             cell_matrix = (it_basis->second).get_global_element_matrix();
             cell_rhs    = (it_basis->second).get_global_element_rhs();
 
             if (neumann_bc)
-            {
-              for (const auto &face : cell->face_iterators())
-                if (face->at_boundary() && (face->boundary_id() == 1))
-                  {
-                    fe_face_values.reinit(cell, face);
-                    surface_force.value_list(
-                      fe_face_values.get_quadrature_points(), 
-                      surface_force_values);
-                    for (unsigned int q_point = 0; q_point < n_face_q_points;
-                        ++q_point)
-                      {
-                        // const double surface_force_value = surface_force.value(
-                        //   fe_face_values.quadrature_point(q_point)); // *
-                        // fe_face_values.normal_vector(q_point));
-                        for (unsigned int i = 0; i < dofs_per_cell; ++i)
-                          cell_rhs(i) +=
-                            (fe_face_values.shape_value(i,
-                                                        q_point) * // phi_i(x_q)
-                            surface_force_values[q_point] *        // g(x_q)
-                            fe_face_values.JxW(q_point));         // dx
-                      }
-                  }
-            }
+              {
+                for (const auto &face : cell->face_iterators())
+                  if (face->at_boundary() && (face->boundary_id() == 1))
+                    {
+                      fe_face_values.reinit(cell, face);
+                      surface_force.value_list(
+                        fe_face_values.get_quadrature_points(),
+                        surface_force_values);
+                      for (unsigned int q_point = 0; q_point < n_face_q_points;
+                           ++q_point)
+                        {
+                          // const double surface_force_value =
+                          // surface_force.value(
+                          //   fe_face_values.quadrature_point(q_point)); // *
+                          // fe_face_values.normal_vector(q_point));
+                          for (unsigned int i = 0; i < dofs_per_cell; ++i)
+                            cell_rhs(i) +=
+                              (fe_face_values.shape_value(
+                                 i,
+                                 q_point) *                    // phi_i(x_q)
+                               surface_force_values[q_point] * // g(x_q)
+                               fe_face_values.JxW(q_point));   // dx
+                        }
+                    }
+              }
             // pcout << "cell no. " << cell->id() << std::endl;
             // for (unsigned int i = 0; i < cell_matrix.m(); ++i)
             //   {
@@ -236,7 +240,7 @@ namespace Elasticity
                                                    local_dof_indices,
                                                    system_matrix,
                                                    system_rhs);
-            // TrilinosWrappers::SparseMatrix::iterator 
+            // TrilinosWrappers::SparseMatrix::iterator
             //   it_old = old_system_matrix.begin();
             // bool different(false);
             // for (TrilinosWrappers::SparseMatrix::iterator
@@ -245,15 +249,15 @@ namespace Elasticity
             //     if (it_old++ != it)
             //       different = true;
             //   }
-              
+
             // if(different)
-            //   pcout << "something happened in cell " << cell->id() << std::endl;                                       
+            //   pcout << "something happened in cell " << cell->id() <<
+            //   std::endl;
           }
       }
-    
+
     system_matrix.compress(VectorOperation::add);
     system_rhs.compress(VectorOperation::add);
-    
   }
 
 
@@ -301,8 +305,8 @@ namespace Elasticity
         // }
 
         // pcout << "these were all zero rows and colomns" << std::endl;
-        
-          
+
+
         solver.initialize(system_matrix);
         solver.solve(system_matrix,
                      completely_distributed_solution,
@@ -383,8 +387,8 @@ namespace Elasticity
             locally_relevant_solution.extract_subvector_to(local_dof_indices,
                                                            extracted_weights);
 
-            typename std::map<CellId, ElaBasis<dim>>::iterator
-              it_basis = cell_basis_map.find(cell->id());
+            typename std::map<CellId, ElaBasis<dim>>::iterator it_basis =
+              cell_basis_map.find(cell->id());
             (it_basis->second).set_global_weights(extracted_weights);
           }
       } // end ++cell
@@ -452,31 +456,27 @@ namespace Elasticity
         for (unsigned int i = 0;
              i < Utilities::MPI::n_mpi_processes(mpi_communicator);
              ++i)
-        {
-          filenames.push_back("coarse/ms_solution-" + 
-                              Utilities::int_to_string(i, 4) + ".vtu");
-        }
+          {
+            filenames.push_back("coarse/ms_solution-" +
+                                Utilities::int_to_string(i, 4) + ".vtu");
+          }
 
-        std::ofstream master_output(
-          "output/ms_solution.pvtu");
+        std::ofstream master_output("output/ms_solution.pvtu");
         data_out.write_pvtu_record(master_output, filenames);
 
         std::vector<std::string> basis_filenames;
-        typename std::map<CellId, ElaBasis<dim>>::iterator it_basis =
-                                                  cell_basis_map.begin(),
-                                                it_endbasis =
-                                                  cell_basis_map.end();
+        typename std::map<CellId, ElaBasis<dim>>::iterator
+          it_basis    = cell_basis_map.begin(),
+          it_endbasis = cell_basis_map.end();
 
         for (; it_basis != it_endbasis; ++it_basis)
-        {
-          (it_basis->second).output_global_solution_in_cell();
-          basis_filenames.push_back((it_basis->second).get_filename());
-        }
+          {
+            (it_basis->second).output_global_solution_in_cell();
+            basis_filenames.push_back((it_basis->second).get_filename());
+          }
 
-        std::ofstream fine_master_output(
-          "output/fine_ms_solution.pvtu");
-        data_out.write_pvtu_record(fine_master_output,
-          basis_filenames);
+        std::ofstream fine_master_output("output/fine_ms_solution.pvtu");
+        data_out.write_pvtu_record(fine_master_output, basis_filenames);
       }
   }
 
@@ -489,12 +489,12 @@ namespace Elasticity
           << "Trilinos"
           << " on " << Utilities::MPI::n_mpi_processes(mpi_communicator)
           << " MPI rank(s)..." << std::endl;
-    const auto [p1, p2]         = get_init_vert({-10, 0, 0, 10, 1, 1});
+    const auto [p1, p2] = get_init_vert({-10, 0, 0, 10, 1, 1});
     std::list<double> side_length_list;
     for (unsigned int i = 0; i < dim; ++i)
       side_length_list.push_back(p2[i] - p1[i]);
-    double cell_length = *(std::min_element(side_length_list.begin(),
-                                            side_length_list.end()));
+    double cell_length =
+      *(std::min_element(side_length_list.begin(), side_length_list.end()));
     std::vector<unsigned int> repetitions;
     for (auto it : side_length_list)
       repetitions.push_back((unsigned int)(it / cell_length));

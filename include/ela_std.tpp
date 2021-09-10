@@ -1,8 +1,8 @@
 #ifndef _INCLUDE_ELA_STD_TPP_
 #define _INCLUDE_ELA_STD_TPP_
 
-#include "ela_std.h"
 #include "directory.h"
+#include "ela_std.h"
 
 namespace Elasticity
 {
@@ -90,13 +90,14 @@ namespace Elasticity
     // std::filesystem::create_directories("output/std_partitioned");
 
     try
-        {
-          Tools::create_data_directory("output/std_partitioned/");
-        }
-      catch (std::runtime_error &e)
-        {
-          // No exception handling here.
-        }
+      {
+        Tools::create_data_directory("output/");
+        Tools::create_data_directory("output/std_partitioned/");
+      }
+    catch (std::runtime_error &e)
+      {
+        // No exception handling here.
+      }
 
     preconditioner_matrix.clear();
     preconditioner_matrix.reinit(locally_owned_dofs, dsp, mpi_communicator);
@@ -123,16 +124,16 @@ namespace Elasticity
     const unsigned int    n_q_points      = quadrature_formula.size();
     const unsigned int    n_face_q_points = face_quadrature_formula.size();
     std::vector<double>   lambda_values(n_q_points), mu_values(n_q_points);
-    std::vector<Vector<double>>   body_force_values(n_q_points);
+    std::vector<Vector<double>> body_force_values(n_q_points);
     for (unsigned int i = 0; i < n_q_points; ++i)
       body_force_values[i].reinit(dim);
-    lambda<dim>           lambda;
-    mu<dim>               mu;
-    BodyForce<dim>        body_force;
-    SurfaceForce<dim>     surface_force;
-    FullMatrix<double>    cell_matrix(dofs_per_cell, dofs_per_cell);
-    Vector<double>        cell_rhs(dofs_per_cell);
-    Vector<double>        cell_rhs_tmp(dofs_per_cell);
+    lambda<dim>        lambda;
+    mu<dim>            mu;
+    BodyForce<dim>     body_force;
+    SurfaceForce<dim>  surface_force;
+    FullMatrix<double> cell_matrix(dofs_per_cell, dofs_per_cell);
+    Vector<double>     cell_rhs(dofs_per_cell);
+    Vector<double>     cell_rhs_tmp(dofs_per_cell);
 
     std::vector<types::global_dof_index> local_dof_indices(dofs_per_cell);
     for (const auto &cell : dof_handler.active_cell_iterators())
@@ -144,8 +145,8 @@ namespace Elasticity
             fe_values.reinit(cell);
             lambda.value_list(fe_values.get_quadrature_points(), lambda_values);
             mu.value_list(fe_values.get_quadrature_points(), mu_values);
-            body_force.vector_value_list(fe_values.get_quadrature_points()
-                                          , body_force_values);
+            body_force.vector_value_list(fe_values.get_quadrature_points(),
+                                         body_force_values);
             for (unsigned int q_point = 0; q_point < n_q_points; ++q_point)
               {
                 for (unsigned int i = 0; i < fe.dofs_per_cell; ++i)
@@ -178,27 +179,28 @@ namespace Elasticity
                 cell_rhs_tmp = cell_rhs;
               }
             if (neumann_bc)
-            {
-              for (const auto &face : cell->face_iterators())
-                if (face->at_boundary() && (face->boundary_id() == 1))
-                  {
-                    fe_face_values.reinit(cell, face);
-                    for (unsigned int q_point = 0; q_point < n_face_q_points;
-                        ++q_point)
-                      {
-                        const double surface_force_value = surface_force.value(
-                          fe_face_values.quadrature_point(q_point)); // *
-                        // fe_face_values.normal_vector(q_point));
-                        for (unsigned int i = 0; i < dofs_per_cell; ++i)
-                          cell_rhs(i) +=
-                            (fe_face_values.shape_value(i,
-                                                        q_point) * // phi_i(x_q)
-                            surface_force_value *                 // g(x_q)
-                            fe_face_values.JxW(q_point));         // dx
-                      }
-                  }
-            }
-            
+              {
+                for (const auto &face : cell->face_iterators())
+                  if (face->at_boundary() && (face->boundary_id() == 1))
+                    {
+                      fe_face_values.reinit(cell, face);
+                      for (unsigned int q_point = 0; q_point < n_face_q_points;
+                           ++q_point)
+                        {
+                          const double surface_force_value =
+                            surface_force.value(
+                              fe_face_values.quadrature_point(q_point)); // *
+                          // fe_face_values.normal_vector(q_point));
+                          for (unsigned int i = 0; i < dofs_per_cell; ++i)
+                            cell_rhs(i) += (fe_face_values.shape_value(
+                                              i,
+                                              q_point) *          // phi_i(x_q)
+                                            surface_force_value * // g(x_q)
+                                            fe_face_values.JxW(q_point)); // dx
+                        }
+                    }
+              }
+
             cell->get_dof_indices(local_dof_indices);
             constraints.distribute_local_to_global(cell_matrix,
                                                    cell_rhs,
@@ -339,7 +341,7 @@ namespace Elasticity
 
     // write the output files
     const std::string filename =
-      ("output/std_partitioned/std_solution-" + 
+      ("output/std_partitioned/std_solution-" +
        Utilities::int_to_string(cycle, 2) + "." +
        Utilities::int_to_string(triangulation.locally_owned_subdomain(), 4) +
        ".vtu");
@@ -352,13 +354,13 @@ namespace Elasticity
         for (unsigned int i = 0;
              i < Utilities::MPI::n_mpi_processes(mpi_communicator);
              ++i)
-          filenames.push_back("std_partitioned/std_solution-" + 
-                              Utilities::int_to_string(cycle, 2) +
-                              "." + Utilities::int_to_string(i, 4) + ".vtu");
+          filenames.push_back("std_partitioned/std_solution-" +
+                              Utilities::int_to_string(cycle, 2) + "." +
+                              Utilities::int_to_string(i, 4) + ".vtu");
 
-        std::ofstream master_output(
-          "output/std_solution-" + Utilities::int_to_string(cycle, 2) +
-          ".pvtu");
+        std::ofstream master_output("output/std_solution-" +
+                                    Utilities::int_to_string(cycle, 2) +
+                                    ".pvtu");
         data_out.write_pvtu_record(master_output, filenames);
       }
   }
