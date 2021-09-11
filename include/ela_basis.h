@@ -16,11 +16,11 @@
 #include <deal.II/dofs/dof_handler.h>
 #include <deal.II/dofs/dof_tools.h>
 
+#include <deal.II/fe/component_mask.h>
 #include <deal.II/fe/fe_q.h>
 #include <deal.II/fe/fe_system.h>
 #include <deal.II/fe/fe_values.h>
 #include <deal.II/fe/fe_values_extractors.h>
-#include <deal.II/fe/component_mask.h>
 
 #include <deal.II/grid/grid_generator.h>
 #include <deal.II/grid/grid_tools.h>
@@ -33,9 +33,9 @@
 #include <deal.II/lac/solver_bicgstab.h>
 #include <deal.II/lac/solver_cg.h>
 #include <deal.II/lac/solver_gmres.h>
-#include <deal.II/lac/sparsity_tools.h>
-#include <deal.II/lac/sparse_matrix.h>
 #include <deal.II/lac/sparse_direct.h>
+#include <deal.II/lac/sparse_matrix.h>
+#include <deal.II/lac/sparsity_tools.h>
 #include <deal.II/lac/trilinos_block_sparse_matrix.h>
 #include <deal.II/lac/trilinos_parallel_block_vector.h>
 #include <deal.II/lac/trilinos_precondition.h>
@@ -48,16 +48,16 @@
 
 #include <deal.II/physics/transformations.h>
 
-#include "forces_and_parameters.h"
-#include "postprocessing.h"
-#include "mytools.h"
 #include "basis_funs.h"
+#include "forces_and_parameters.h"
+#include "mytools.h"
+#include "postprocessing.h"
 
 // STL
 #include <cmath>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <filesystem>
 
 
 namespace Elasticity
@@ -65,7 +65,7 @@ namespace Elasticity
   using namespace dealii;
 
   /****************************************************************************/
-  /* Class for the fine scale part of the multiscale implementation for 
+  /* Class for the fine scale part of the multiscale implementation for
      linear elasticity problems */
 
   // class that enables solving linear elasticity problems in parallel
@@ -75,10 +75,10 @@ namespace Elasticity
   {
   public:
     ElaBasis(typename Triangulation<dim>::active_cell_iterator &global_cell,
-              typename Triangulation<dim>::active_cell_iterator &first_cell,
-              unsigned int local_subdomain,
-              MPI_Comm     mpi_communicator,
-              const bool   direct_solver);
+             typename Triangulation<dim>::active_cell_iterator &first_cell,
+             unsigned int                                       local_subdomain,
+             MPI_Comm   mpi_communicator,
+             const bool direct_solver);
     ElaBasis(const ElaBasis<dim> &other);
 
     void
@@ -106,29 +106,29 @@ namespace Elasticity
     void
     output_basis();
 
-    MPI_Comm                                  mpi_communicator;
-    typename Triangulation<dim>::active_cell_iterator  first_cell;
-    Triangulation<dim>                        triangulation;
-    FESystem<dim>                             fe;
-    DoFHandler<dim>                           dof_handler;
-    std::vector<AffineConstraints<double>>    constraints_vector;
-    std::vector<Point<dim>>                   corner_points;
-    std::vector<Vector<double>>               solution_vector;
-    SparsityPattern                           sparsity_pattern;
-    Vector<double>                            assembled_cell_rhs;
-    SparseMatrix<double>                      assembled_cell_matrix;
-    Vector<double>                            global_element_rhs;
-    FullMatrix<double>                        global_element_matrix;
-    std::vector<double>                       global_weights;
-    Vector<double>                            system_rhs;
-    SparseMatrix<double>                      system_matrix;
-    Vector<double>                            global_solution;
-    const CellId                              global_cell_id;
-    const unsigned int                        local_subdomain;
-    std::string                               filename;
-    BasisFun::BasisQ1<dim>                    basis_q1;
-    ConditionalOStream                        pcout;
-    const bool                                direct_solver;        
+    MPI_Comm                                          mpi_communicator;
+    typename Triangulation<dim>::active_cell_iterator first_cell;
+    Triangulation<dim>                                triangulation;
+    FESystem<dim>                                     fe;
+    DoFHandler<dim>                                   dof_handler;
+    std::vector<AffineConstraints<double>>            constraints_vector;
+    std::vector<Point<dim>>                           corner_points;
+    std::vector<Vector<double>>                       solution_vector;
+    SparsityPattern                                   sparsity_pattern;
+    Vector<double>                                    assembled_cell_rhs;
+    SparseMatrix<double>                              assembled_cell_matrix;
+    Vector<double>                                    global_element_rhs;
+    FullMatrix<double>                                global_element_matrix;
+    std::vector<double>                               global_weights;
+    Vector<double>                                    system_rhs;
+    SparseMatrix<double>                              system_matrix;
+    Vector<double>                                    global_solution;
+    const CellId                                      global_cell_id;
+    const unsigned int                                local_subdomain;
+    std::string                                       filename;
+    BasisFun::BasisQ1<dim>                            basis_q1;
+    ConditionalOStream                                pcout;
+    const bool                                        direct_solver;
   };
 } // namespace Elasticity
 

@@ -381,7 +381,10 @@ namespace Elasticity
     const unsigned int                   dofs_per_cell = fe.dofs_per_cell;
     std::vector<types::global_dof_index> local_dof_indices(dofs_per_cell);
 
-    for (const auto &cell : dof_handler.active_cell_iterators())
+    typename DoFHandler<dim>::active_cell_iterator cell =
+                                                     dof_handler.begin_active(),
+                                                   endc = dof_handler.end();
+    for (; cell != endc; ++cell)
       {
         if (cell->is_locally_owned())
           {
@@ -453,8 +456,31 @@ namespace Elasticity
     std::ofstream output("output/coarse/" + filename);
     data_out.write_vtu(output);
 
+    std::vector<std::string>                           basis_filenames;
+    typename std::map<CellId, ElaBasis<dim>>::iterator it_basis =
+                                                         cell_basis_map.begin(),
+                                                       it_endbasis =
+                                                         cell_basis_map.end();
+
+    for (; it_basis != it_endbasis; ++it_basis)
+      {
+        (it_basis->second).output_global_solution_in_cell();
+        basis_filenames.push_back((it_basis->second).get_filename());
+      }
+
+    std::vector<std::vector<std::string>> gathered_basis_filenames =
+      Utilities::MPI::gather(mpi_communicator, basis_filenames);
+
+    std::vector<std::string> ordered_basis_filenames;
+    for (unsigned int i = 0; i < gathered_basis_filenames.size(); ++i)
+      for (unsigned int j = 0; j < gathered_basis_filenames[i].size(); ++j)
+        ordered_basis_filenames.push_back(gathered_basis_filenames[i][j]);
+
     if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0)
       {
+        std::ofstream fine_master_output("output/fine_ms_solution.pvtu");
+        data_out.write_pvtu_record(fine_master_output, ordered_basis_filenames);
+
         std::vector<std::string> filenames;
         for (unsigned int i = 0;
              i < Utilities::MPI::n_mpi_processes(mpi_communicator);
@@ -466,20 +492,6 @@ namespace Elasticity
 
         std::ofstream master_output("output/ms_solution.pvtu");
         data_out.write_pvtu_record(master_output, filenames);
-
-        std::vector<std::string> basis_filenames;
-        typename std::map<CellId, ElaBasis<dim>>::iterator
-          it_basis    = cell_basis_map.begin(),
-          it_endbasis = cell_basis_map.end();
-
-        for (; it_basis != it_endbasis; ++it_basis)
-          {
-            (it_basis->second).output_global_solution_in_cell();
-            basis_filenames.push_back((it_basis->second).get_filename());
-          }
-
-        std::ofstream fine_master_output("output/fine_ms_solution.pvtu");
-        data_out.write_pvtu_record(fine_master_output, basis_filenames);
       }
   }
 

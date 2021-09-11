@@ -14,6 +14,7 @@
 #include <deal.II/distributed/grid_refinement.h>
 #include <deal.II/distributed/tria.h>
 
+#include <deal.II/dofs/dof_accessor.h>
 #include <deal.II/dofs/dof_handler.h>
 #include <deal.II/dofs/dof_tools.h>
 
@@ -43,18 +44,18 @@
 
 #include <deal.II/physics/transformations.h>
 
-#include "forces_and_parameters.h"
-#include "postprocessing.h"
-#include "mytools.h"
 #include "ela_basis.h"
+#include "forces_and_parameters.h"
+#include "mytools.h"
+#include "postprocessing.h"
 
 // STL
 #include <cmath>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <map>
 #include <memory>
-#include <filesystem>
 
 
 namespace Elasticity
@@ -62,8 +63,8 @@ namespace Elasticity
   using namespace dealii;
 
   /****************************************************************************/
- /* Class for the coarse scale part of the multiscale implementation for 
-    linear elasticity problems */
+  /* Class for the coarse scale part of the multiscale implementation for
+     linear elasticity problems */
 
   // class that enables solving linear elasticity problems in parallel
   // which is based on the step-8 and step-40 tutorials of deal.ii

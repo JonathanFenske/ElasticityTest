@@ -376,7 +376,7 @@ namespace Elasticity
           << " MPI rank(s)..." << std::endl;
 
     const auto [p1, p2]         = get_init_vert({-10, 0, 0, 10, 1, 1});
-    const unsigned int n_cycles = 2;
+    const unsigned int n_cycles = 3;
     for (unsigned int cycle = 0; cycle < n_cycles; ++cycle)
       {
         pcout << "Cycle " << cycle << ':' << std::endl;
