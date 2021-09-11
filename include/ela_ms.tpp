@@ -118,14 +118,17 @@ namespace Elasticity
     TimerOutput::Scope t(computing_timer,
                          "basis initialization and computation");
 
-    typename Triangulation<dim>::active_cell_iterator
-      first_cell = dof_handler.begin_active(),
-      cell = first_cell, endc = dof_handler.end();
+    typename Triangulation<dim>::active_cell_iterator first_cell,
+      cell = dof_handler.begin_active(), endc = dof_handler.end();
+
+    unsigned int i = 0;
 
     for (; cell != endc; ++cell)
       {
         if (cell->is_locally_owned())
           {
+            if (i++ == 0)
+              first_cell = cell;
             ElaBasis<dim> current_cell_problem(
               cell,
               first_cell,

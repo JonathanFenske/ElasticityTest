@@ -346,6 +346,9 @@ namespace Elasticity
 
     if (global_cell_id == first_cell->id())
       output_basis();
+    else
+      std::cout << global_cell_id << " is not the first cell ("
+                << first_cell->id() << ")" << std::endl;
   }
 
 
