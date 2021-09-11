@@ -413,11 +413,12 @@ namespace Elasticity
               << std::endl;
         assemble_system();
         solve();
-        if (Utilities::MPI::n_mpi_processes(mpi_communicator) <= 32)
-          {
-            TimerOutput::Scope t(computing_timer, "output");
-            output_results(cycle);
-          }
+
+        {
+          TimerOutput::Scope t(computing_timer, "output");
+          output_results(cycle);
+        }
+
         computing_timer.print_summary();
         computing_timer.reset();
         pcout << std::endl;

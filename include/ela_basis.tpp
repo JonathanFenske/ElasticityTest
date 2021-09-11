@@ -343,6 +343,7 @@ namespace Elasticity
                     << std::endl;
         }
     }
+
     if (global_cell_id == first_cell->id())
       output_basis();
   }

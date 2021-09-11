@@ -512,15 +512,20 @@ namespace Elasticity
           << triangulation.n_global_active_cells() << std::endl
           << "   Number of degrees of freedom: " << dof_handler.n_dofs()
           << std::endl;
+
     initialize_and_compute_basis();
+
     assemble_system();
+
     solve();
+
     send_global_weights_to_cell();
-    if (Utilities::MPI::n_mpi_processes(mpi_communicator) <= 32)
-      {
-        TimerOutput::Scope t(computing_timer, "output");
-        output_results();
-      }
+
+    {
+      TimerOutput::Scope t(computing_timer, "output");
+      output_results();
+    }
+
     computing_timer.print_summary();
     computing_timer.reset();
     pcout << std::endl;

@@ -21,8 +21,6 @@ namespace Tools
               "Error creating directory! It might already exist or you do not have write permissions in this folder.");
           }
       }
-    else
-      std::cout << dir_name << "has not been created" << std::endl;
   }
 
 } // namespace Tools
