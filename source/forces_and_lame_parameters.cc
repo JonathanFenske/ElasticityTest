@@ -1,6 +1,5 @@
-#include "forces_and_parameters.h"
-
-#include "forces_and_parameters.tpp"
+#include "forces_and_lame_parameters.h"
+#include "forces_and_lame_parameters.tpp"
 
 namespace Elasticity
 {

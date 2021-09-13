@@ -1,7 +1,7 @@
-#ifndef _INCLUDE_FORCES_AND_PARAMETERS_TPP_
-#define _INCLUDE_FORCES_AND_PARAMETERS_TPP_
+#ifndef _INCLUDE_FORCES_AND_LAME_PARAMETERS_TPP_
+#define _INCLUDE_FORCES_AND_LAME_PARAMETERS_TPP_
 
-#include "forces_and_parameters.h"
+#include "forces_and_lame_parameters.h"
 
 namespace Elasticity
 {
@@ -25,7 +25,7 @@ namespace Elasticity
     //   return -100;//-100 *fabs(std::sin(M_PI*p(0)/5));
     // else
     //   return 0.;
-    return 0;
+    return force_value;
   }
 
 
@@ -37,7 +37,7 @@ namespace Elasticity
   {
     if (component == dim - 1)
       {
-        return -grav * rho;
+        return -force_value;
       }
     else
       {
@@ -102,11 +102,9 @@ namespace Elasticity
 
   template <int dim>
   double
-  lambda<dim>::value(const Point<dim> & /*p*/, const unsigned int) const
+  lambda<dim>::value(const Point<dim> &p, const unsigned int) const
   {
-    // int fr = 80;
-    return E / (2 * (1 + nu)); // * (std::sin(2 * fr * M_PI * p(0) / 20) + 1);
-    // return -(std::sin(M_PI*p(0)/15)+2);//(-0.1 * p(0) + 2.5) * 1e9;////*;
+    return mean_value * (std::sin(2 * fr * M_PI * p(0)) + 1);
   }
 
 
@@ -114,12 +112,8 @@ namespace Elasticity
   double
   mu<dim>::value(const Point<dim> &p, const unsigned int) const
   {
-    int fr = 40;
-    return E * nu / ((1 + nu) * (1 - 2 * nu)) *
-           (std::sin(2 * fr * M_PI * p(0) / 20) + 1);
-    // return E * nu / ((1 + nu) * (1 - 2 * nu)) * (0.5 * std::sin(2 * fr * M_PI
-    // * p(0) / 20) +1);//* std::sin(2 * fr * M_PI * p(1) / 20) + 1);
+    return mean_value * (std::sin(2 * fr * M_PI * p(0)) + 1);
   }
 } // namespace Elasticity
 
-#endif // _INCLUDE_FORCES_AND_PARAMETERS_TPP_
+#endif // _INCLUDE_FORCES_AND_LAME_PARAMETERS_TPP_

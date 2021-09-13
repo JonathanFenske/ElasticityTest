@@ -1,15 +1,34 @@
 #ifndef _INCLUDE_POSTPROCESSING_TPP_
 #define _INCLUDE_POSTPROCESSING_TPP_
 
+#include "forces_and_lame_parameters.h"
 #include "postprocessing.h"
-#include "forces_and_parameters.h"
 
 namespace Elasticity
 {
   using namespace dealii;
-  
+
   /****************************************************************************/
   /* Postprocessing */
+
+  template <int dim>
+  StrainPostprocessor<dim>::StrainPostprocessor(unsigned int basis_index)
+    : basis_str("_" + Utilities::int_to_string(basis_index, 2))
+  {}
+
+
+  template <int dim>
+  StrainPostprocessor<dim>::StrainPostprocessor()
+    : basis_str("")
+  {}
+
+
+  template <int dim>
+  StrainPostprocessor<dim>::StrainPostprocessor(
+    const StrainPostprocessor<dim> &other)
+    : basis_str(other.basis_str)
+  {}
+
 
   template <int dim>
   void
@@ -103,6 +122,85 @@ namespace Elasticity
   }
 
 
+  template <int dim>
+  StressPostprocessor<dim>::StressPostprocessor()
+    : basis_str("")
+    , mu_mean(0)
+    , mu_fr(0)
+    , lambda_mean(0)
+    , lambda_fr(0)
+  {}
+
+
+  // template <int dim>
+  // void
+  // StressPostprocessor<dim>::operator=(StressPostprocessor &other)
+  // {
+  //   basis_str   = basis_str;
+  //   mu_mean     = other.mu_mean;
+  //   mu_fr       = other.mu_fr;
+  //   lambda_mean = other.lambda_mean;
+  //   lambda_fr   = other.lambda_fr;
+  // }
+
+
+  template <int dim>
+  StressPostprocessor<dim>::StressPostprocessor(
+    unsigned int                 basis_index,
+    const GlobalParameters<dim> &global_parameters)
+    : basis_str("_" + Utilities::int_to_string(basis_index, 2))
+    , mu_mean(global_parameters.mu)
+    , mu_fr(global_parameters.mu_fr)
+    , lambda_mean(global_parameters.lambda)
+    , lambda_fr(global_parameters.lambda_fr)
+  {}
+
+
+  template <int dim>
+  StressPostprocessor<dim>::StressPostprocessor(
+    unsigned int           basis_index,
+    const ParametersBasis &parameters_basis)
+    : basis_str("_" + Utilities::int_to_string(basis_index, 2))
+    , mu_mean(parameters_basis.mu)
+    , mu_fr(parameters_basis.mu_fr)
+    , lambda_mean(parameters_basis.lambda)
+    , lambda_fr(parameters_basis.lambda_fr)
+  {}
+
+
+  template <int dim>
+  StressPostprocessor<dim>::StressPostprocessor(
+    const GlobalParameters<dim> &global_parameters)
+    : basis_str("")
+    , mu_mean(global_parameters.mu)
+    , mu_fr(global_parameters.mu_fr)
+    , lambda_mean(global_parameters.lambda)
+    , lambda_fr(global_parameters.lambda_fr)
+  {}
+
+
+  template <int dim>
+  StressPostprocessor<dim>::StressPostprocessor(
+    const ParametersBasis &parameters_basis)
+    : basis_str("")
+    , mu_mean(parameters_basis.mu)
+    , mu_fr(parameters_basis.mu_fr)
+    , lambda_mean(parameters_basis.lambda)
+    , lambda_fr(parameters_basis.lambda_fr)
+  {}
+
+
+  template <int dim>
+  StressPostprocessor<dim>::StressPostprocessor(
+    const StressPostprocessor<dim> &other)
+    : basis_str(other.basis_str)
+    , mu_mean(other.mu_mean)
+    , mu_fr(other.mu_fr)
+    , lambda_mean(other.lambda_mean)
+    , lambda_fr(other.lambda_fr)
+  {}
+
+
   // function that computes the linearized stress (Hooke's law)
   template <int dim>
   void
@@ -112,8 +210,8 @@ namespace Elasticity
   {
     AssertDimension(input_data.solution_gradients.size(),
                     computed_quantities.size());
-    mu<dim>             mu;
-    lambda<dim>         lambda;
+    mu<dim>             mu(mu_mean, mu_fr);
+    lambda<dim>         lambda(lambda_mean, lambda_fr);
     std::vector<double> mu_values(input_data.evaluation_points.size()),
       lambda_values(input_data.evaluation_points.size());
     mu.value_list(input_data.evaluation_points, mu_values);
@@ -179,6 +277,6 @@ namespace Elasticity
   {
     return update_gradients | update_quadrature_points;
   }
-}
+} // namespace Elasticity
 
 #endif // _INCLUDE_POSTPROCESSING_TPP_

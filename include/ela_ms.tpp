@@ -14,7 +14,9 @@ namespace Elasticity
 
   // The constructor
   template <int dim>
-  ElaMs<dim>::ElaMs(const bool direct_solver, const bool neumann_bc)
+  ElaMs<dim>::ElaMs(const GlobalParameters<dim> &global_parameters,
+                    const ParametersMs &         parameters_ms,
+                    const ParametersBasis &      parameters_basis)
     : mpi_communicator(MPI_COMM_WORLD)
     , triangulation(mpi_communicator,
                     typename Triangulation<dim>::MeshSmoothing(
@@ -23,27 +25,16 @@ namespace Elasticity
     , fe(FE_Q<dim>(1), dim)
     , dof_handler(triangulation)
     , cell_basis_map()
+    , global_parameters(global_parameters)
+    , parameters_ms(parameters_ms)
+    , parameters_basis(parameters_basis)
     , pcout(std::cout,
             (Utilities::MPI::this_mpi_process(mpi_communicator) == 0))
     , computing_timer(mpi_communicator,
                       pcout,
                       TimerOutput::summary,
                       TimerOutput::wall_times)
-    // If true, a direct solver will be used to solve the problem.
-    , direct_solver(direct_solver)
-    , neumann_bc(neumann_bc)
   {}
-
-
-  template <int dim>
-  const std::tuple<Point<dim>, Point<dim>>
-  ElaMs<dim>::get_init_vert(std::vector<double> p) const
-  {
-    Point<dim> p1_tmp, p2_tmp;
-    for (int i = 0; i < dim; ++i)
-      p1_tmp(i) = p[i], p2_tmp(i) = p[dim + i];
-    return {p1_tmp, p2_tmp};
-  }
 
 
   template <int dim>
@@ -61,17 +52,21 @@ namespace Elasticity
     constraints.clear();
     constraints.reinit(locally_relevant_dofs);
     DoFTools::make_hanging_node_constraints(dof_handler, constraints);
+    unsigned int dirichlet_id = 0;
 
     // The next part is used if a Dirichlet boundary condition is only applied
     // on a part of a face.
 
-    // {
-    //   Point<dim> p1 = {-1, -1, -0.1}, p2 = {1, 1, 0.1};
-    //   MyTools::set_dirichlet_id(p1, p2, 4, 100);
-    // }
+    if (global_parameters.other_dirichlet_id)
+      {
+        const Point<dim> p1(global_parameters.dirichlet_p1),
+          p2(global_parameters.dirichlet_p2);
+        MyTools::set_dirichlet_id<dim>(p1, p2, 4, 100, triangulation);
+        dirichlet_id = 100;
+      }
 
     VectorTools::interpolate_boundary_values(dof_handler,
-                                             0,
+                                             dirichlet_id,
                                              Functions::ZeroFunction<dim>(dim),
                                              constraints);
 
@@ -95,10 +90,10 @@ namespace Elasticity
 
     try
       {
-        Tools::create_data_directory("output");
-        Tools::create_data_directory("output/basis_output/");
-        Tools::create_data_directory("output/global_basis_output/");
-        Tools::create_data_directory("output/coarse/");
+        MyTools::create_data_directory("output/");
+        MyTools::create_data_directory("output/basis_output/");
+        MyTools::create_data_directory("output/global_basis_output/");
+        MyTools::create_data_directory("output/coarse/");
       }
     catch (std::runtime_error &e)
       {
@@ -134,7 +129,7 @@ namespace Elasticity
               first_cell,
               triangulation.locally_owned_subdomain(),
               mpi_communicator,
-              direct_solver);
+              parameters_basis);
 
             std::pair<typename std::map<CellId, ElaBasis<dim>>::iterator, bool>
               result;
@@ -179,7 +174,7 @@ namespace Elasticity
                                        update_JxW_values);
 
     const unsigned int  n_face_q_points = face_quadrature_formula.size();
-    SurfaceForce<dim>   surface_force;
+    SurfaceForce<dim>   surface_force(global_parameters.surface_force);
     std::vector<double> surface_force_values(n_face_q_points);
 
     const unsigned int dofs_per_cell = fe.n_dofs_per_cell();
@@ -201,11 +196,12 @@ namespace Elasticity
             cell_matrix = (it_basis->second).get_global_element_matrix();
             cell_rhs    = (it_basis->second).get_global_element_rhs();
 
-            if (neumann_bc)
+            if (global_parameters.neumann_bc)
               {
                 for (const auto &face : cell->face_iterators())
                   if (face->at_boundary() && (face->boundary_id() == 1))
                     {
+                      std::vector<double> surface_force_values(n_face_q_points);
                       fe_face_values.reinit(cell, face);
                       surface_force.value_list(
                         fe_face_values.get_quadrature_points(),
@@ -213,10 +209,6 @@ namespace Elasticity
                       for (unsigned int q_point = 0; q_point < n_face_q_points;
                            ++q_point)
                         {
-                          // const double surface_force_value =
-                          // surface_force.value(
-                          //   fe_face_values.quadrature_point(q_point)); // *
-                          // fe_face_values.normal_vector(q_point));
                           for (unsigned int i = 0; i < dofs_per_cell; ++i)
                             cell_rhs(i) +=
                               (fe_face_values.shape_value(
@@ -227,35 +219,13 @@ namespace Elasticity
                         }
                     }
               }
-            // pcout << "cell no. " << cell->id() << std::endl;
-            // for (unsigned int i = 0; i < cell_matrix.m(); ++i)
-            //   {
-            //     for (unsigned int j = 0; j < cell_matrix.n(); ++j)
-            //       pcout << cell_matrix(i,j) << " , ";
-            //     pcout << std::endl;
-            //   }
 
-            // TrilinosWrappers::SparseMatrix old_system_matrix;
-            // old_system_matrix.reinit(system_matrix);
             cell->get_dof_indices(local_dof_indices);
             constraints.distribute_local_to_global(cell_matrix,
                                                    cell_rhs,
                                                    local_dof_indices,
                                                    system_matrix,
                                                    system_rhs);
-            // TrilinosWrappers::SparseMatrix::iterator
-            //   it_old = old_system_matrix.begin();
-            // bool different(false);
-            // for (TrilinosWrappers::SparseMatrix::iterator
-            //   it = system_matrix.begin(); it != system_matrix.end(); ++it)
-            //   {
-            //     if (it_old++ != it)
-            //       different = true;
-            //   }
-
-            // if(different)
-            //   pcout << "something happened in cell " << cell->id() <<
-            //   std::endl;
           }
       }
 
@@ -268,55 +238,31 @@ namespace Elasticity
   void
   ElaMs<dim>::solve()
   {
-    if (direct_solver)
+    if (parameters_ms.direct_solver)
       {
         TimerOutput::Scope t(computing_timer,
                              "parallel sparse direct solver (MUMPS)");
 
-        pcout << "   Using direct solver..." << std::endl;
+        if (parameters_ms.verbose)
+          {
+            pcout << "   Using direct solver..." << std::endl;
+          }
 
         TrilinosWrappers::MPI::Vector completely_distributed_solution(
           locally_owned_dofs, mpi_communicator);
         SolverControl                  solver_control;
         TrilinosWrappers::SolverDirect solver(solver_control);
 
-        // pcout << "looking for zero rows and colomns" << std::endl;
-        // std::vector<bool> row_flags(system_matrix.m(), false),
-        //   colomn_flags(system_matrix.n(), false);
-        // for (unsigned int i = 0; i < system_matrix.m(); ++i)
-        // {
-        //   for(unsigned int j = 0; j < system_matrix.n(); ++j)
-        //   {
-        //     if(system_matrix.el(i,j))
-        //     {
-        //       row_flags[i] = true;
-        //       colomn_flags[j] = true;
-        //     }
-        //   }
-        // }
-
-        // for (unsigned int i = 0; i < system_matrix.m(); ++i)
-        // {
-        //   if(row_flags[i])
-        //     pcout << "row " << i << " is a not zero row" << std::endl;
-        // }
-
-        // for (unsigned int i = 0; i < system_matrix.m(); ++i)
-        // {
-        //   if(colomn_flags[i])
-        //     pcout << "colomn " << i << " is a not zero colomn" << std::endl;
-        // }
-
-        // pcout << "these were all zero rows and colomns" << std::endl;
-
-
         solver.initialize(system_matrix);
         solver.solve(system_matrix,
                      completely_distributed_solution,
                      system_rhs);
 
-        pcout << "   Solved in with parallel sparse direct solver (MUMPS)."
-              << std::endl;
+        if (parameters_ms.verbose)
+          {
+            pcout << "   Solved in with parallel sparse direct solver (MUMPS)."
+                  << std::endl;
+          }
 
         constraints.distribute(completely_distributed_solution);
 
@@ -326,7 +272,10 @@ namespace Elasticity
       {
         TimerOutput::Scope t(computing_timer, "solve");
 
-        pcout << "   Using iterative solver..." << std::endl;
+        if (parameters_ms.verbose)
+          {
+            pcout << "   Using iterative solver..." << std::endl;
+          }
 
         TrilinosWrappers::MPI::Vector completely_distributed_solution(
           locally_owned_dofs, mpi_communicator);
@@ -365,8 +314,12 @@ namespace Elasticity
             Assert(false, ExcMessage(e.what()));
           }
 
-        pcout << "   Solved (iteratively) in " << solver_control.last_step()
-              << " iterations." << std::endl;
+        if (parameters_ms.verbose)
+          {
+            pcout << "   Solved (iteratively) in " << solver_control.last_step()
+                  << " iterations." << std::endl;
+          }
+
         constraints.distribute(completely_distributed_solution);
         locally_relevant_solution = completely_distributed_solution;
       }
@@ -443,7 +396,7 @@ namespace Elasticity
     data_out.add_data_vector(locally_relevant_solution, strain_postproc);
 
     // add the linearized stress tensor to the output
-    StressPostprocessor<dim> stress_postproc;
+    StressPostprocessor<dim> stress_postproc(global_parameters);
     data_out.add_data_vector(locally_relevant_solution, stress_postproc);
 
     data_out.build_patches();
@@ -500,33 +453,37 @@ namespace Elasticity
   void
   ElaMs<dim>::run()
   {
-    pcout << "Running with "
-          << "Trilinos"
-          << " on " << Utilities::MPI::n_mpi_processes(mpi_communicator)
-          << " MPI rank(s)..." << std::endl;
-    const auto [p1, p2] = get_init_vert({-10, 0, 0, 10, 1, 1});
-    std::list<double> side_length_list;
-    for (unsigned int i = 0; i < dim; ++i)
-      side_length_list.push_back(p2[i] - p1[i]);
-    double cell_length =
-      *(std::min_element(side_length_list.begin(), side_length_list.end()));
-    std::vector<unsigned int> repetitions;
-    for (auto it : side_length_list)
-      repetitions.push_back((unsigned int)(it / cell_length));
+    if (parameters_ms.verbose)
+      {
+        pcout << "Running with "
+              << "Trilinos"
+              << " on " << Utilities::MPI::n_mpi_processes(mpi_communicator)
+              << " MPI rank(s)..." << std::endl;
+      }
+
+    const Point<dim> p1 = global_parameters.init_p1,
+                     p2 = global_parameters.init_p2;
+
+    const std::vector<unsigned int> repetitions =
+      MyTools::get_repetitions(p1, p2);
 
     GridGenerator::subdivided_hyper_rectangle(
       triangulation, repetitions, p1, p2, true);
 
     // GridGenerator::cylinder(triangulation, 10., 0.1);
 
-    triangulation.refine_global(1);
+    triangulation.refine_global(parameters_ms.n_refine);
 
     // GridTools::transform(MyTools::roty<dim>, triangulation);
     setup_system();
-    pcout << "   Number of active cells:       "
-          << triangulation.n_global_active_cells() << std::endl
-          << "   Number of degrees of freedom: " << dof_handler.n_dofs()
-          << std::endl;
+
+    if (parameters_ms.verbose)
+      {
+        pcout << "   Number of active cells:       "
+              << triangulation.n_global_active_cells() << std::endl
+              << "   Number of degrees of freedom: " << dof_handler.n_dofs()
+              << std::endl;
+      }
 
     initialize_and_compute_basis();
 

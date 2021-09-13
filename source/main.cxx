@@ -1,8 +1,48 @@
-#include "ela_std.h"
-#include "ela_ms.h"
+#include "run_problem.h"
 
-int main (int argc, char *argv[])
+int
+main(int argc, char *argv[])
 {
+  // Very simple way of input handling.
+  if (argc < 2)
+    {
+      std::cout << "You must provide an input file \"-p <filename>\""
+                << std::endl;
+      exit(1);
+    }
+
+  std::string input_file = "";
+
+  std::list<std::string> args;
+  for (int i = 1; i < argc; ++i)
+    {
+      args.push_back(argv[i]);
+    }
+
+  while (args.size())
+    {
+      if (args.front() == std::string("-p"))
+        {
+          if (args.size() == 1) /* This is not robust. */
+            {
+              std::cerr << "Error: flag '-p' must be followed by the "
+                        << "name of a parameter file." << std::endl;
+              exit(1);
+            }
+          else
+            {
+              args.pop_front();
+              input_file = args.front();
+              args.pop_front();
+            }
+        }
+      else
+        {
+          std::cerr << "Unknown command line option: " << args.front()
+                    << std::endl;
+          exit(1);
+        }
+    } // end while
   try
     {
       using namespace dealii;
@@ -23,11 +63,11 @@ int main (int argc, char *argv[])
 #endif
 
       const bool say_hello_from_cluster = true;
-// #if DEBUG
-//         true;
-// #else
-//         false;
-// #endif
+      // #if DEBUG
+      //         true;
+      // #else
+      //         false;
+      // #endif
 
       if (say_hello_from_cluster)
         {
@@ -45,14 +85,24 @@ int main (int argc, char *argv[])
                     << "   | threads = " << dealii::MultithreadInfo::n_threads()
                     << std::endl;
         }
-      const bool direct_solver = true;
-      const bool neumann_bc = false;
 
-      ElaStd<3> ela_std(direct_solver, neumann_bc);
-      ela_std.run();
+      const Dimension dimension(input_file);
+      const int       dim = dimension.dim;
 
-      ElaMs<3> ela_ms(direct_solver, neumann_bc);
-      ela_ms.run();
+      switch (dim)
+        {
+          case 2:
+            run_2d_problem(input_file);
+            break;
+
+          case 3:
+            run_3d_problem(input_file);
+            break;
+
+          default:
+            std::cout << "The dimension must be 2 or 3." << std::endl;
+            exit(1);
+        }
     }
   catch (std::exception &exc)
     {

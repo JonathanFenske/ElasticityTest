@@ -45,9 +45,10 @@
 #include <deal.II/physics/transformations.h>
 
 #include "ela_basis.h"
-#include "forces_and_parameters.h"
+#include "forces_and_lame_parameters.h"
 #include "mytools.h"
 #include "postprocessing.h"
+#include "process_parameter_file.h"
 
 // STL
 #include <cmath>
@@ -72,13 +73,13 @@ namespace Elasticity
   class ElaMs
   {
   public:
-    ElaMs(const bool direct_solver, const bool neumann_bc);
+    ElaMs(const GlobalParameters<dim> &global_parameters,
+          const ParametersMs &         parameters_ms,
+          const ParametersBasis &      parameters_basis);
     void
     run();
 
   private:
-    const std::tuple<Point<dim>, Point<dim>>
-    get_init_vert(std::vector<double> p) const;
     void
     setup_system();
     void
@@ -106,17 +107,12 @@ namespace Elasticity
     TrilinosWrappers::MPI::Vector             locally_relevant_solution;
     TrilinosWrappers::MPI::Vector             system_rhs;
     std::map<CellId, ElaBasis<dim>>           cell_basis_map;
+    const GlobalParameters<dim>               global_parameters;
+    const ParametersMs                        parameters_ms;
+    const ParametersBasis                     parameters_basis;
     ConditionalOStream                        pcout;
     TimerOutput                               computing_timer;
-    const bool                                direct_solver;
-    const bool                                neumann_bc;
   };
-
-
-  // template <int dim>
-  // class ElaMs : public ElaMs<dim>
-  // {
-  // };
 } // namespace Elasticity
 
 #endif // _INCLUDE_ELA_MS_H_

@@ -43,15 +43,16 @@
 
 #include <deal.II/physics/transformations.h>
 
-#include "forces_and_parameters.h"
-#include "postprocessing.h"
+#include "forces_and_lame_parameters.h"
 #include "mytools.h"
+#include "postprocessing.h"
+#include "process_parameter_file.h"
 
 // STL
 #include <cmath>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <filesystem>
 
 
 namespace Elasticity
@@ -67,13 +68,12 @@ namespace Elasticity
   class ElaStd
   {
   public:
-    ElaStd(const bool direct_solver, const bool neumann_bc);
+    ElaStd(const GlobalParameters<dim> &global_parameters,
+           const ParametersStd &        parameters_std);
     void
     run();
 
   private:
-    const std::tuple<Point<dim>, Point<dim>>
-    get_init_vert(std::vector<double> p) const;
     void
     setup_system();
     void
@@ -96,10 +96,10 @@ namespace Elasticity
     TrilinosWrappers::SparseMatrix            preconditioner_matrix;
     TrilinosWrappers::MPI::Vector             locally_relevant_solution;
     TrilinosWrappers::MPI::Vector             system_rhs;
+    const GlobalParameters<dim>               global_parameters;
+    const ParametersStd                       parameters_std;
     ConditionalOStream                        pcout;
     TimerOutput                               computing_timer;
-    const bool                                direct_solver;
-    const bool                                neumann_bc;
   };
 
 

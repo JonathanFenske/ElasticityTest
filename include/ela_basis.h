@@ -49,9 +49,10 @@
 #include <deal.II/physics/transformations.h>
 
 #include "basis_funs.h"
-#include "forces_and_parameters.h"
+#include "forces_and_lame_parameters.h"
 #include "mytools.h"
 #include "postprocessing.h"
+#include "process_parameter_file.h"
 
 // STL
 #include <cmath>
@@ -77,8 +78,8 @@ namespace Elasticity
     ElaBasis(typename Triangulation<dim>::active_cell_iterator &global_cell,
              typename Triangulation<dim>::active_cell_iterator &first_cell,
              unsigned int                                       local_subdomain,
-             MPI_Comm   mpi_communicator,
-             const bool direct_solver);
+             MPI_Comm               mpi_communicator,
+             const ParametersBasis &parameters_basis);
     ElaBasis(const ElaBasis<dim> &other);
 
     void
@@ -125,10 +126,10 @@ namespace Elasticity
     Vector<double>                                    global_solution;
     const CellId                                      global_cell_id;
     const unsigned int                                local_subdomain;
+    const ParametersBasis                             parameters_basis;
     std::string                                       filename;
     BasisFun::BasisQ1<dim>                            basis_q1;
     ConditionalOStream                                pcout;
-    const bool                                        direct_solver;
   };
 } // namespace Elasticity
 

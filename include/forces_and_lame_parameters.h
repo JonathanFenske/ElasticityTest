@@ -1,9 +1,11 @@
-#ifndef _INCLUDE_FORCES_AND_PARAMETERS_H_
-#define _INCLUDE_FORCES_AND_PARAMETERS_H_
+#ifndef _INCLUDE_FORCES_AND_LAME_PARAMETERS_H_
+#define _INCLUDE_FORCES_AND_LAME_PARAMETERS_H_
 
 #include <deal.II/base/function.h>
 
 #include <deal.II/fe/mapping_q1_eulerian.h>
+
+#include "process_parameter_file.h"
 
 
 
@@ -19,8 +21,16 @@ namespace Elasticity
   class SurfaceForce : public Function<dim>
   {
   public:
+    SurfaceForce(const double force_value)
+      : Function<dim>()
+      , force_value(force_value)
+    {}
+
     virtual double
     value(const Point<dim> &p, const unsigned int component = 0) const override;
+
+  private:
+    const double force_value;
   };
 
 
@@ -29,6 +39,12 @@ namespace Elasticity
   class BodyForce : public Function<dim>
   {
   public:
+    BodyForce(const double rho)
+      : Function<dim>()
+      , rho(rho)
+      , force_value(grav * rho)
+    {}
+
     virtual double
     value(const Point<dim> &p, const unsigned int component) const override;
 
@@ -53,7 +69,9 @@ namespace Elasticity
     /*!
      * Mass density (of steel)
      */
-    const double rho = 7.85e3;
+    const double rho;
+
+    const double force_value;
   };
 
 
@@ -62,8 +80,18 @@ namespace Elasticity
   class lambda : public Function<dim>
   {
   public:
+    lambda(const double mean_value, const unsigned int fr)
+      : Function<dim>()
+      , mean_value(mean_value)
+      , fr(fr)
+    {}
+
     virtual double
     value(const Point<dim> &p, const unsigned int component = 0) const override;
+
+  private:
+    const double       mean_value;
+    const unsigned int fr;
   };
 
 
@@ -72,8 +100,18 @@ namespace Elasticity
   class mu : public Function<dim>
   {
   public:
+    mu(const double mean_value, const unsigned int fr)
+      : Function<dim>()
+      , mean_value(mean_value)
+      , fr(fr)
+    {}
+
     virtual double
     value(const Point<dim> &p, const unsigned int component = 0) const override;
+
+  private:
+    const double       mean_value;
+    const unsigned int fr;
   };
 
   // exernal template instantiations
@@ -88,4 +126,4 @@ namespace Elasticity
   extern template class mu<3>;
 } // namespace Elasticity
 
-#endif // _INCLUDE_FORCES_AND_PARAMETERS_H_
+#endif // _INCLUDE_FORCES_AND_LAME_PARAMETERS_H_

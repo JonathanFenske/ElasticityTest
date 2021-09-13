@@ -17,14 +17,15 @@ include_directories(${MsELA_INCLUDE_DIR})
 #set(MsELA_TARGET_LIB_SRC ${MsELA_TARGET_LIB_SRC})
 
 set(MsELA_LIBRARY_SRC
-	mytools.cc
+  basis_funs.cc
   ela_std.cc
   ela_basis.cc
   ela_ms.cc
-  forces_and_parameters.cc
+  forces_and_lame_parameters.cc
+  mytools.cc
   postprocessing.cc
-  basis_funs.cc
-  directory.cc)
+  process_parameter_file.cc
+  run_problem.cc)
 
 print_all_args (
 	${MsELA_LIBRARY_SRC}

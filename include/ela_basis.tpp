@@ -19,7 +19,7 @@ namespace Elasticity
     typename Triangulation<dim>::active_cell_iterator &first_cell,
     unsigned int                                       local_subdomain,
     MPI_Comm                                           mpi_communicator,
-    const bool                                         direct_solver)
+    const ParametersBasis &                            parameters_basis)
     : mpi_communicator(mpi_communicator)
     , first_cell(first_cell)
     , triangulation()
@@ -33,11 +33,10 @@ namespace Elasticity
     , global_weights(fe.dofs_per_cell)
     , global_cell_id(global_cell->id())
     , local_subdomain(local_subdomain)
+    , parameters_basis(parameters_basis)
     , basis_q1(global_cell)
     , pcout(std::cout,
             (Utilities::MPI::this_mpi_process(mpi_communicator) == 0))
-    // If true, a direct solver will be used to solve the problem.
-    , direct_solver(direct_solver)
   {
     // set corner points
     for (unsigned int vertex_n = 0;
@@ -64,11 +63,10 @@ namespace Elasticity
     , global_weights(other.global_weights)
     , global_cell_id(other.global_cell_id)
     , local_subdomain(other.local_subdomain)
+    , parameters_basis(other.parameters_basis)
     , basis_q1(other.basis_q1)
     , pcout(std::cout,
             (Utilities::MPI::this_mpi_process(mpi_communicator) == 0))
-    // If true, a direct solver will be used to solve the problem.
-    , direct_solver(other.direct_solver)
   {}
 
 
@@ -130,9 +128,9 @@ namespace Elasticity
     const unsigned int dofs_per_cell = fe.n_dofs_per_cell();
     const unsigned int n_q_points    = quadrature_formula.size();
 
-    lambda<dim>                 lambda;
-    mu<dim>                     mu;
-    BodyForce<dim>              body_force;
+    lambda<dim>    lambda(parameters_basis.lambda, parameters_basis.lambda_fr);
+    mu<dim>        mu(parameters_basis.mu, parameters_basis.mu_fr);
+    BodyForce<dim> body_force(parameters_basis.rho);
     std::vector<Vector<double>> body_force_values(n_q_points);
     for (unsigned int i = 0; i < n_q_points; ++i)
       body_force_values[i].reinit(dim);
@@ -200,7 +198,7 @@ namespace Elasticity
   void
   ElaBasis<dim>::solve(unsigned int q_point)
   {
-    if (direct_solver)
+    if (parameters_basis.direct_solver)
       {
         SparseDirectUMFPACK A_inv;
         A_inv.initialize(system_matrix);
@@ -307,7 +305,7 @@ namespace Elasticity
     GridGenerator::general_cell(triangulation,
                                 corner_points,
                                 /* colorize faces */ false);
-    triangulation.refine_global(4);
+    triangulation.refine_global(parameters_basis.n_refine);
 
     setup_system();
 
@@ -343,9 +341,9 @@ namespace Elasticity
                     << std::endl;
         }
     }
-
-    if (global_cell_id == first_cell->id())
-      output_basis();
+    if (parameters_basis.prevent_output)
+      if (global_cell_id == first_cell->id())
+        output_basis();
   }
 
 
@@ -426,7 +424,8 @@ namespace Elasticity
         data_out.add_data_vector(basis_solution, strain_proc_vector[n_basis]);
 
         // add the linearized stress tensor to the output
-        stress_proc_vector[n_basis] = StressPostprocessor<dim>(n_basis);
+        stress_proc_vector[n_basis] =
+          StressPostprocessor<dim>(n_basis, parameters_basis);
         data_out.add_data_vector(basis_solution, stress_proc_vector[n_basis]);
       }
 
@@ -466,7 +465,7 @@ namespace Elasticity
     data_out.add_data_vector(global_solution, strain_postproc);
 
     // add the linearized stress tensor to the output
-    StressPostprocessor<dim> stress_postproc;
+    StressPostprocessor<dim> stress_postproc(parameters_basis);
     data_out.add_data_vector(global_solution, stress_postproc);
 
     data_out.build_patches();
