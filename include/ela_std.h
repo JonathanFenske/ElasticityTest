@@ -101,6 +101,7 @@ namespace Elasticity
     TrilinosWrappers::MPI::Vector             system_rhs;
     const GlobalParameters<dim>               global_parameters;
     const ParametersStd                       parameters_std;
+    std::vector<bool>                         processor_is_used;
     ConditionalOStream                        pcout;
     TimerOutput                               computing_timer;
   };

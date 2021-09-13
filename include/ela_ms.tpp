@@ -27,6 +27,8 @@ namespace Elasticity
     , global_parameters(global_parameters)
     , parameters_ms(parameters_ms)
     , parameters_basis(parameters_basis)
+    , processor_is_used(Utilities::MPI::n_mpi_processes(mpi_communicator),
+                        false)
     , pcout(std::cout,
             (Utilities::MPI::this_mpi_process(mpi_communicator) == 0))
     , computing_timer(mpi_communicator,
@@ -186,6 +188,8 @@ namespace Elasticity
       {
         if (cell->is_locally_owned())
           {
+            processor_is_used[Utilities::MPI::this_mpi_process(
+              mpi_communicator)] = true;
             typename std::map<CellId, ElaBasis<dim>>::iterator it_basis =
               cell_basis_map.find(cell->id());
 
@@ -378,12 +382,8 @@ namespace Elasticity
   {
     DataOut<dim> data_out;
     data_out.attach_dof_handler(dof_handler);
-    std::cout << Utilities::MPI::this_mpi_process(mpi_communicator)
-              << locally_relevant_solution.size()
-              << locally_relevant_dofs.size() << locally_owned_dofs.size()
-              << std::endl;
 
-    if (locally_relevant_solution.size() != 0)
+    if (processor_is_used[Utilities::MPI::this_mpi_process(mpi_communicator)])
       {
         // add the displacement to the output
         std::vector<std::string> solution_name(dim, "displacement");

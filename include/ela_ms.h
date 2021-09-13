@@ -114,6 +114,7 @@ namespace Elasticity
     const GlobalParameters<dim>               global_parameters;
     const ParametersMs                        parameters_ms;
     const ParametersBasis                     parameters_basis;
+    std::vector<bool>                         processor_is_used;
     ConditionalOStream                        pcout;
     TimerOutput                               computing_timer;
   };

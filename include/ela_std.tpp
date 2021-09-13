@@ -23,6 +23,8 @@ namespace Elasticity
     , dof_handler(triangulation)
     , global_parameters(global_parameters)
     , parameters_std(parameters_std)
+    , processor_is_used(Utilities::MPI::n_mpi_processes(mpi_communicator),
+                        false)
     , pcout(std::cout,
             (Utilities::MPI::this_mpi_process(mpi_communicator) == 0))
     , computing_timer(mpi_communicator,
@@ -132,8 +134,10 @@ namespace Elasticity
       {
         if (cell->is_locally_owned())
           {
-            cell_matrix = 0.;
-            cell_rhs    = 0.;
+            processor_is_used[Utilities::MPI::this_mpi_process(
+              mpi_communicator)] = true;
+            cell_matrix          = 0.;
+            cell_rhs             = 0.;
             fe_values.reinit(cell);
             lambda.value_list(fe_values.get_quadrature_points(), lambda_values);
             mu.value_list(fe_values.get_quadrature_points(), mu_values);
@@ -332,7 +336,7 @@ namespace Elasticity
     DataOut<dim> data_out;
     data_out.attach_dof_handler(dof_handler);
 
-    if (locally_relevant_solution.size() != 0)
+    if (processor_is_used[Utilities::MPI::this_mpi_process(mpi_communicator)])
       {
         // add the displacement to the output
         std::vector<std::string> solution_name(dim, "displacement");
@@ -380,7 +384,6 @@ namespace Elasticity
                            Utilities::int_to_string(i, 4) + ".vtu";
             tmp_filename2            = "output/" + tmp_filename;
             const char *tmp_filechar = tmp_filename2.c_str();
-            std::cout << stat(tmp_filechar, &info) << std::endl;
             if (stat(tmp_filechar, &info) == 0)
               filenames.push_back(tmp_filename);
           }
