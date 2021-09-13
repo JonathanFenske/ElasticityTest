@@ -1,7 +1,6 @@
 #ifndef _INCLUDE_ELA_MS_TPP_
 #define _INCLUDE_ELA_MS_TPP_
 
-#include "directory.h"
 #include "ela_ms.h"
 
 namespace Elasticity
