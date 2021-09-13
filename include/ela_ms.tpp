@@ -379,7 +379,7 @@ namespace Elasticity
     DataOut<dim> data_out;
     data_out.attach_dof_handler(dof_handler);
 
-    if (locally_owned_dofs.size() != 0)
+    if (locally_relevant_solution.size() != 0)
       {
         // add the displacement to the output
         std::vector<std::string> solution_name(dim, "displacement");
@@ -438,7 +438,7 @@ namespace Elasticity
     if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0)
       {
         std::vector<std::string> coarse_filenames;
-        std::string              tmp_filename;
+        std::string              tmp_filename, tmp_filename2;
         struct stat              info;
         for (unsigned int i = 0;
              i < Utilities::MPI::n_mpi_processes(mpi_communicator);
@@ -446,7 +446,8 @@ namespace Elasticity
           {
             tmp_filename =
               "coarse/ms_solution-" + Utilities::int_to_string(i, 4) + ".vtu";
-            const char *tmp_filechar = tmp_filename.c_str();
+            tmp_filename2            = "output/" + tmp_filename;
+            const char *tmp_filechar = tmp_filename2.c_str();
             if (stat(tmp_filechar, &info) == 0)
               coarse_filenames.push_back(tmp_filename);
           }

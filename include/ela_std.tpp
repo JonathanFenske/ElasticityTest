@@ -332,45 +332,58 @@ namespace Elasticity
     DataOut<dim> data_out;
     data_out.attach_dof_handler(dof_handler);
 
-    // add the displacement to the output
-    std::vector<std::string> solution_name(dim, "displacement");
-    std::vector<DataComponentInterpretation::DataComponentInterpretation>
-      interpretation(dim,
-                     DataComponentInterpretation::component_is_part_of_vector);
+    if (locally_relevant_solution.size() != 0)
+      {
+        // add the displacement to the output
+        std::vector<std::string> solution_name(dim, "displacement");
+        std::vector<DataComponentInterpretation::DataComponentInterpretation>
+          interpretation(
+            dim, DataComponentInterpretation::component_is_part_of_vector);
 
-    data_out.add_data_vector(locally_relevant_solution,
-                             solution_name,
-                             DataOut<dim>::type_dof_data,
-                             interpretation);
+        data_out.add_data_vector(locally_relevant_solution,
+                                 solution_name,
+                                 DataOut<dim>::type_dof_data,
+                                 interpretation);
 
-    // add the linearized strain tensor to the output
-    StrainPostprocessor<dim> strain_postproc;
-    data_out.add_data_vector(locally_relevant_solution, strain_postproc);
+        // add the linearized strain tensor to the output
+        StrainPostprocessor<dim> strain_postproc;
+        data_out.add_data_vector(locally_relevant_solution, strain_postproc);
 
-    // add the linearized stress tensor to the output
-    StressPostprocessor<dim> stress_postproc(global_parameters);
-    data_out.add_data_vector(locally_relevant_solution, stress_postproc);
+        // add the linearized stress tensor to the output
+        StressPostprocessor<dim> stress_postproc(global_parameters);
+        data_out.add_data_vector(locally_relevant_solution, stress_postproc);
 
-    data_out.build_patches();
+        data_out.build_patches();
 
-    // write the output files
-    const std::string filename =
-      ("output/std_partitioned/std_solution-" +
-       Utilities::int_to_string(cycle, 2) + "." +
-       Utilities::int_to_string(triangulation.locally_owned_subdomain(), 4) +
-       ".vtu");
-    std::ofstream output(filename);
-    data_out.write_vtu(output);
+        // write the output files
+        const std::string filename =
+          ("output/std_partitioned/std_solution-" +
+           Utilities::int_to_string(cycle, 2) + "." +
+           Utilities::int_to_string(triangulation.locally_owned_subdomain(),
+                                    4) +
+           ".vtu");
+        std::ofstream output(filename);
+        data_out.write_vtu(output);
+      }
 
     if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0)
       {
         std::vector<std::string> filenames;
+        std::string              tmp_filename, tmp_filename2;
+        struct stat              info;
         for (unsigned int i = 0;
              i < Utilities::MPI::n_mpi_processes(mpi_communicator);
              ++i)
-          filenames.push_back("std_partitioned/std_solution-" +
-                              Utilities::int_to_string(cycle, 2) + "." +
-                              Utilities::int_to_string(i, 4) + ".vtu");
+          {
+            tmp_filename = "std_partitioned/std_solution-" +
+                           Utilities::int_to_string(cycle, 2) + "." +
+                           Utilities::int_to_string(i, 4) + ".vtu";
+            tmp_filename2            = "output/" + tmp_filename;
+            const char *tmp_filechar = tmp_filename2.c_str();
+            std::cout << stat(tmp_filechar, &info) << std::endl;
+            if (stat(tmp_filechar, &info) == 0)
+              filenames.push_back(tmp_filename);
+          }
 
         std::ofstream master_output("output/std_solution-" +
                                     Utilities::int_to_string(cycle, 2) +
