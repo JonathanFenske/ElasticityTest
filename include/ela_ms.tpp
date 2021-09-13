@@ -379,36 +379,41 @@ namespace Elasticity
     DataOut<dim> data_out;
     data_out.attach_dof_handler(dof_handler);
 
-    // add the displacement to the output
-    std::vector<std::string> solution_name(dim, "displacement");
-    std::vector<DataComponentInterpretation::DataComponentInterpretation>
-      interpretation(dim,
-                     DataComponentInterpretation::component_is_part_of_vector);
+    if (locally_owned_dofs.size() != 0)
+      {
+        // add the displacement to the output
+        std::vector<std::string> solution_name(dim, "displacement");
+        std::vector<DataComponentInterpretation::DataComponentInterpretation>
+          interpretation(
+            dim, DataComponentInterpretation::component_is_part_of_vector);
 
-    data_out.add_data_vector(locally_relevant_solution,
-                             solution_name,
-                             DataOut<dim>::type_dof_data,
-                             interpretation);
+        data_out.add_data_vector(locally_relevant_solution,
+                                 solution_name,
+                                 DataOut<dim>::type_dof_data,
+                                 interpretation);
 
-    // add the linearized strain tensor to the output
-    StrainPostprocessor<dim> strain_postproc;
-    data_out.add_data_vector(locally_relevant_solution, strain_postproc);
+        // add the linearized strain tensor to the output
+        StrainPostprocessor<dim> strain_postproc;
+        data_out.add_data_vector(locally_relevant_solution, strain_postproc);
 
-    // add the linearized stress tensor to the output
-    StressPostprocessor<dim> stress_postproc(global_parameters);
-    data_out.add_data_vector(locally_relevant_solution, stress_postproc);
+        // add the linearized stress tensor to the output
+        StressPostprocessor<dim> stress_postproc(global_parameters);
+        data_out.add_data_vector(locally_relevant_solution, stress_postproc);
 
-    data_out.build_patches();
+        data_out.build_patches();
 
-    // write the output files
-    const std::string filename =
-      ("ms_solution-" +
-       Utilities::int_to_string(triangulation.locally_owned_subdomain(), 4) +
-       ".vtu");
-    std::ofstream output("output/coarse/" + filename);
-    data_out.write_vtu(output);
+        // write the output files
+        const std::string coarse_filename =
+          ("ms_solution-" +
+           Utilities::int_to_string(triangulation.locally_owned_subdomain(),
+                                    4) +
+           ".vtu");
+        std::ofstream output("output/coarse/" + coarse_filename);
+        data_out.write_vtu(output);
+      }
 
-    std::vector<std::string>                           basis_filenames;
+    std::vector<std::string> basis_filenames;
+
     typename std::map<CellId, ElaBasis<dim>>::iterator it_basis =
                                                          cell_basis_map.begin(),
                                                        it_endbasis =
@@ -426,24 +431,30 @@ namespace Elasticity
     std::vector<std::string> ordered_basis_filenames;
     for (unsigned int i = 0; i < gathered_basis_filenames.size(); ++i)
       for (unsigned int j = 0; j < gathered_basis_filenames[i].size(); ++j)
-        ordered_basis_filenames.push_back(gathered_basis_filenames[i][j]);
+        {
+          ordered_basis_filenames.push_back(gathered_basis_filenames[i][j]);
+        }
 
     if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0)
       {
-        std::ofstream fine_master_output("output/fine_ms_solution.pvtu");
-        data_out.write_pvtu_record(fine_master_output, ordered_basis_filenames);
-
-        std::vector<std::string> filenames;
+        std::vector<std::string> coarse_filenames;
+        std::string              tmp_filename;
+        struct stat              info;
         for (unsigned int i = 0;
              i < Utilities::MPI::n_mpi_processes(mpi_communicator);
              ++i)
           {
-            filenames.push_back("coarse/ms_solution-" +
-                                Utilities::int_to_string(i, 4) + ".vtu");
+            tmp_filename =
+              "coarse/ms_solution-" + Utilities::int_to_string(i, 4) + ".vtu";
+            const char *tmp_filechar = tmp_filename.c_str();
+            if (stat(tmp_filechar, &info) == 0)
+              coarse_filenames.push_back(tmp_filename);
           }
-
         std::ofstream master_output("output/ms_solution.pvtu");
-        data_out.write_pvtu_record(master_output, filenames);
+        data_out.write_pvtu_record(master_output, coarse_filenames);
+
+        std::ofstream fine_master_output("output/fine_ms_solution.pvtu");
+        data_out.write_pvtu_record(fine_master_output, ordered_basis_filenames);
       }
   }
 

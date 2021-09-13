@@ -51,7 +51,11 @@
 #include "process_parameter_file.h"
 
 // STL
+#include <sys/stat.h>
+#include <sys/types.h>
+
 #include <cmath>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
