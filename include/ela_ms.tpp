@@ -378,6 +378,10 @@ namespace Elasticity
   {
     DataOut<dim> data_out;
     data_out.attach_dof_handler(dof_handler);
+    std::cout << Utilities::MPI::this_mpi_process(mpi_communicator)
+              << locally_relevant_solution.size()
+              << locally_relevant_dofs.size() << locally_owned_dofs.size()
+              << std::endl;
 
     if (locally_relevant_solution.size() != 0)
       {
