@@ -27,8 +27,7 @@ namespace Elasticity
     , global_parameters(global_parameters)
     , parameters_ms(parameters_ms)
     , parameters_basis(parameters_basis)
-    , processor_is_used(Utilities::MPI::n_mpi_processes(mpi_communicator),
-                        false)
+    , processor_is_used(false)
     , pcout(std::cout,
             (Utilities::MPI::this_mpi_process(mpi_communicator) == 0))
     , computing_timer(mpi_communicator,
@@ -188,8 +187,7 @@ namespace Elasticity
       {
         if (cell->is_locally_owned())
           {
-            processor_is_used[Utilities::MPI::this_mpi_process(
-              mpi_communicator)] = true;
+            processor_is_used = true;
             typename std::map<CellId, ElaBasis<dim>>::iterator it_basis =
               cell_basis_map.find(cell->id());
 
@@ -383,7 +381,7 @@ namespace Elasticity
     DataOut<dim> data_out;
     data_out.attach_dof_handler(dof_handler);
 
-    if (processor_is_used[Utilities::MPI::this_mpi_process(mpi_communicator)])
+    if (processor_is_used)
       {
         // add the displacement to the output
         std::vector<std::string> solution_name(dim, "displacement");
@@ -439,22 +437,30 @@ namespace Elasticity
           ordered_basis_filenames.push_back(gathered_basis_filenames[i][j]);
         }
 
-    if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0)
+    std::vector<bool> used_processors =
+      Utilities::MPI::gather(mpi_communicator, processor_is_used);
+
+    unsigned int first_used_processor;
+    for (unsigned int i = 0;
+         i < Utilities::MPI::n_mpi_processes(mpi_communicator);
+         ++i)
+      if (used_processors[i])
+        {
+          first_used_processor = i;
+          break;
+        }
+
+    if (Utilities::MPI::this_mpi_process(mpi_communicator) ==
+        first_used_processor)
       {
         std::vector<std::string> coarse_filenames;
-        std::string              tmp_filename, tmp_filename2;
-        struct stat              info;
         for (unsigned int i = 0;
              i < Utilities::MPI::n_mpi_processes(mpi_communicator);
              ++i)
-          {
-            tmp_filename =
-              "coarse/ms_solution-" + Utilities::int_to_string(i, 4) + ".vtu";
-            tmp_filename2            = "output/" + tmp_filename;
-            const char *tmp_filechar = tmp_filename2.c_str();
-            if (stat(tmp_filechar, &info) == 0)
-              coarse_filenames.push_back(tmp_filename);
-          }
+          if (used_processors[i])
+            coarse_filenames.push_back("coarse/ms_solution-" +
+                                       Utilities::int_to_string(i, 4) + ".vtu");
+
         std::ofstream master_output("output/ms_solution.pvtu");
         data_out.write_pvtu_record(master_output, coarse_filenames);
 

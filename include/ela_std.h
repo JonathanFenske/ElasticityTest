@@ -49,9 +49,6 @@
 #include "process_parameter_file.h"
 
 // STL
-#include <sys/stat.h>
-#include <sys/types.h>
-
 #include <cmath>
 #include <filesystem>
 #include <fstream>
@@ -101,16 +98,10 @@ namespace Elasticity
     TrilinosWrappers::MPI::Vector             system_rhs;
     const GlobalParameters<dim>               global_parameters;
     const ParametersStd                       parameters_std;
-    std::vector<bool>                         processor_is_used;
+    bool                                      processor_is_used;
     ConditionalOStream                        pcout;
     TimerOutput                               computing_timer;
   };
-
-
-  // template <int dim>
-  // class ElaStd : public ElaStd<dim>
-  // {
-  // };
 } // namespace Elasticity
 
 #endif // _INCLUDE_ELA_STD_H_

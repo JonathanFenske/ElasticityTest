@@ -51,9 +51,6 @@
 #include "process_parameter_file.h"
 
 // STL
-#include <sys/stat.h>
-#include <sys/types.h>
-
 #include <cmath>
 #include <cstring>
 #include <filesystem>
@@ -114,7 +111,7 @@ namespace Elasticity
     const GlobalParameters<dim>               global_parameters;
     const ParametersMs                        parameters_ms;
     const ParametersBasis                     parameters_basis;
-    std::vector<bool>                         processor_is_used;
+    bool                                      processor_is_used;
     ConditionalOStream                        pcout;
     TimerOutput                               computing_timer;
   };

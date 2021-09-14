@@ -23,8 +23,7 @@ namespace Elasticity
     , dof_handler(triangulation)
     , global_parameters(global_parameters)
     , parameters_std(parameters_std)
-    , processor_is_used(Utilities::MPI::n_mpi_processes(mpi_communicator),
-                        false)
+    , processor_is_used(false)
     , pcout(std::cout,
             (Utilities::MPI::this_mpi_process(mpi_communicator) == 0))
     , computing_timer(mpi_communicator,
@@ -134,10 +133,9 @@ namespace Elasticity
       {
         if (cell->is_locally_owned())
           {
-            processor_is_used[Utilities::MPI::this_mpi_process(
-              mpi_communicator)] = true;
-            cell_matrix          = 0.;
-            cell_rhs             = 0.;
+            processor_is_used = true;
+            cell_matrix       = 0.;
+            cell_rhs          = 0.;
             fe_values.reinit(cell);
             lambda.value_list(fe_values.get_quadrature_points(), lambda_values);
             mu.value_list(fe_values.get_quadrature_points(), mu_values);
@@ -336,7 +334,7 @@ namespace Elasticity
     DataOut<dim> data_out;
     data_out.attach_dof_handler(dof_handler);
 
-    if (processor_is_used[Utilities::MPI::this_mpi_process(mpi_communicator)])
+    if (processor_is_used)
       {
         // add the displacement to the output
         std::vector<std::string> solution_name(dim, "displacement");
@@ -370,23 +368,30 @@ namespace Elasticity
         data_out.write_vtu(output);
       }
 
-    if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0)
+    std::vector<bool> used_processors =
+      Utilities::MPI::gather(mpi_communicator, processor_is_used);
+
+    unsigned int first_used_processor;
+    for (unsigned int i = 0;
+         i < Utilities::MPI::n_mpi_processes(mpi_communicator);
+         ++i)
+      if (used_processors[i])
+        {
+          first_used_processor = i;
+          break;
+        }
+
+    if (Utilities::MPI::this_mpi_process(mpi_communicator) ==
+        first_used_processor)
       {
         std::vector<std::string> filenames;
-        std::string              tmp_filename, tmp_filename2;
-        struct stat              info;
         for (unsigned int i = 0;
              i < Utilities::MPI::n_mpi_processes(mpi_communicator);
              ++i)
-          {
-            tmp_filename = "std_partitioned/std_solution-" +
-                           Utilities::int_to_string(cycle, 2) + "." +
-                           Utilities::int_to_string(i, 4) + ".vtu";
-            tmp_filename2            = "output/" + tmp_filename;
-            const char *tmp_filechar = tmp_filename2.c_str();
-            if (stat(tmp_filechar, &info) == 0)
-              filenames.push_back(tmp_filename);
-          }
+          if (used_processors[i])
+            filenames.push_back("std_partitioned/std_solution-" +
+                                Utilities::int_to_string(cycle, 2) + "." +
+                                Utilities::int_to_string(i, 4) + ".vtu");
 
         std::ofstream master_output("output/std_solution-" +
                                     Utilities::int_to_string(cycle, 2) +
