@@ -414,6 +414,19 @@ namespace Elasticity
         data_out.write_vtu(output);
       }
 
+    std::vector<bool> used_processors =
+      Utilities::MPI::all_gather(mpi_communicator, processor_is_used);
+
+    unsigned int first_used_processor;
+    for (unsigned int i = 0;
+         i < Utilities::MPI::n_mpi_processes(mpi_communicator);
+         ++i)
+      if (used_processors[i])
+        {
+          first_used_processor = i;
+          break;
+        }
+
     std::vector<std::string> basis_filenames;
 
     typename std::map<CellId, ElaBasis<dim>>::iterator it_basis =
@@ -428,26 +441,15 @@ namespace Elasticity
       }
 
     std::vector<std::vector<std::string>> gathered_basis_filenames =
-      Utilities::MPI::gather(mpi_communicator, basis_filenames);
+      Utilities::MPI::gather(mpi_communicator,
+                             basis_filenames,
+                             first_used_processor);
 
     std::vector<std::string> ordered_basis_filenames;
     for (unsigned int i = 0; i < gathered_basis_filenames.size(); ++i)
       for (unsigned int j = 0; j < gathered_basis_filenames[i].size(); ++j)
         {
           ordered_basis_filenames.push_back(gathered_basis_filenames[i][j]);
-        }
-
-    std::vector<bool> used_processors =
-      Utilities::MPI::gather(mpi_communicator, processor_is_used);
-
-    unsigned int first_used_processor;
-    for (unsigned int i = 0;
-         i < Utilities::MPI::n_mpi_processes(mpi_communicator);
-         ++i)
-      if (used_processors[i])
-        {
-          first_used_processor = i;
-          break;
         }
 
     if (Utilities::MPI::this_mpi_process(mpi_communicator) ==
