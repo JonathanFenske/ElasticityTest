@@ -104,7 +104,7 @@ namespace Elasticity
   double
   lambda<dim>::value(const Point<dim> &p, const unsigned int) const
   {
-    return mean_value * (std::sin(2 * fr * M_PI * p(0)) + 1);
+    return mean_value * (0.8 * std::sin(2 * fr * M_PI * p(0)) + 1);
   }
 
 
@@ -112,7 +112,7 @@ namespace Elasticity
   double
   mu<dim>::value(const Point<dim> &p, const unsigned int) const
   {
-    return mean_value * (std::sin(2 * fr * M_PI * p(0)) + 1);
+    return mean_value * (0.8 * std::sin(2 * fr * M_PI * p(0)) + 1);
   }
 } // namespace Elasticity
 
