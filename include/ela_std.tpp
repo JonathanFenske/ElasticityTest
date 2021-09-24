@@ -368,35 +368,22 @@ namespace Elasticity
         data_out.write_vtu(output);
       }
 
-    std::cout << Utilities::MPI::this_mpi_process(mpi_communicator)
-              << ": before gathering" << std::endl;
-
     std::vector<bool> used_processors =
       Utilities::MPI::all_gather(mpi_communicator, processor_is_used);
-
-    std::cout << Utilities::MPI::this_mpi_process(mpi_communicator)
-              << ": after gathering" << std::endl;
 
     unsigned int first_used_processor;
     for (unsigned int i = 0;
          i < Utilities::MPI::n_mpi_processes(mpi_communicator);
          ++i)
       {
-        std::cout << Utilities::MPI::this_mpi_process(mpi_communicator)
-                  << ": in for loop" << std::endl;
         if (used_processors[i])
           {
-            std::cout << Utilities::MPI::this_mpi_process(mpi_communicator)
-                      << ": before break" << std::endl;
             first_used_processor = i;
 
             break;
           }
       }
 
-
-    std::cout << Utilities::MPI::this_mpi_process(mpi_communicator)
-              << ": before pvtu" << std::endl;
     if (Utilities::MPI::this_mpi_process(mpi_communicator) ==
         first_used_processor)
       {

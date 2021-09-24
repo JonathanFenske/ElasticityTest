@@ -30,6 +30,10 @@ documentation/
 *.a
 *.lib
 
+# Image formats
+*.vtu
+*.pvtu
+
 # Executables
 *.exe
 *.out
