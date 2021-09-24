@@ -60,10 +60,10 @@ subsection Global parameters
     set nu = 0.3
 
     set mu = 1.
-    set mu frequency = 40
+    set mu frequency = 100
 
     set lambda = 1.
-    set lambda frequency = 0
+    set lambda frequency = 100
 
     set rho = 7.85e3
   end
@@ -80,7 +80,7 @@ subsection Standard method parameters
   end
 
   subsection Mesh
-    set refinements = 1
+    set refinements = 2
     set cycles = 3
   end
 end
@@ -93,7 +93,7 @@ subsection Multiscale method parameters
     end
 
     subsection Mesh
-      set refinements = 1
+      set refinements = 2
     end
   end
 
