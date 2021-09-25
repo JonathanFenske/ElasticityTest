@@ -104,7 +104,7 @@ subsection Multiscale method parameters
     end
 
     subsection Mesh
-      set refinements = 4
+      set refinements = 3
       set prevent output = false
     end
   end

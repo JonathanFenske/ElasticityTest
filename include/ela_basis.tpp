@@ -233,10 +233,9 @@ namespace Elasticity
             Assert(false, ExcMessage(e.what()));
           }
 
-        std::cout.precision(15);
         std::cout << "   Solved (iteratively) in " << solver_control.last_step()
-                  << " iterations with an error of " << scientific
-                  << solver_control.last_check() << std::endl;
+                  << " iterations with an error of "
+                  << solver_control.last_value() << std::endl;
       }
   }
 
