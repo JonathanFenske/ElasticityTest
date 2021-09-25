@@ -334,7 +334,7 @@ namespace Elasticity
           {
             pcout << "   Solved (iteratively) in " << solver_control.last_step()
                   << " iterations with an error of"
-                  << solver_control.last_check() << std::endl;
+                  << solver_control.last_value() << std::endl;
           }
 
         constraints.distribute(completely_distributed_solution);
