@@ -213,8 +213,8 @@ namespace Elasticity
         SolverControl solver_control(
           /* n_max_iter */ n_iterations,
           solver_tolerance,
-          /* log_history */ true,
-          /* log_result */ true);
+          /* log_history */ false,
+          /* log_result */ false);
 
         SolverCG<> solver(solver_control);
 
@@ -233,12 +233,9 @@ namespace Elasticity
             Assert(false, ExcMessage(e.what()));
           }
 
-        std::cout << "   "
-                  << "(cell   " << global_cell_id.to_string() << ") "
-                  << "(basis   " << q_point << ")   "
-                  << solver_control.last_step()
-                  << " fine CG iterations needed to obtain convergence."
-                  << std::endl;
+        std::cout << "   Solved (iteratively) in " << solver_control.last_step()
+                  << " iterations with an error of"
+                  << solver_control.last_check() << std::endl;
       }
   }
 
