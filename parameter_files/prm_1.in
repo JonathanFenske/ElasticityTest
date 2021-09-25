@@ -60,10 +60,10 @@ subsection Global parameters
     set nu = 0.3
 
     set mu = 1.
-    set mu frequency = 100
+    set mu frequency = 0
 
     set lambda = 1.
-    set lambda frequency = 100
+    set lambda frequency = 0
 
     set rho = 7.85e3
   end
@@ -76,7 +76,7 @@ end
 subsection Standard method parameters
   subsection Bools
     set verbose = true
-    set use direct solver = true
+    set use direct solver = false
   end
 
   subsection Mesh
