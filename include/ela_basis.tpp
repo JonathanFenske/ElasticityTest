@@ -233,9 +233,12 @@ namespace Elasticity
             Assert(false, ExcMessage(e.what()));
           }
 
-        std::cout << "   Solved (iteratively) in " << solver_control.last_step()
-                  << " iterations with an error of "
-                  << solver_control.last_value() << std::endl;
+        constraints_vector[q_point].distribute(solution_vector[q_point]);
+
+        // std::cout << "   Solved (iteratively) in " <<
+        // solver_control.last_step()
+        //           << " iterations with an error of "
+        //           << solver_control.last_value() << std::endl;
       }
   }
 
