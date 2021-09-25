@@ -60,10 +60,10 @@ subsection Global parameters
     set nu = 0.3
 
     set mu = 1.
-    set mu frequency = 0
+    set mu frequency = 100
 
     set lambda = 1.
-    set lambda frequency = 0
+    set lambda frequency = 100
 
     set rho = 7.85e3
   end
@@ -89,7 +89,7 @@ subsection Multiscale method parameters
   subsection Coarse scale
     subsection Bools
       set verbose = true
-      set use direct solver = true
+      set use direct solver = false
     end
 
     subsection Mesh
@@ -100,7 +100,7 @@ subsection Multiscale method parameters
   subsection Fine scale
     subsection Bools
       set verbose = true
-      set use direct solver = true
+      set use direct solver = false
     end
 
     subsection Mesh

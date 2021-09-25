@@ -291,15 +291,30 @@ namespace Elasticity
 
         TrilinosWrappers::SolverCG solver(solver_control);
 
-        TrilinosWrappers::PreconditionSSOR                 preconditioner;
-        TrilinosWrappers::PreconditionSSOR::AdditionalData data(
-          /* over relaxation */ 1.2);
+        ////////////////////////////////////////////////////////////////
+        ///////////////////////////////////
+        // TrilinosWrappers::PreconditionSSOR                 preconditioner;
+        // TrilinosWrappers::PreconditionSSOR::AdditionalData data(
+        //   /* over relaxation */ 1.2);
+        ///////////////////////////////////
 
-        // TrilinosWrappers::PreconditionBlockJacobi preconditioner;
-        // TrilinosWrappers::PreconditionBlockJacobi::AdditionalData data;
-
-        // TrilinosWrappers::PreconditionAMG                 preconditioner;
-        // TrilinosWrappers::PreconditionAMG::AdditionalData data;
+        ///////////////////////////////////
+        std::vector<std::vector<bool>> constant_modes;
+        FEValuesExtractors::Vector     displacement_components(0);
+        DoFTools::extract_constant_modes(dof_handler,
+                                         fe.component_mask(
+                                           displacement_components),
+                                         constant_modes);
+        TrilinosWrappers::PreconditionAMG                 preconditioner;
+        TrilinosWrappers::PreconditionAMG::AdditionalData data;
+        data.constant_modes        = constant_modes;
+        data.elliptic              = true;
+        data.higher_order_elements = false;
+        data.smoother_sweeps       = 2;
+        data.smoother_type         = "ML symmetric Gauss-Seidel";
+        data.aggregation_threshold = 0.002;
+        ///////////////////////////////////
+        ////////////////////////////////////////////////////////////////
 
         preconditioner.initialize(system_matrix, data);
 

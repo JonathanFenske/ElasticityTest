@@ -1,5 +1,5 @@
 subsection Dimension
-  set dim = 2
+  set dim = 3
 end
 
 subsection Global parameters
@@ -63,7 +63,7 @@ subsection Global parameters
     set mu frequency = 40
 
     set lambda = 1.
-    set lambda frequency = 0
+    set lambda frequency = 40
 
     set rho = 7.85e3
   end
@@ -76,12 +76,12 @@ end
 subsection Standard method parameters
   subsection Bools
     set verbose = true
-    set use direct solver = true
+    set use direct solver = false
   end
 
   subsection Mesh
     set refinements = 1
-    set cycles = 2
+    set cycles = 1
   end
 end
 
