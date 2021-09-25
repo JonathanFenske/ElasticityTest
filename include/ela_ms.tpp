@@ -286,8 +286,8 @@ namespace Elasticity
         SolverControl solver_control(
           /* n_max_iter */ n_iterations,
           solver_tolerance,
-          /* log_history */ false,
-          /* log_result */ false);
+          /* log_history */ true,
+          /* log_result */ true);
 
         TrilinosWrappers::SolverCG solver(solver_control);
 
@@ -333,8 +333,7 @@ namespace Elasticity
         if (parameters_ms.verbose)
           {
             pcout << "   Solved (iteratively) in " << solver_control.last_step()
-                  << " iterations with an error of"
-                  << solver_control.last_value() << std::endl;
+                  << " iterations." << std::endl;
           }
 
         constraints.distribute(completely_distributed_solution);
