@@ -59,7 +59,7 @@ subsection Global parameters
   end
 
   subsection Material parameters
-    set layers = 10
+    set layers = 100
 
     set E = 210.e9
     set nu = 0.3
