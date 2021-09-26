@@ -104,12 +104,10 @@ namespace Elasticity
   lambda<dim>::lambda(const GlobalParameters<dim> &global_parameters)
     : Function<dim>()
     , global_parameters(global_parameters)
-    , height(global_parameters.init_p2(dim - 1) -
-             global_parameters.init_p1(dim - 1))
-    , length(global_parameters.init_p2(0) - global_parameters.init_p1(0))
   {
     if (global_parameters.material_structure.at("horizontal layers") ||
-        global_parameters.material_structure.at("vertical layers"))
+        global_parameters.material_structure.at("vertical layers") ||
+        global_parameters.material_structure.at("y-layers"))
       {
         double value_step_size =
           global_parameters.lambda / (0.5 * global_parameters.n_layers);
@@ -117,11 +115,27 @@ namespace Elasticity
           {
             values.push_back(i * value_step_size);
           }
+
         if (global_parameters.material_structure.at("horizontal layers"))
-          layer_size_inv = global_parameters.n_layers / length;
+          {
+            double length =
+              global_parameters.init_p2(0) - global_parameters.init_p1(0);
+            layer_size_inv = global_parameters.n_layers / length;
+          }
 
         if (global_parameters.material_structure.at("vertical layers"))
-          layer_size_inv = global_parameters.n_layers / height;
+          {
+            double height = global_parameters.init_p2(dim - 1) -
+                            global_parameters.init_p1(dim - 1);
+            layer_size_inv = global_parameters.n_layers / height;
+          }
+
+        if (global_parameters.material_structure.at("y-layers"))
+          {
+            double depth =
+              global_parameters.init_p2(1) - global_parameters.init_p1(1);
+            layer_size_inv = global_parameters.n_layers / depth;
+          }
       }
   }
 
@@ -142,6 +156,8 @@ namespace Elasticity
         unsigned int layer =
           (p(0) - global_parameters.init_p1(0)) * layer_size_inv;
         layer = std::min(layer, global_parameters.n_layers - 1);
+        if (layer == global_parameters.n_layers)
+          std::cout << layer << std::endl;
         return values[layer];
       }
 
@@ -150,6 +166,16 @@ namespace Elasticity
       {
         unsigned int layer =
           (p(dim - 1) - global_parameters.init_p1(dim - 1)) * layer_size_inv;
+        layer = std::min(layer, global_parameters.n_layers - 1);
+        return values[layer];
+      }
+
+    // Case: layers in y-direction
+    if (global_parameters.material_structure.at("y-layers"))
+      {
+        AssertDimension(dim, 3);
+        unsigned int layer =
+          (p(1) - global_parameters.init_p1(1)) * layer_size_inv;
         layer = std::min(layer, global_parameters.n_layers - 1);
         return values[layer];
       }
@@ -163,12 +189,10 @@ namespace Elasticity
   mu<dim>::mu(const GlobalParameters<dim> &global_parameters)
     : Function<dim>()
     , global_parameters(global_parameters)
-    , height(global_parameters.init_p2(dim - 1) -
-             global_parameters.init_p1(dim - 1))
-    , length(global_parameters.init_p2(0) - global_parameters.init_p1(0))
   {
     if (global_parameters.material_structure.at("horizontal layers") ||
-        global_parameters.material_structure.at("vertical layers"))
+        global_parameters.material_structure.at("vertical layers") ||
+        global_parameters.material_structure.at("y-layers"))
       {
         double value_step_size =
           global_parameters.mu / (0.5 * global_parameters.n_layers);
@@ -176,11 +200,27 @@ namespace Elasticity
           {
             values.push_back(i * value_step_size);
           }
+
         if (global_parameters.material_structure.at("horizontal layers"))
-          layer_size_inv = global_parameters.n_layers / length;
+          {
+            double length =
+              global_parameters.init_p2(0) - global_parameters.init_p1(0);
+            layer_size_inv = global_parameters.n_layers / length;
+          }
 
         if (global_parameters.material_structure.at("vertical layers"))
-          layer_size_inv = global_parameters.n_layers / height;
+          {
+            double height = global_parameters.init_p2(dim - 1) -
+                            global_parameters.init_p1(dim - 1);
+            layer_size_inv = global_parameters.n_layers / height;
+          }
+
+        if (global_parameters.material_structure.at("y-layers"))
+          {
+            double depth =
+              global_parameters.init_p2(1) - global_parameters.init_p1(1);
+            layer_size_inv = global_parameters.n_layers / depth;
+          }
       }
   }
 
@@ -208,6 +248,16 @@ namespace Elasticity
       {
         unsigned int layer =
           (p(dim - 1) - global_parameters.init_p1(dim - 1)) * layer_size_inv;
+        layer = std::min(layer, global_parameters.n_layers - 1);
+        return values[layer];
+      }
+
+    // Case: layers in y-direction
+    if (global_parameters.material_structure.at("y-layers"))
+      {
+        AssertDimension(dim, 3);
+        unsigned int layer =
+          (p(1) - global_parameters.init_p1(1)) * layer_size_inv;
         layer = std::min(layer, global_parameters.n_layers - 1);
         return values[layer];
       }

@@ -10,6 +10,7 @@ subsection Global parameters
     set oscillations = false
     set horizontal layers = true
     set vertical layers = false
+    set y-layers = false
   end
 
   subsection 2D
@@ -34,11 +35,11 @@ subsection Global parameters
 
   subsection 3D
     set init p1[0] = -10.
-    set init p1[1] = 0.
+    set init p1[1] = -10.
     set init p1[2] = 0.
 
     set init p2[0] = 10.
-    set init p2[1] = 1.
+    set init p2[1] = 10.
     set init p2[2] = 1.
 
     set dirichlet p1[0] = -1.

@@ -7,10 +7,10 @@ subsection Global parameters
     set other dirichlet id = false
     set neumann boundary condition = false
 	  set use E and nu = true
-    set oscillations = true
+    set oscillations = false
     set horizontal layers = false
     set vertical layers = false
-    set y-layers = false
+    set y-layers = true
   end
 
   subsection 2D
@@ -35,11 +35,11 @@ subsection Global parameters
 
   subsection 3D
     set init p1[0] = -10.
-    set init p1[1] = 0.
+    set init p1[1] = -10.
     set init p1[2] = 0.
 
     set init p2[0] = 10.
-    set init p2[1] = 1.
+    set init p2[1] = 10.
     set init p2[2] = 1.
 
     set dirichlet p1[0] = -1.
@@ -60,7 +60,7 @@ subsection Global parameters
   end
 
   subsection Material parameters
-    set layers = 1
+    set layers = 100
     
     set E = 210.e9
     set nu = 0.3

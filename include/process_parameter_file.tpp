@@ -87,7 +87,7 @@ namespace Elasticity
           "Choose whether to use Young's modulus and the Poisson ratio"
           " to declare Lamé's parameters");
         prm.declare_entry("oscillations",
-                          "true",
+                          "false",
                           Patterns::Bool(),
                           "Declare if the Lamé parameters oscillate.");
         prm.declare_entry("horizontal layers",
@@ -100,6 +100,11 @@ namespace Elasticity
                           Patterns::Bool(),
                           "Declare if the material "
                           "consists of vertical layers.");
+        prm.declare_entry("y-layers",
+                          "false",
+                          Patterns::Bool(),
+                          "Declare if the material "
+                          "is structured with layers in y-direction.");
       }
       prm.leave_subsection();
 
@@ -229,6 +234,10 @@ namespace Elasticity
         material_structure.insert(
           std::make_pair("vertical layers", prm.get_bool("vertical layers")));
         if (material_structure["vertical layers"] == true)
+          ++m;
+        material_structure.insert(
+          std::make_pair("y-layers", prm.get_bool("y-layers")));
+        if (material_structure["y-layers"] == true)
           ++m;
 
         if (m != 1)

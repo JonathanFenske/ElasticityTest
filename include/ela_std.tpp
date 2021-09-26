@@ -476,8 +476,6 @@ namespace Elasticity
         {
           TimerOutput::Scope t(computing_timer, "output");
           output_results(cycle);
-          std::cout << Utilities::MPI::this_mpi_process(mpi_communicator)
-                    << ": output done" << std::endl;
         }
 
         computing_timer.print_summary();

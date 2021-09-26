@@ -92,9 +92,6 @@ namespace Elasticity
 
     double layer_size_inv;
 
-    double height;
-    double length;
-
     std::vector<double> values;
   };
 
@@ -113,9 +110,6 @@ namespace Elasticity
     GlobalParameters<dim> global_parameters;
 
     double layer_size_inv;
-
-    double height;
-    double length;
 
     std::vector<double> values;
   };
