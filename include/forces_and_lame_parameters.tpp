@@ -141,6 +141,7 @@ namespace Elasticity
       {
         unsigned int layer =
           (p(0) - global_parameters.init_p1(0)) * layer_size_inv;
+        layer = std::min(layer, global_parameters.n_layers - 1);
         return values[layer];
       }
 
@@ -149,6 +150,7 @@ namespace Elasticity
       {
         unsigned int layer =
           (p(dim - 1) - global_parameters.init_p1(dim - 1)) * layer_size_inv;
+        layer = std::min(layer, global_parameters.n_layers - 1);
         return values[layer];
       }
 
@@ -197,6 +199,7 @@ namespace Elasticity
       {
         unsigned int layer =
           (p(0) - global_parameters.init_p1(0)) * layer_size_inv;
+        layer = std::min(layer, global_parameters.n_layers - 1);
         return values[layer];
       }
 
@@ -205,6 +208,7 @@ namespace Elasticity
       {
         unsigned int layer =
           (p(dim - 1) - global_parameters.init_p1(dim - 1)) * layer_size_inv;
+        layer = std::min(layer, global_parameters.n_layers - 1);
         return values[layer];
       }
 
