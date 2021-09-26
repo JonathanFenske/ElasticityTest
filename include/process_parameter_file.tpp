@@ -43,12 +43,14 @@ namespace Elasticity
     : other_dirichlet_id(other.other_dirichlet_id)
     , neumann_bc(other.neumann_bc)
     , use_E_and_nu(other.use_E_and_nu)
+    , material_structure(other.material_structure)
     , init_p1(other.init_p1)
     , init_p2(other.init_p2)
     , dirichlet_p1(other.dirichlet_p1)
     , dirichlet_p2(other.dirichlet_p2)
     , neumann_p1(other.neumann_p1)
     , neumann_p2(other.neumann_p2)
+    , n_layers(other.n_layers)
     , E(other.E)
     , nu(other.nu)
     , mu(other.mu)
@@ -78,11 +80,26 @@ namespace Elasticity
           "false",
           Patterns::Bool(),
           "Choose whether a Neumann boundary condition is to be declared");
-        prm.declare_entry("use E and nu",
+        prm.declare_entry(
+          "use E and nu",
+          "true",
+          Patterns::Bool(),
+          "Choose whether to use Young's modulus and the Poisson ratio"
+          " to declare Lamé's parameters");
+        prm.declare_entry("oscillations",
                           "true",
                           Patterns::Bool(),
-                          "Use Young's modulus and the Poisson ratio"
-                          " to declare the Lamé parameters.");
+                          "Declare if the Lamé parameters oscillate.");
+        prm.declare_entry("horizontal layers",
+                          "false",
+                          Patterns::Bool(),
+                          "Declare if the material "
+                          "consists of horizontal layers.");
+        prm.declare_entry("vertical layers",
+                          "false",
+                          Patterns::Bool(),
+                          "Declare if the material "
+                          "consists of vertical layers.");
       }
       prm.leave_subsection();
 
@@ -136,6 +153,11 @@ namespace Elasticity
 
       prm.enter_subsection("Material parameters");
       {
+        prm.declare_entry("layers",
+                          "1",
+                          Patterns::Integer(),
+                          "Number of layers.");
+
         prm.declare_entry("E", "1", Patterns::Double(), "Set Young's modulus.");
         prm.declare_entry("nu",
                           "0.3",
@@ -148,7 +170,7 @@ namespace Elasticity
                           "Set the first Lamé parameter.");
         prm.declare_entry("mu frequency",
                           "0",
-                          Patterns::Integer(),
+                          Patterns::Double(),
                           "Set the frequency per body length of "
                           "the second Lamé parameter.");
 
@@ -158,7 +180,7 @@ namespace Elasticity
                           "Set the first Lamé parameter.");
         prm.declare_entry("lambda frequency",
                           "0",
-                          Patterns::Integer(),
+                          Patterns::Double(),
                           "Set the frequency per body length of "
                           "the second Lamé parameter.");
 
@@ -193,6 +215,29 @@ namespace Elasticity
         other_dirichlet_id = prm.get_bool("other dirichlet id");
         neumann_bc         = prm.get_bool("neumann boundary condition");
         use_E_and_nu       = prm.get_bool("use E and nu");
+
+        int m = 0;
+        material_structure.insert(
+          std::make_pair("oscillations", prm.get_bool("oscillations")));
+        if (material_structure["oscillations"] == true)
+          ++m;
+        material_structure.insert(
+          std::make_pair("horizontal layers",
+                         prm.get_bool("horizontal layers")));
+        if (material_structure["horizontal layers"] == true)
+          ++m;
+        material_structure.insert(
+          std::make_pair("vertical layers", prm.get_bool("vertical layers")));
+        if (material_structure["vertical layers"] == true)
+          ++m;
+
+        if (m != 1)
+          {
+            std::cout << "One and only one of the material "
+                         "structure parameters must be true"
+                      << std::endl;
+            exit(1);
+          }
       }
       prm.leave_subsection();
 
@@ -222,6 +267,8 @@ namespace Elasticity
 
       prm.enter_subsection("Material parameters");
       {
+        n_layers = prm.get_integer("layers");
+
         E  = prm.get_double("E");
         nu = prm.get_double("nu");
 
@@ -236,10 +283,10 @@ namespace Elasticity
             lambda = prm.get_double("lambda");
           }
 
-        mu_fr = prm.get_integer("mu frequency");
+        mu_fr = prm.get_double("mu frequency");
         mu_fr = mu_fr / (init_p2[dim - 1] - init_p1[dim - 1]);
 
-        lambda_fr = prm.get_integer("lambda frequency");
+        lambda_fr = prm.get_double("lambda frequency");
         lambda_fr = lambda_fr / (init_p2[dim - 1] - init_p1[dim - 1]);
 
         rho = prm.get_double("rho");

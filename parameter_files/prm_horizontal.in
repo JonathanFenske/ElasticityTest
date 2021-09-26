@@ -7,6 +7,9 @@ subsection Global parameters
     set other dirichlet id = false
     set neumann boundary condition = false
 	  set use E and nu = true
+    set oscillations = false
+    set horizontal layers = true
+    set vertical layers = false
   end
 
   subsection 2D
@@ -56,6 +59,8 @@ subsection Global parameters
   end
 
   subsection Material parameters
+    set layers = 10
+
     set E = 210.e9
     set nu = 0.3
 

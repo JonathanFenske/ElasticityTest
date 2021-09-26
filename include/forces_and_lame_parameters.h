@@ -5,6 +5,8 @@
 
 #include <deal.II/fe/mapping_q1_eulerian.h>
 
+#include <map>
+
 #include "process_parameter_file.h"
 
 
@@ -80,18 +82,20 @@ namespace Elasticity
   class lambda : public Function<dim>
   {
   public:
-    lambda(const double mean_value, const unsigned int fr)
-      : Function<dim>()
-      , mean_value(mean_value)
-      , fr(fr)
-    {}
+    lambda(const GlobalParameters<dim> &global_parameters);
 
     virtual double
     value(const Point<dim> &p, const unsigned int component = 0) const override;
 
   private:
-    const double       mean_value;
-    const unsigned int fr;
+    GlobalParameters<dim> global_parameters;
+
+    double layer_size_inv;
+
+    double height;
+    double length;
+
+    std::vector<double> values;
   };
 
 
@@ -100,18 +104,20 @@ namespace Elasticity
   class mu : public Function<dim>
   {
   public:
-    mu(const double mean_value, const unsigned int fr)
-      : Function<dim>()
-      , mean_value(mean_value)
-      , fr(fr)
-    {}
+    mu(const GlobalParameters<dim> &global_parameters);
 
     virtual double
     value(const Point<dim> &p, const unsigned int component = 0) const override;
 
   private:
-    const double       mean_value;
-    const unsigned int fr;
+    GlobalParameters<dim> global_parameters;
+
+    double layer_size_inv;
+
+    double height;
+    double length;
+
+    std::vector<double> values;
   };
 
   // exernal template instantiations

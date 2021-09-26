@@ -245,46 +245,7 @@ namespace Elasticity
   }
 
 
-  ParametersBasis::ParametersBasis(const std::string &parameter_filename,
-                                   const GlobalParameters<2> &global_parameters)
-    : mu(global_parameters.mu)
-    , mu_fr(global_parameters.mu_fr)
-    , lambda(global_parameters.lambda)
-    , lambda_fr(global_parameters.lambda_fr)
-    , rho(global_parameters.rho)
-  {
-    ParameterHandler prm;
-
-    declare_parameters(prm);
-
-    std::ifstream parameter_file(parameter_filename);
-    if (!parameter_file)
-      {
-        parameter_file.close();
-        std::ofstream parameter_out(parameter_filename);
-        prm.print_parameters(parameter_out, ParameterHandler::Text);
-        AssertThrow(
-          false,
-          ExcMessage(
-            "Input parameter file <" + parameter_filename +
-            "> not found. Creating a template file of the same name."));
-      }
-
-    prm.parse_input(parameter_file,
-                    /* filename = */ "generated_parameter.in",
-                    /* last_line = */ "",
-                    /* skip_undefined = */ true);
-    parse_parameters(prm);
-  }
-
-
-  ParametersBasis::ParametersBasis(const std::string &parameter_filename,
-                                   const GlobalParameters<3> &global_parameters)
-    : mu(global_parameters.mu)
-    , mu_fr(global_parameters.mu_fr)
-    , lambda(global_parameters.lambda)
-    , lambda_fr(global_parameters.lambda_fr)
-    , rho(global_parameters.rho)
+  ParametersBasis::ParametersBasis(const std::string &parameter_filename)
   {
     ParameterHandler prm;
 
@@ -316,11 +277,6 @@ namespace Elasticity
     , direct_solver(other.direct_solver)
     , prevent_output(other.prevent_output)
     , n_refine(other.n_refine)
-    , mu(other.mu)
-    , mu_fr(other.mu_fr)
-    , lambda(other.lambda)
-    , lambda_fr(other.lambda_fr)
-    , rho(other.rho)
   {}
 
 

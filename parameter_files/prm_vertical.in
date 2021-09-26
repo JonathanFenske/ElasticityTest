@@ -59,16 +59,16 @@ subsection Global parameters
   end
 
   subsection Material parameters
-    set layers = 10
+    set layers = 100
     
     set E = 210.e9
     set nu = 0.3
 
     set mu = 1.
-    set mu frequency = 40
+    set mu frequency = 100
 
     set lambda = 1.
-    set lambda frequency = 40
+    set lambda frequency = 100
 
     set rho = 7.85e3
   end
@@ -85,8 +85,8 @@ subsection Standard method parameters
   end
 
   subsection Mesh
-    set refinements = 1
-    set cycles = 1
+    set refinements = 2
+    set cycles = 3
   end
 end
 
@@ -98,7 +98,7 @@ subsection Multiscale method parameters
     end
 
     subsection Mesh
-      set refinements = 1
+      set refinements = 2
     end
   end
 
@@ -109,7 +109,7 @@ subsection Multiscale method parameters
     end
 
     subsection Mesh
-      set refinements = 1
+      set refinements = 3
       set prevent output = false
     end
   end

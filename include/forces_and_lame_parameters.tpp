@@ -101,10 +101,85 @@ namespace Elasticity
 
 
   template <int dim>
+  lambda<dim>::lambda(const GlobalParameters<dim> &global_parameters)
+    : Function<dim>()
+    , global_parameters(global_parameters)
+    , height(global_parameters.init_p2(dim - 1) -
+             global_parameters.init_p1(dim - 1))
+    , length(global_parameters.init_p2(0) - global_parameters.init_p1(0))
+  {
+    if (global_parameters.material_structure.at("horizontal layers") ||
+        global_parameters.material_structure.at("vertical layers"))
+      {
+        double value_step_size =
+          global_parameters.lambda / (0.5 * global_parameters.n_layers);
+        for (unsigned int i = 1; i < global_parameters.n_layers + 1; ++i)
+          {
+            values.push_back(i * value_step_size);
+          }
+        if (global_parameters.material_structure.at("horizontal layers"))
+          layer_size_inv = global_parameters.n_layers / length;
+
+        if (global_parameters.material_structure.at("vertical layers"))
+          layer_size_inv = global_parameters.n_layers / height;
+      }
+  }
+
+
+  template <int dim>
   double
   lambda<dim>::value(const Point<dim> &p, const unsigned int) const
   {
-    return mean_value * (0.8 * std::sin(2 * fr * M_PI * p(0)) + 1);
+    // Case: oscillation in x-direction
+    if (global_parameters.material_structure.at("oscillations"))
+      return global_parameters.lambda *
+             (0.8 * std::sin(2 * global_parameters.lambda_fr * M_PI * p(0)) +
+              1);
+
+    // Case: horizontal layers
+    if (global_parameters.material_structure.at("horizontal layers"))
+      {
+        unsigned int layer =
+          (p(0) - global_parameters.init_p1(0)) * layer_size_inv;
+        return values[layer];
+      }
+
+    // Case: vertical layers
+    if (global_parameters.material_structure.at("vertical layers"))
+      {
+        unsigned int layer =
+          (p(dim - 1) - global_parameters.init_p1(dim - 1)) * layer_size_inv;
+        return values[layer];
+      }
+
+    std::cout << "The material structure was not declared." << std::endl;
+    exit(1);
+  }
+
+
+  template <int dim>
+  mu<dim>::mu(const GlobalParameters<dim> &global_parameters)
+    : Function<dim>()
+    , global_parameters(global_parameters)
+    , height(global_parameters.init_p2(dim - 1) -
+             global_parameters.init_p1(dim - 1))
+    , length(global_parameters.init_p2(0) - global_parameters.init_p1(0))
+  {
+    if (global_parameters.material_structure.at("horizontal layers") ||
+        global_parameters.material_structure.at("vertical layers"))
+      {
+        double value_step_size =
+          global_parameters.mu / (0.5 * global_parameters.n_layers);
+        for (unsigned int i = 1; i < global_parameters.n_layers + 1; ++i)
+          {
+            values.push_back(i * value_step_size);
+          }
+        if (global_parameters.material_structure.at("horizontal layers"))
+          layer_size_inv = global_parameters.n_layers / length;
+
+        if (global_parameters.material_structure.at("vertical layers"))
+          layer_size_inv = global_parameters.n_layers / height;
+      }
   }
 
 
@@ -112,7 +187,29 @@ namespace Elasticity
   double
   mu<dim>::value(const Point<dim> &p, const unsigned int) const
   {
-    return mean_value * (0.8 * std::sin(2 * fr * M_PI * p(0)) + 1);
+    // Case: oscillation in x-direction
+    if (global_parameters.material_structure.at("oscillations"))
+      return global_parameters.mu *
+             (0.8 * std::sin(2 * global_parameters.mu_fr * M_PI * p(0)) + 1);
+
+    // Case: horizontal layers
+    if (global_parameters.material_structure.at("horizontal layers"))
+      {
+        unsigned int layer =
+          (p(0) - global_parameters.init_p1(0)) * layer_size_inv;
+        return values[layer];
+      }
+
+    // Case: vertical layers
+    if (global_parameters.material_structure.at("vertical layers"))
+      {
+        unsigned int layer =
+          (p(dim - 1) - global_parameters.init_p1(dim - 1)) * layer_size_inv;
+        return values[layer];
+      }
+
+    std::cout << "The material structure was not declared." << std::endl;
+    exit(1);
   }
 } // namespace Elasticity
 

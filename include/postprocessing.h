@@ -59,12 +59,7 @@ namespace Elasticity
     StressPostprocessor(unsigned int                 basis_index,
                         const GlobalParameters<dim> &global_parameters);
 
-    StressPostprocessor(unsigned int           basis_index,
-                        const ParametersBasis &parameters_basis);
-
     StressPostprocessor(const GlobalParameters<dim> &global_parameters);
-
-    StressPostprocessor(const ParametersBasis &parameters_basis);
 
     StressPostprocessor(const StressPostprocessor<dim> &other);
 
@@ -87,11 +82,8 @@ namespace Elasticity
     get_needed_update_flags() const override;
 
   private:
-    std::string  basis_str;
-    double       mu_mean;
-    unsigned int mu_fr;
-    double       lambda_mean;
-    unsigned int lambda_fr;
+    std::string           basis_str;
+    GlobalParameters<dim> parameters;
   };
 } // namespace Elasticity
 

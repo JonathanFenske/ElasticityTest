@@ -1,4 +1,5 @@
 #include "postprocessing.h"
+
 #include "postprocessing.tpp"
 
 namespace Elasticity
@@ -8,4 +9,4 @@ namespace Elasticity
 
   template class StressPostprocessor<2>;
   template class StressPostprocessor<3>;
-}
+} // namespace Elasticity

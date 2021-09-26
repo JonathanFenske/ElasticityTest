@@ -78,8 +78,9 @@ namespace Elasticity
     ElaBasis(typename Triangulation<dim>::active_cell_iterator &global_cell,
              typename Triangulation<dim>::active_cell_iterator &first_cell,
              unsigned int                                       local_subdomain,
-             MPI_Comm               mpi_communicator,
-             const ParametersBasis &parameters_basis);
+             MPI_Comm                     mpi_communicator,
+             const ParametersBasis &      parameters_basis,
+             const GlobalParameters<dim> &global_parameters);
     ElaBasis(const ElaBasis<dim> &other);
 
     void
@@ -127,6 +128,7 @@ namespace Elasticity
     const CellId                                      global_cell_id;
     const unsigned int                                local_subdomain;
     const ParametersBasis                             parameters_basis;
+    const GlobalParameters<dim>                       global_parameters;
     std::string                                       filename;
     BasisFun::BasisQ1<dim>                            basis_q1;
     ConditionalOStream                                pcout;

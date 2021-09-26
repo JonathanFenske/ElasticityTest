@@ -16,7 +16,7 @@ namespace Elasticity
 
     {
       ParametersMs    parameters_ms(input_file);
-      ParametersBasis parameters_basis(input_file, global_parameters);
+      ParametersBasis parameters_basis(input_file);
       ElaMs<2> ela_ms(global_parameters, parameters_ms, parameters_basis);
       ela_ms.run();
     }
@@ -35,7 +35,7 @@ namespace Elasticity
 
     {
       ParametersMs    parameters_ms(input_file);
-      ParametersBasis parameters_basis(input_file, global_parameters);
+      ParametersBasis parameters_basis(input_file);
       ElaMs<3> ela_ms(global_parameters, parameters_ms, parameters_basis);
       ela_ms.run();
     }

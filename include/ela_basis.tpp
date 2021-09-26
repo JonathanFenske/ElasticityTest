@@ -19,7 +19,8 @@ namespace Elasticity
     typename Triangulation<dim>::active_cell_iterator &first_cell,
     unsigned int                                       local_subdomain,
     MPI_Comm                                           mpi_communicator,
-    const ParametersBasis &                            parameters_basis)
+    const ParametersBasis &                            parameters_basis,
+    const GlobalParameters<dim> &                      global_parameters)
     : mpi_communicator(mpi_communicator)
     , first_cell(first_cell)
     , triangulation()
@@ -34,6 +35,7 @@ namespace Elasticity
     , global_cell_id(global_cell->id())
     , local_subdomain(local_subdomain)
     , parameters_basis(parameters_basis)
+    , global_parameters(global_parameters)
     , basis_q1(global_cell)
     , pcout(std::cout,
             (Utilities::MPI::this_mpi_process(mpi_communicator) == 0))
@@ -64,6 +66,7 @@ namespace Elasticity
     , global_cell_id(other.global_cell_id)
     , local_subdomain(other.local_subdomain)
     , parameters_basis(other.parameters_basis)
+    , global_parameters(other.global_parameters)
     , basis_q1(other.basis_q1)
     , pcout(std::cout,
             (Utilities::MPI::this_mpi_process(mpi_communicator) == 0))
@@ -128,9 +131,9 @@ namespace Elasticity
     const unsigned int dofs_per_cell = fe.n_dofs_per_cell();
     const unsigned int n_q_points    = quadrature_formula.size();
 
-    lambda<dim>    lambda(parameters_basis.lambda, parameters_basis.lambda_fr);
-    mu<dim>        mu(parameters_basis.mu, parameters_basis.mu_fr);
-    BodyForce<dim> body_force(parameters_basis.rho);
+    lambda<dim>                 lambda(global_parameters);
+    mu<dim>                     mu(global_parameters);
+    BodyForce<dim>              body_force(global_parameters.rho);
     std::vector<Vector<double>> body_force_values(n_q_points);
     for (unsigned int i = 0; i < n_q_points; ++i)
       body_force_values[i].reinit(dim);
@@ -425,7 +428,7 @@ namespace Elasticity
 
         // add the linearized stress tensor to the output
         stress_proc_vector[n_basis] =
-          StressPostprocessor<dim>(n_basis, parameters_basis);
+          StressPostprocessor<dim>(n_basis, global_parameters);
         data_out.add_data_vector(basis_solution, stress_proc_vector[n_basis]);
       }
 
@@ -465,7 +468,7 @@ namespace Elasticity
     data_out.add_data_vector(global_solution, strain_postproc);
 
     // add the linearized stress tensor to the output
-    StressPostprocessor<dim> stress_postproc(parameters_basis);
+    StressPostprocessor<dim> stress_postproc(global_parameters);
     data_out.add_data_vector(global_solution, stress_postproc);
 
     data_out.build_patches();

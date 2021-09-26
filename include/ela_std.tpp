@@ -120,8 +120,8 @@ namespace Elasticity
     std::vector<Vector<double>> body_force_values(n_q_points);
     for (unsigned int i = 0; i < n_q_points; ++i)
       body_force_values[i].reinit(dim);
-    lambda<dim> lambda(global_parameters.lambda, global_parameters.lambda_fr);
-    mu<dim>     mu(global_parameters.mu, global_parameters.mu_fr);
+    lambda<dim>        lambda(global_parameters);
+    mu<dim>            mu(global_parameters);
     BodyForce<dim>     body_force(global_parameters.rho);
     SurfaceForce<dim>  surface_force(global_parameters.surface_force);
     FullMatrix<double> cell_matrix(dofs_per_cell, dofs_per_cell);
@@ -262,7 +262,8 @@ namespace Elasticity
         TrilinosWrappers::MPI::Vector completely_distributed_solution(
           locally_owned_dofs, mpi_communicator);
 
-        unsigned int  n_iterations     = dof_handler.n_dofs();
+        // unsigned int  n_iterations     = 1000 * dof_handler.n_dofs();
+        unsigned int  n_iterations     = 1;
         const double  solver_tolerance = 1e-8 * system_rhs.l2_norm();
         SolverControl solver_control(
           /* n_max_iter */ n_iterations,

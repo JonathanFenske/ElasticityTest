@@ -125,23 +125,7 @@ namespace Elasticity
   template <int dim>
   StressPostprocessor<dim>::StressPostprocessor()
     : basis_str("")
-    , mu_mean(0)
-    , mu_fr(0)
-    , lambda_mean(0)
-    , lambda_fr(0)
   {}
-
-
-  // template <int dim>
-  // void
-  // StressPostprocessor<dim>::operator=(StressPostprocessor &other)
-  // {
-  //   basis_str   = basis_str;
-  //   mu_mean     = other.mu_mean;
-  //   mu_fr       = other.mu_fr;
-  //   lambda_mean = other.lambda_mean;
-  //   lambda_fr   = other.lambda_fr;
-  // }
 
 
   template <int dim>
@@ -149,22 +133,7 @@ namespace Elasticity
     unsigned int                 basis_index,
     const GlobalParameters<dim> &global_parameters)
     : basis_str("_" + Utilities::int_to_string(basis_index, 2))
-    , mu_mean(global_parameters.mu)
-    , mu_fr(global_parameters.mu_fr)
-    , lambda_mean(global_parameters.lambda)
-    , lambda_fr(global_parameters.lambda_fr)
-  {}
-
-
-  template <int dim>
-  StressPostprocessor<dim>::StressPostprocessor(
-    unsigned int           basis_index,
-    const ParametersBasis &parameters_basis)
-    : basis_str("_" + Utilities::int_to_string(basis_index, 2))
-    , mu_mean(parameters_basis.mu)
-    , mu_fr(parameters_basis.mu_fr)
-    , lambda_mean(parameters_basis.lambda)
-    , lambda_fr(parameters_basis.lambda_fr)
+    , parameters(global_parameters)
   {}
 
 
@@ -172,21 +141,7 @@ namespace Elasticity
   StressPostprocessor<dim>::StressPostprocessor(
     const GlobalParameters<dim> &global_parameters)
     : basis_str("")
-    , mu_mean(global_parameters.mu)
-    , mu_fr(global_parameters.mu_fr)
-    , lambda_mean(global_parameters.lambda)
-    , lambda_fr(global_parameters.lambda_fr)
-  {}
-
-
-  template <int dim>
-  StressPostprocessor<dim>::StressPostprocessor(
-    const ParametersBasis &parameters_basis)
-    : basis_str("")
-    , mu_mean(parameters_basis.mu)
-    , mu_fr(parameters_basis.mu_fr)
-    , lambda_mean(parameters_basis.lambda)
-    , lambda_fr(parameters_basis.lambda_fr)
+    , parameters(global_parameters)
   {}
 
 
@@ -194,10 +149,7 @@ namespace Elasticity
   StressPostprocessor<dim>::StressPostprocessor(
     const StressPostprocessor<dim> &other)
     : basis_str(other.basis_str)
-    , mu_mean(other.mu_mean)
-    , mu_fr(other.mu_fr)
-    , lambda_mean(other.lambda_mean)
-    , lambda_fr(other.lambda_fr)
+    , parameters(other.parameters)
   {}
 
 
@@ -210,8 +162,8 @@ namespace Elasticity
   {
     AssertDimension(input_data.solution_gradients.size(),
                     computed_quantities.size());
-    mu<dim>             mu(mu_mean, mu_fr);
-    lambda<dim>         lambda(lambda_mean, lambda_fr);
+    mu<dim>             mu(parameters);
+    lambda<dim>         lambda(parameters);
     std::vector<double> mu_values(input_data.evaluation_points.size()),
       lambda_values(input_data.evaluation_points.size());
     mu.value_list(input_data.evaluation_points, mu_values);

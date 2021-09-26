@@ -129,7 +129,8 @@ namespace Elasticity
               first_cell,
               triangulation.locally_owned_subdomain(),
               mpi_communicator,
-              parameters_basis);
+              parameters_basis,
+              global_parameters);
 
             std::pair<typename std::map<CellId, ElaBasis<dim>>::iterator, bool>
               result;

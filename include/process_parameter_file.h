@@ -32,6 +32,8 @@ namespace Elasticity
   template <int dim>
   struct GlobalParameters
   {
+    GlobalParameters()
+    {}
     GlobalParameters(const std::string &parameter_filename);
     GlobalParameters(
       const GlobalParameters<dim> &other); // This the the copy constructor
@@ -41,9 +43,10 @@ namespace Elasticity
     void
     parse_parameters(ParameterHandler &prm);
 
-    bool other_dirichlet_id;
-    bool neumann_bc;
-    bool use_E_and_nu;
+    bool                        other_dirichlet_id;
+    bool                        neumann_bc;
+    bool                        use_E_and_nu;
+    std::map<std::string, bool> material_structure;
 
     Point<dim> init_p1;
     Point<dim> init_p2;
@@ -54,14 +57,16 @@ namespace Elasticity
     Point<dim> neumann_p1;
     Point<dim> neumann_p2;
 
+    unsigned int n_layers;
+
     double E;
     double nu;
 
-    double       mu;
-    unsigned int mu_fr;
+    double mu;
+    double mu_fr;
 
-    double       lambda;
-    unsigned int lambda_fr;
+    double lambda;
+    double lambda_fr;
 
     double rho;
 
@@ -106,10 +111,9 @@ namespace Elasticity
 
   struct ParametersBasis
   {
-    ParametersBasis(const std::string &        parameter_filename,
-                    const GlobalParameters<2> &global_parameters);
-    ParametersBasis(const std::string &        parameter_filename,
-                    const GlobalParameters<3> &global_parameters);
+    ParametersBasis()
+    {}
+    ParametersBasis(const std::string &parameter_filename);
     ParametersBasis(
       const ParametersBasis &other); // This the the copy constructor
 
@@ -124,14 +128,6 @@ namespace Elasticity
     bool prevent_output;
 
     unsigned int n_refine;
-
-    double       mu;
-    unsigned int mu_fr;
-
-    double       lambda;
-    unsigned int lambda_fr;
-
-    double rho;
   };
 
 
