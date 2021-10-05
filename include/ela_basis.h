@@ -65,46 +65,160 @@ namespace Elasticity
 {
   using namespace dealii;
 
-  /****************************************************************************/
-  /* Class for the fine scale part of the multiscale implementation for
-     linear elasticity problems */
-
-  // class that enables solving linear elasticity problems in parallel
-  // which is based on the step-8 and step-40 tutorials of deal.ii
+  /**
+   * @brief Fine-scale basis class for MsFEMs in linear elasticity.
+   *
+   * @tparam dim Space dimension
+   *
+   * This class solves the fine-scale problem of the two-scale
+   * MsFEM for linear elasticity problems.
+   *
+   * It gets a cell from the coarse mesh of the class ElaMs,
+   * solves the problem on a finer scale and returns the solution.
+   *
+   * Furthermore, if given the solution of ElaMs, it can output
+   * the solution with the basis functions that are generated here.
+   *
+   * Based on the implementations in the repository
+   * https://github.com/konsim83/MPI-MSFEC/
+   */
   template <int dim>
   class ElaBasis
   {
   public:
+    /**
+     * @brief Construct a new ElaBasis object.
+     *
+     * @param global_cell The cell for which this class constructs basis
+     *                    functions.
+     * @param first_cell The first cell on this processor.
+     * @param local_subdomain The id of the local subdomain, i.e. the id of the
+     *                        processor that solves this problem.
+     * @param mpi_communicator The MPI-communicator
+     * @param parameters_basis Parameters that only this class needs.
+     * @param global_parameters Parameters that many classes need.
+     */
     ElaBasis(typename Triangulation<dim>::active_cell_iterator &global_cell,
              typename Triangulation<dim>::active_cell_iterator &first_cell,
              unsigned int                                       local_subdomain,
              MPI_Comm                     mpi_communicator,
              const ParametersBasis &      parameters_basis,
              const GlobalParameters<dim> &global_parameters);
+
+    /**
+     * @brief Copy Constructor for Ela Basis.
+     *
+     * @param other The ElaBasis object that we want to copy.
+     */
     ElaBasis(const ElaBasis<dim> &other);
 
+    /**
+     * @brief Function that runs the problem.
+     *
+     * This member function runs all the member functions
+     * that are necessary to construct the basis functions
+     * for the MsFEM.
+     *
+     * If this is the first cell on this processor and verbose of
+     * #parameters_basis is true, an output for the constructed
+     * basis function will be created.
+     */
     void
     run();
+
+    /**
+     * @brief Returns the #global_element_matrix.
+     *
+     * @return const FullMatrix<double>&
+     */
     const FullMatrix<double> &
     get_global_element_matrix() const;
+
+    /**
+     * @brief Returns the #global_element_rhs.
+     *
+     * @return const Vector<double>&
+     */
     const Vector<double> &
     get_global_element_rhs() const;
+
+    /**
+     * @brief Set the weights for the local contribution
+     *        to the solution of the global MsFEM problem.
+     *
+     * @param global_weights
+     */
     void
     set_global_weights(const std::vector<double> &global_weights);
     void
+
+    /**
+     * @brief Creates a .vtu output file with the local contribution
+     *        to the global solution with the local basis functions.
+     */
     output_global_solution_in_cell();
+
+    /**
+     * @brief Return the filename for the local contribution to
+     *        global solution.
+     *
+     * @return const std::string
+     */
     const std::string
     get_filename() const;
 
   private:
+    /**
+     * @brief Sets up the system.
+     *
+     * This function sets up the system, i.e. it creates the needed sparse
+     * matrices with the correct sparsity pattern and the vectors.
+     *
+     * Moreover, it creates the constraint vector that contains the Dirichlet
+     * boundary conditions (,which are, in this case, the point values of the
+     * basis functions on the coarse mesh at the quadrature points of this cell)
+     * and the hanging node constraints.
+     */
     void
     setup_system();
+
+    /**
+     * @brief Assembles the system.
+     *
+     * This function assembles the #assembled_cell_matrix and the
+     * #assembled_cell_rhs for this linear elasticity problem.
+     *
+     * Based on the step-8 tutorial program of deal.ii.
+     */
     void
     assemble_system();
+
+    /**
+     * @brief Solves the problem at a quadrature point.
+     *
+     * @param q_point The index of the quadrature point.
+     *
+     * This function solves the problem at a quadrature point
+     * with the corresponding constraints and thus constructs
+     * the basis functions for this cell.
+     *
+     * In #parameters_basis, it can be specified if a direct
+     * or iterative (CG-method with SSOR preconditioner) shall
+     * be used.
+     */
     void
     solve(unsigned int q_point);
+
+    /**
+     * @brief Assembles the local contribution to the global system matrix
+     *        in ElaMs.
+     */
     void
     assemble_global_element_matrix();
+
+    /**
+     * @brief Outputs the constructed basis functions of the local cell.
+     */
     void
     output_basis();
 
@@ -131,7 +245,6 @@ namespace Elasticity
     const GlobalParameters<dim>                       global_parameters;
     std::string                                       filename;
     BasisFun::BasisQ1<dim>                            basis_q1;
-    ConditionalOStream                                pcout;
   };
 } // namespace Elasticity
 

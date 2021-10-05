@@ -37,8 +37,6 @@ namespace Elasticity
     , parameters_basis(parameters_basis)
     , global_parameters(global_parameters)
     , basis_q1(global_cell)
-    , pcout(std::cout,
-            (Utilities::MPI::this_mpi_process(mpi_communicator) == 0))
   {
     // set corner points
     for (unsigned int vertex_n = 0;
@@ -68,8 +66,6 @@ namespace Elasticity
     , parameters_basis(other.parameters_basis)
     , global_parameters(other.global_parameters)
     , basis_q1(other.basis_q1)
-    , pcout(std::cout,
-            (Utilities::MPI::this_mpi_process(mpi_communicator) == 0))
   {}
 
 

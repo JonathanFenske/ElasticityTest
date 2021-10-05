@@ -10,13 +10,6 @@ namespace Elasticity
   /****************************************************************************/
   /* Forces and parameters */
 
-  // Currently parameter values for steel. Note that the mass density that is
-  // needed for the force density of the body forces must also modified if
-  // another material is simulated.
-  const double E  = 210.e9; // Young modulus
-  const double nu = 0.3;    // Poisson ratio
-
-
   template <int dim>
   double
   SurfaceForce<dim>::value(const Point<dim> & /*p*/, const unsigned int) const
