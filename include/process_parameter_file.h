@@ -46,8 +46,7 @@ namespace Elasticity
      *
      * Declare dimension the parameter #dim for the <a href=
      * "https://www.dealii.org/9.2.0/doxygen/deal.II/
-     * classParameterHandler.html">link
-     * ParameterHandler</a>.
+     * classParameterHandler.html">ParameterHandler</a>.
      */
     static void
     declare_parameters(ParameterHandler &prm);
@@ -59,8 +58,7 @@ namespace Elasticity
      *
      * Parse the parameter #dim with the <a href=
      * "https://www.dealii.org/9.2.0/doxygen/deal.II/
-     * classParameterHandler.html">link
-     * ParameterHandler</a>.
+     * classParameterHandler.html">ParameterHandler</a>.
      */
     void
     parse_parameters(ParameterHandler &prm);
@@ -112,8 +110,7 @@ namespace Elasticity
      *
      * Declare the needed parameters for the <a href=
      * "https://www.dealii.org/9.2.0/doxygen/deal.II/
-     * classParameterHandler.html">link
-     * ParameterHandler</a>.
+     * classParameterHandler.html">ParameterHandler</a>.
      */
     static void
     declare_parameters(ParameterHandler &prm);
@@ -125,8 +122,7 @@ namespace Elasticity
      *
      * Parse the needed parameters with the <a href=
      * "https://www.dealii.org/9.2.0/doxygen/deal.II/
-     * classParameterHandler.html">link
-     * ParameterHandler</a>.
+     * classParameterHandler.html">ParameterHandler</a>.
      */
     void
     parse_parameters(ParameterHandler &prm);
@@ -175,7 +171,7 @@ namespace Elasticity
      * The first vertex that defines the body that is in this case
      * a <a href=
      * "https://www.dealii.org/9.2.0/doxygen/deal.II/
-     * namespaceGridGenerator.html#ac76417d7404b75cf53c732f456e6e971">link
+     * namespaceGridGenerator.html#ac76417d7404b75cf53c732f456e6e971">
      * subdivided_hyper_rectangle</a>.
      *
      * #init_p1 must be componentwise smaller than #init_p2.
@@ -188,7 +184,7 @@ namespace Elasticity
      * The second vertex that defines the body that is in this case
      * a <a href=
      * "https://www.dealii.org/9.2.0/doxygen/deal.II/
-     * namespaceGridGenerator.html#ac76417d7404b75cf53c732f456e6e971">link
+     * namespaceGridGenerator.html#ac76417d7404b75cf53c732f456e6e971">
      * subdivided_hyper_rectangle</a>.
      *
      * #init_p1 must be componentwise smaller than #init_p2.
@@ -321,8 +317,7 @@ namespace Elasticity
      *
      * Declare the needed parameters for the <a href=
      * "https://www.dealii.org/9.2.0/doxygen/deal.II/
-     * classParameterHandler.html">link
-     * ParameterHandler</a>.
+     * classParameterHandler.html">ParameterHandler</a>.
      */
     static void
     declare_parameters(ParameterHandler &prm);
@@ -334,8 +329,7 @@ namespace Elasticity
      *
      * Parse the needed parameters with the <a href=
      * "https://www.dealii.org/9.2.0/doxygen/deal.II/
-     * classParameterHandler.html">link
-     * ParameterHandler</a>.
+     * classParameterHandler.html">ParameterHandler</a>.
      */
     void
     parse_parameters(ParameterHandler &prm);
@@ -394,8 +388,7 @@ namespace Elasticity
      *
      * Declare the needed parameters for the <a href=
      * "https://www.dealii.org/9.2.0/doxygen/deal.II/
-     * classParameterHandler.html">link
-     * ParameterHandler</a>.
+     * classParameterHandler.html">ParameterHandler</a>.
      */
     static void
     declare_parameters(ParameterHandler &prm);
@@ -407,8 +400,7 @@ namespace Elasticity
      *
      * Parse the needed parameters with the <a href=
      * "https://www.dealii.org/9.2.0/doxygen/deal.II/
-     * classParameterHandler.html">link
-     * ParameterHandler</a>.
+     * classParameterHandler.html">ParameterHandler</a>.
      */
     void
     parse_parameters(ParameterHandler &prm);
@@ -464,8 +456,7 @@ namespace Elasticity
      *
      * Declare the needed parameters for the <a href=
      * "https://www.dealii.org/9.2.0/doxygen/deal.II/
-     * classParameterHandler.html">link
-     * ParameterHandler</a>.
+     * classParameterHandler.html">ParameterHandler</a>.
      */
     static void
     declare_parameters(ParameterHandler &prm);
@@ -477,8 +468,7 @@ namespace Elasticity
      *
      * Parse the needed parameters with the <a href=
      * "https://www.dealii.org/9.2.0/doxygen/deal.II/
-     * classParameterHandler.html">link
-     * ParameterHandler</a>.
+     * classParameterHandler.html">ParameterHandler</a>.
      */
     void
     parse_parameters(ParameterHandler &prm);

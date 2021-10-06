@@ -19,9 +19,11 @@
 // My Headers
 
 /*!
- * @namespace ShapeFun
+ * @namespace BasisFun
  *
- * @brief contains tools to evaluate standard finite element shape functions on arbitrary cells in
+ * @brief Shape Functions
+ * This namespace contains tools to evaluate standard
+ * finite element shape functions on arbitrary cells in
  * various spaces that are approximated conformally.
  */
 namespace BasisFun

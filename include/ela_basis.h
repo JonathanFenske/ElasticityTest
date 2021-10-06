@@ -188,7 +188,9 @@ namespace Elasticity
      * This function assembles the #assembled_cell_matrix and the
      * #assembled_cell_rhs for this linear elasticity problem.
      *
-     * Based on the step-8 tutorial program of deal.ii.
+     * Based on the
+     * <a href="https://www.dealii.org/9.2.0/doxygen/deal.II/step_8.html">
+     * step-8</a> tutorial program of deal.ii.
      */
     void
     assemble_system();

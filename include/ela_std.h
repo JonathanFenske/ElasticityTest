@@ -68,7 +68,12 @@ namespace Elasticity
    * with the FEM and is used to illustrate the differences
    * between the standard FEM and MsFEM solutions.
    *
-   * Based on the step-8 and step-40 deal.ii tutorials.
+   * Based on the
+   * <a href="https://www.dealii.org/9.2.0/doxygen/deal.II/step_8.html">
+   * step-8</a>
+   * and
+   * <a href="https://www.dealii.org/9.2.0/doxygen/deal.II/step_40.html">
+   * step-40</a> deal.ii tutorials.
    */
   template <int dim>
   class ElaStd

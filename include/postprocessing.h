@@ -33,7 +33,7 @@ namespace Elasticity
    *
    * Based on the documentation for the deal.ii class
    * <a href="https://www.dealii.org/9.2.0/doxygen/deal.II/classData
-   * PostprocessorTensor.html">link DataPostprocessorTensor</a>.
+   * PostprocessorTensor.html">DataPostprocessorTensor</a>.
    */
   template <int dim>
   class StrainPostprocessor : public DataPostprocessor<dim>
