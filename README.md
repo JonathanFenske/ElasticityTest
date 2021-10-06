@@ -65,7 +65,7 @@ mpirun -n N source/MsEla -p ../ElasticityTest/parameter_files/PARAMETER_FILE
 ```
 
 Here, `PARAMETER_FILE` is a placeholder for parameter files. In the folder `ElasticityTest/parameter_files` are 
-already existing parameter files, like e.g. prm_oscillating. Note that a parameter file is necessary.
+already existing parameter files, like e.g. `prm_oscillating`. Note that a parameter file is necessary.
 
 ### Building the documentation
 
