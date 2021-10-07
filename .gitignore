@@ -38,6 +38,13 @@ documentation/
 *.exe
 *.out
 *.app
+MsEla
+
+# Make/cmake
+*.cmake
+Makefile
+CMakeCache.txt
+CMakeFiles/
 
 build/
 
