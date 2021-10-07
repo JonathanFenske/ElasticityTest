@@ -34,13 +34,13 @@ subsection Global parameters
   end
 
   subsection 3D
-    set init p1[0] = -5.
-    set init p1[1] = -5.
+    set init p1[0] = -10.
+    set init p1[1] = -10.
     set init p1[2] = 0.
 
-    set init p2[0] = 5.
-    set init p2[1] = 5.
-    set init p2[2] = 0.5
+    set init p2[0] = 10.
+    set init p2[1] = 10.
+    set init p2[2] = 1.
 
     set dirichlet p1[0] = -1.
     set dirichlet p1[1] = -1.
@@ -110,7 +110,7 @@ subsection Multiscale method parameters
     end
 
     subsection Mesh
-      set refinements = 3
+      set refinements = 4
       set prevent output = false
     end
   end
