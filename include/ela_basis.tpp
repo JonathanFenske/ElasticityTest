@@ -298,10 +298,15 @@ namespace Elasticity
     MPI_Get_processor_name(processor_name, &name_len);
     std::string proc_name(processor_name, name_len);
 
-    std::cout << "	Solving for basis in cell   " << global_cell_id.to_string()
-              << "   [machine: " << proc_name
-              << " | rank: " << Utilities::MPI::this_mpi_process(MPI_COMM_WORLD)
-              << "]   .....";
+    if (parameters_basis.verbose)
+      {
+        std::cout << "	Solving for basis in cell   "
+                  << global_cell_id.to_string() << "   [machine: " << proc_name
+                  << " | rank: "
+                  << Utilities::MPI::this_mpi_process(MPI_COMM_WORLD)
+                  << "]   .....";
+      }
+
     timer.restart();
 
     GridGenerator::general_cell(triangulation,
@@ -335,10 +340,9 @@ namespace Elasticity
           constraints_vector[i].clear();
         }
 
-      if (true)
+      timer.stop();
+      if (parameters_basis.verbose)
         {
-          timer.stop();
-
           std::cout << "done in   " << timer.cpu_time() << "   seconds."
                     << std::endl;
         }
