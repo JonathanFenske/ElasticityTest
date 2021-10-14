@@ -108,13 +108,13 @@ subsection Multiscale method parameters
 
   subsection Fine scale
     subsection Bools
-      set verbose = true
+      set verbose = false
       set use direct solver = false
     end
 
     subsection Mesh
       set refinements = 2
-      set prevent output = false
+      set prevent output = true
     end
   end
 end
