@@ -8,7 +8,7 @@ subsection Global parameters
     set neumann boundary condition = false
 	  set use E and nu = true
     set oscillations = false
-    set horizontal layers = true
+    set horizontal layers = false
     set vertical layers = true
     set y-layers = true
   end
