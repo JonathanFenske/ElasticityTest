@@ -64,7 +64,7 @@ subsection Global parameters
     set n y layers = 50
     set n z layers = 5
 
-    set E = 210.e9
+    set E = 105.e9
     set nu = 0.3
 
     set mu = 1.
