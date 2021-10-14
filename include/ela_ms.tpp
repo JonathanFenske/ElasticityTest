@@ -108,10 +108,12 @@ namespace Elasticity
 
   template <int dim>
   void
-  ElaMs<dim>::initialize_and_compute_basis()
+  ElaMs<dim>::initialize_and_compute_basis(unsigned int cycle)
   {
     TimerOutput::Scope t(computing_timer,
                          "basis initialization and computation");
+
+    cell_basis_map.clear();
 
     typename Triangulation<dim>::active_cell_iterator first_cell,
       cell = dof_handler.begin_active(), endc = dof_handler.end();
@@ -130,7 +132,8 @@ namespace Elasticity
               triangulation.locally_owned_subdomain(),
               mpi_communicator,
               parameters_basis,
-              global_parameters);
+              global_parameters,
+              cycle);
 
             std::pair<typename std::map<CellId, ElaBasis<dim>>::iterator, bool>
               result;
@@ -392,7 +395,7 @@ namespace Elasticity
 
   template <int dim>
   void
-  ElaMs<dim>::output_results()
+  ElaMs<dim>::output_results(unsigned int cycle)
   {
     DataOut<dim> data_out;
     data_out.attach_dof_handler(dof_handler);
@@ -422,7 +425,7 @@ namespace Elasticity
 
         // write the output files
         const std::string coarse_filename =
-          ("ms_solution-" +
+          ("ms_solution-" + Utilities::int_to_string(cycle, 2) + "." +
            Utilities::int_to_string(triangulation.locally_owned_subdomain(),
                                     4) +
            ".vtu");
@@ -437,11 +440,13 @@ namespace Elasticity
     for (unsigned int i = 0;
          i < Utilities::MPI::n_mpi_processes(mpi_communicator);
          ++i)
-      if (used_processors[i])
-        {
-          first_used_processor = i;
-          break;
-        }
+      {
+        if (used_processors[i])
+          {
+            first_used_processor = i;
+            break;
+          }
+      }
 
     std::vector<std::string> basis_filenames;
 
@@ -476,13 +481,17 @@ namespace Elasticity
              i < Utilities::MPI::n_mpi_processes(mpi_communicator);
              ++i)
           if (used_processors[i])
-            coarse_filenames.push_back("coarse/ms_solution-" +
-                                       Utilities::int_to_string(i, 4) + ".vtu");
+            coarse_filenames.push_back(
+              "coarse/ms_solution-" + Utilities::int_to_string(cycle, 2) + "." +
+              Utilities::int_to_string(i, 4) + ".vtu");
 
-        std::ofstream master_output("output/ms_solution.pvtu");
+        std::ofstream master_output(
+          "output/ms_solution" + Utilities::int_to_string(cycle, 2) + ".pvtu");
         data_out.write_pvtu_record(master_output, coarse_filenames);
 
-        std::ofstream fine_master_output("output/fine_ms_solution.pvtu");
+        std::ofstream fine_master_output("output/fine_ms_solution" +
+                                         Utilities::int_to_string(cycle, 2) +
+                                         ".pvtu");
         data_out.write_pvtu_record(fine_master_output, ordered_basis_filenames);
       }
   }
@@ -500,46 +509,60 @@ namespace Elasticity
               << " MPI rank(s)..." << std::endl;
       }
 
-    const Point<dim> p1 = global_parameters.init_p1,
-                     p2 = global_parameters.init_p2;
-
-    const std::vector<unsigned int> repetitions =
-      MyTools::get_repetitions(p1, p2);
-
-    GridGenerator::subdivided_hyper_rectangle(
-      triangulation, repetitions, p1, p2, true);
-
-    // GridGenerator::cylinder(triangulation, 10., 0.1);
-
-    triangulation.refine_global(parameters_ms.n_refine);
-
-    // GridTools::transform(MyTools::roty<dim>, triangulation);
-    setup_system();
-
-    if (parameters_ms.verbose)
+    for (unsigned int cycle = 0; cycle < parameters_ms.n_cycles; ++cycle)
       {
-        pcout << "   Number of active cells:       "
-              << triangulation.n_global_active_cells() << std::endl
-              << "   Number of degrees of freedom: " << dof_handler.n_dofs()
-              << std::endl;
+        if (parameters_ms.verbose)
+          {
+            pcout << "Cycle " << cycle << ':' << std::endl;
+          }
+
+        if (cycle == 0)
+          {
+            const Point<dim> p1 = global_parameters.init_p1,
+                             p2 = global_parameters.init_p2;
+
+            const std::vector<unsigned int> repetitions =
+              MyTools::get_repetitions(p1, p2);
+
+            GridGenerator::subdivided_hyper_rectangle(
+              triangulation, repetitions, p1, p2, true);
+
+            // GridGenerator::cylinder(triangulation, 10., 0.1);
+
+            triangulation.refine_global(parameters_ms.n_refine);
+          }
+        else
+          {
+            ++parameters_basis.n_refine;
+          }
+
+        setup_system();
+
+        if (parameters_ms.verbose)
+          {
+            pcout << "   Number of active cells:       "
+                  << triangulation.n_global_active_cells() << std::endl
+                  << "   Number of degrees of freedom: " << dof_handler.n_dofs()
+                  << std::endl;
+          }
+
+        initialize_and_compute_basis(cycle);
+
+        assemble_system();
+
+        solve();
+
+        send_global_weights_to_cell();
+
+        {
+          TimerOutput::Scope t(computing_timer, "output");
+          output_results(cycle);
+        }
+
+        computing_timer.print_summary();
+        computing_timer.reset();
+        pcout << std::endl;
       }
-
-    initialize_and_compute_basis();
-
-    assemble_system();
-
-    solve();
-
-    send_global_weights_to_cell();
-
-    {
-      TimerOutput::Scope t(computing_timer, "output");
-      output_results();
-    }
-
-    computing_timer.print_summary();
-    computing_timer.reset();
-    pcout << std::endl;
   }
 } // namespace Elasticity
 

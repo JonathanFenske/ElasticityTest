@@ -196,6 +196,11 @@ namespace Elasticity
                             "3",
                             Patterns::Integer(0, 10),
                             "Number of initial mesh refinements.");
+
+          prm.declare_entry("cycles",
+                            "3",
+                            Patterns::Integer(1, 10),
+                            "Number of cycles that the problems runs through.");
         }
         prm.leave_subsection();
       }
@@ -221,6 +226,7 @@ namespace Elasticity
         prm.enter_subsection("Mesh");
         {
           n_refine = prm.get_integer("refinements");
+          n_cycles = prm.get_integer("cycles");
         }
         prm.leave_subsection();
       }

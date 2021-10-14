@@ -88,8 +88,8 @@ subsection Standard method parameters
   end
 
   subsection Mesh
-    set refinements = 0
-    set cycles = 1
+    set refinements = 1
+    set cycles = 2
   end
 end
 
@@ -102,6 +102,7 @@ subsection Multiscale method parameters
 
     subsection Mesh
       set refinements = 1
+      set cycles = 2
     end
   end
 

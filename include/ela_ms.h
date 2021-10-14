@@ -122,7 +122,7 @@ namespace Elasticity
      * each cell and computing the basis functions with these objects.
      */
     void
-    initialize_and_compute_basis();
+    initialize_and_compute_basis(unsigned int cycle);
 
     /**
      * @brief Assembles the system.
@@ -178,7 +178,7 @@ namespace Elasticity
      * single pvtu file.
      */
     void
-    output_results();
+    output_results(unsigned int cycle);
 
     MPI_Comm                                  mpi_communicator;
     parallel::distributed::Triangulation<dim> triangulation;
@@ -194,7 +194,7 @@ namespace Elasticity
     std::map<CellId, ElaBasis<dim>>           cell_basis_map;
     const GlobalParameters<dim>               global_parameters;
     const ParametersMs                        parameters_ms;
-    const ParametersBasis                     parameters_basis;
+    ParametersBasis                           parameters_basis;
     bool                                      processor_is_used;
     /**< True if this processor is assigned at least one coarse cell. */
 

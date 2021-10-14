@@ -435,8 +435,7 @@ namespace Elasticity
     const Point<dim> p1 = global_parameters.init_p1,
                      p2 = global_parameters.init_p2;
 
-    const unsigned int n_cycles = parameters_std.n_cycles;
-    for (unsigned int cycle = 0; cycle < n_cycles; ++cycle)
+    for (unsigned int cycle = 0; cycle < parameters_std.n_cycles; ++cycle)
       {
         if (parameters_std.verbose)
           {

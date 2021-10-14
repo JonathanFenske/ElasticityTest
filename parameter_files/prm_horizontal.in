@@ -34,12 +34,12 @@ subsection Global parameters
   end
 
   subsection 3D
-    set init p1[0] = -10.
-    set init p1[1] = -10.
+    set init p1[0] = -5.
+    set init p1[1] = -5.
     set init p1[2] = 0.
 
-    set init p2[0] = 10.
-    set init p2[1] = 10.
+    set init p2[0] = 5.
+    set init p2[1] = 5.
     set init p2[2] = 1.
 
     set dirichlet p1[0] = -1.
@@ -60,9 +60,9 @@ subsection Global parameters
   end
 
   subsection Material parameters
-    set n x layers = 100
-    set n y layers = 100
-    set n z layers = 10
+    set n x layers = 50
+    set n y layers = 50
+    set n z layers = 5
 
     set E = 210.e9
     set nu = 0.3
@@ -88,8 +88,8 @@ subsection Standard method parameters
   end
 
   subsection Mesh
-    set refinements = 1
-    set cycles = 1
+    set refinements = 2
+    set cycles = 3
   end
 end
 
@@ -102,6 +102,7 @@ subsection Multiscale method parameters
 
     subsection Mesh
       set refinements = 1
+      set cycles = 3
     end
   end
 
@@ -112,7 +113,7 @@ subsection Multiscale method parameters
     end
 
     subsection Mesh
-      set refinements = 4
+      set refinements = 2
       set prevent output = false
     end
   end

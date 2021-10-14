@@ -371,6 +371,11 @@ namespace Elasticity
      * Number of refinements on the coarse level
      */
     unsigned int n_refine;
+
+    /**
+     * Number of cycles
+     */
+    unsigned int n_cycles;
   };
 
 

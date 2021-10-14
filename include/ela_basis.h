@@ -103,7 +103,8 @@ namespace Elasticity
              unsigned int                                       local_subdomain,
              MPI_Comm                     mpi_communicator,
              const ParametersBasis &      parameters_basis,
-             const GlobalParameters<dim> &global_parameters);
+             const GlobalParameters<dim> &global_parameters,
+             const unsigned int           cycle);
 
     /**
      * @brief Copy Constructor for Ela Basis.
@@ -247,6 +248,7 @@ namespace Elasticity
     const GlobalParameters<dim>                       global_parameters;
     std::string                                       filename;
     BasisFun::BasisQ1<dim>                            basis_q1;
+    const unsigned int                                cycle;
   };
 } // namespace Elasticity
 

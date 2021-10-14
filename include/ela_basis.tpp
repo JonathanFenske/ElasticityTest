@@ -20,7 +20,8 @@ namespace Elasticity
     unsigned int                                       local_subdomain,
     MPI_Comm                                           mpi_communicator,
     const ParametersBasis &                            parameters_basis,
-    const GlobalParameters<dim> &                      global_parameters)
+    const GlobalParameters<dim> &                      global_parameters,
+    const unsigned int                                 cycles)
     : mpi_communicator(mpi_communicator)
     , first_cell(first_cell)
     , triangulation()
@@ -37,6 +38,7 @@ namespace Elasticity
     , parameters_basis(parameters_basis)
     , global_parameters(global_parameters)
     , basis_q1(global_cell)
+    , cycle(cycle)
   {
     // set corner points
     for (unsigned int vertex_n = 0;
@@ -66,6 +68,7 @@ namespace Elasticity
     , parameters_basis(other.parameters_basis)
     , global_parameters(other.global_parameters)
     , basis_q1(other.basis_q1)
+    , cycle(other.cycle)
   {}
 
 
@@ -432,6 +435,7 @@ namespace Elasticity
 
     // filename
     filename = "ela_basis";
+    filename += "." + Utilities::int_to_string(cycle, 2);
     filename += "." + Utilities::int_to_string(local_subdomain, 5);
     filename += ".cell-" + global_cell_id.to_string();
     filename += ".vtu";
@@ -472,6 +476,7 @@ namespace Elasticity
     // filename
     filename = std::string("global_basis_output/");
     filename += std::string("basis_solution");
+    filename += "." + Utilities::int_to_string(cycle, 2);
     filename += "." + Utilities::int_to_string(local_subdomain, 5);
     filename += std::string(".cell-") + global_cell_id.to_string();
     filename += std::string(".vtu");
