@@ -21,7 +21,7 @@ namespace Elasticity
     MPI_Comm                                           mpi_communicator,
     const ParametersBasis &                            parameters_basis,
     const GlobalParameters<dim> &                      global_parameters,
-    const unsigned int                                 cycles)
+    const unsigned int                                 cycle)
     : mpi_communicator(mpi_communicator)
     , first_cell(first_cell)
     , triangulation()

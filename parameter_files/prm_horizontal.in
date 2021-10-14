@@ -36,7 +36,7 @@ subsection Global parameters
   subsection 3D
     set init p1[0] = -5.
     set init p1[1] = -5.
-    set init p1[2] = 0.
+    set init p1[2] = -1.
 
     set init p2[0] = 5.
     set init p2[1] = 5.
@@ -88,7 +88,7 @@ subsection Standard method parameters
   end
 
   subsection Mesh
-    set refinements = 2
+    set refinements = 3
     set cycles = 3
   end
 end
