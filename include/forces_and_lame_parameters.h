@@ -7,8 +7,6 @@
 
 #include <map>
 
-#include "process_parameter_file.h"
-
 /**
  * @file forces_and_lame_parameters.h
  *
@@ -139,14 +137,15 @@ namespace Elasticity
 
 
   /**
-   * @brief Class for the first Lamé parameter of linear elasticity
+   * @brief Class for the Lamé parameters of linear elasticity
    *
    * @tparam dim Space dimension
    */
   template <int dim>
-  class lambda : public Function<dim>
+  class LamePrm : public Function<dim>
   {
   public:
+    LamePrm();
     /**
      * @brief Constructor
      *
@@ -164,7 +163,22 @@ namespace Elasticity
      * All of this and also the mean value of lambda must be specified in the
      * parameter file.
      */
-    lambda(const GlobalParameters<dim> &global_parameters);
+    LamePrm(const unsigned int &               n_x_layers,
+            const unsigned int &               n_y_layers,
+            const unsigned int &               n_z_layers,
+            const double &                     mean,
+            const std::vector<unsigned int> &  index_set,
+            const std::map<std::string, bool> &material_structure,
+            const Point<dim> &                 init_p1,
+            const Point<dim> &                 init_p2);
+
+    LamePrm(const double &                     fr_tmp,
+            const double &                     mean,
+            const std::map<std::string, bool> &material_structure,
+            const Point<dim> &                 init_p1,
+            const Point<dim> &                 init_p2);
+
+    LamePrm(const LamePrm<dim> &other) = default;
 
     /**
      * @brief Returns the value of lambda at the point p.
@@ -177,69 +191,48 @@ namespace Elasticity
     value(const Point<dim> &p, const unsigned int component = 0) const override;
 
   private:
-    GlobalParameters<dim> global_parameters;
+    unsigned int n_x_layers;
+    unsigned int n_y_layers;
+    unsigned int n_z_layers;
+    /**
+     * @see Globalparameters::lambda_fr
+     */
+    double fr;
+
+    /**
+     * @brief The sort of structure of the material
+     *
+     * The entry "oscillations" is true if the material parameters oscillate.
+     *
+     * The entry "horizontal layers" is true if the material consists of
+     * horizontal layers/layers in x-direction.
+     *
+     * The entry "vertical layers" is true if the material consists of
+     * vertical layers.
+     *
+     * The entry "y-layers" is true if the material consists of
+     * layers in y-directions.
+     *
+     * Only one entry can be true
+     */
+    std::map<std::string, bool> material_structure;
+    /**
+     * @see Globalparameters::init_p1
+     */
+    Point<dim> init_p1;
+
+    /**
+     * @see Globalparameters::init_p2
+     */
+    Point<dim> init_p2;
 
     /**
      * The inverse of the size of the layers in the structure
      * if the material is layered.
      */
-    double layer_size_inv;
-
-    /**
-     * Contains the lambda values for each layer
-     * if the material structure is layered.
-     */
-    std::vector<double> values;
-  };
-
-
-  /**
-   * @brief Class for the second Lamé parameter/shear modulus
-   *        in linear elasticity
-   *
-   * @tparam dim Space dimension
-   */
-  template <int dim>
-  class mu : public Function<dim>
-  {
-  public:
-    /**
-     * @brief Constructor
-     *
-     * @param global_parameters Parameters needed for many classes.
-     *
-     * This functions constructs mu and uses #global_parameters to
-     * implement the structure of the material.
-     *
-     * The structure can be oscillating, i.e. mu depends on a trigonometric
-     * function (in our case the sine function).
-     *
-     * Moreover, the structure can be layered with layers in
-     * x-,y- and z-direction.
-     *
-     * All of this and also the mean value of mu must be specified in the
-     * parameter file.
-     */
-    mu(const GlobalParameters<dim> &global_parameters);
-
-    /**
-     * @brief Returns the value of lambda at the point p.
-     *
-     * @param p Point
-     * @param component Component from the output vector to be returned
-     * @return double
-     */
-    virtual double
-    value(const Point<dim> &p, const unsigned int component = 0) const override;
-
-  private:
-    GlobalParameters<dim> global_parameters;
-
-    /**
-     * The inverse of the size of the layers in the structure
-     * if the material is layered.
-     */
-    double layer_size_inv;
+    double layer_size_inv_x;
+    double layer_size_inv_y;
+    double layer_size_inv_z;
 
     /**
      * Contains the lambda values for each layer
@@ -251,13 +244,11 @@ namespace Elasticity
   // exernal template instantiations
   extern template class BodyForce<2>;
   extern template class SurfaceForce<2>;
-  extern template class lambda<2>;
-  extern template class mu<2>;
+  extern template class LamePrm<2>;
 
   extern template class BodyForce<3>;
   extern template class SurfaceForce<3>;
-  extern template class lambda<3>;
-  extern template class mu<3>;
+  extern template class LamePrm<3>;
 } // namespace Elasticity
 
 #endif // _INCLUDE_FORCES_AND_LAME_PARAMETERS_H_

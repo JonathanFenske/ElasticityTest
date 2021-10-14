@@ -39,30 +39,6 @@ namespace Elasticity
 
 
   template <int dim>
-  GlobalParameters<dim>::GlobalParameters(const GlobalParameters<dim> &other)
-    : other_dirichlet_id(other.other_dirichlet_id)
-    , neumann_bc(other.neumann_bc)
-    , use_E_and_nu(other.use_E_and_nu)
-    , material_structure(other.material_structure)
-    , init_p1(other.init_p1)
-    , init_p2(other.init_p2)
-    , dirichlet_p1(other.dirichlet_p1)
-    , dirichlet_p2(other.dirichlet_p2)
-    , neumann_p1(other.neumann_p1)
-    , neumann_p2(other.neumann_p2)
-    , n_layers(other.n_layers)
-    , E(other.E)
-    , nu(other.nu)
-    , mu(other.mu)
-    , mu_fr(other.mu_fr)
-    , lambda(other.lambda)
-    , lambda_fr(other.lambda_fr)
-    , rho(other.rho)
-    , surface_force(other.surface_force)
-  {}
-
-
-  template <int dim>
   void
   GlobalParameters<dim>::declare_parameters(ParameterHandler &prm)
   {
@@ -158,10 +134,20 @@ namespace Elasticity
 
       prm.enter_subsection("Material parameters");
       {
-        prm.declare_entry("layers",
+        prm.declare_entry("n x layers",
                           "1",
                           Patterns::Integer(),
-                          "Number of layers.");
+                          "Number of horizontal layers.");
+
+        prm.declare_entry("n y layers",
+                          "1",
+                          Patterns::Integer(),
+                          "Number of y layers.");
+
+        prm.declare_entry("n z layers",
+                          "1",
+                          Patterns::Integer(),
+                          "Number of vertical layers.");
 
         prm.declare_entry("E", "1", Patterns::Double(), "Set Young's modulus.");
         prm.declare_entry("nu",
@@ -213,38 +199,43 @@ namespace Elasticity
   void
   GlobalParameters<dim>::parse_parameters(ParameterHandler &prm)
   {
+    bool                        use_E_and_nu;
+    std::map<std::string, bool> material_structure;
+
     prm.enter_subsection("Global parameters");
     {
       prm.enter_subsection("Bools");
       {
         other_dirichlet_id = prm.get_bool("other dirichlet id");
         neumann_bc         = prm.get_bool("neumann boundary condition");
-        use_E_and_nu       = prm.get_bool("use E and nu");
+
+        // True if E and nu shall be used to declare mu and lambda.
+        use_E_and_nu = prm.get_bool("use E and nu");
 
         int m = 0;
         material_structure.insert(
           std::make_pair("oscillations", prm.get_bool("oscillations")));
-        if (material_structure["oscillations"] == true)
-          ++m;
+
         material_structure.insert(
           std::make_pair("horizontal layers",
                          prm.get_bool("horizontal layers")));
         if (material_structure["horizontal layers"] == true)
           ++m;
+
         material_structure.insert(
           std::make_pair("vertical layers", prm.get_bool("vertical layers")));
         if (material_structure["vertical layers"] == true)
           ++m;
+
         material_structure.insert(
           std::make_pair("y-layers", prm.get_bool("y-layers")));
         if (material_structure["y-layers"] == true)
           ++m;
 
-        if (m != 1)
+        if (material_structure["oscillations"] && m != 0)
           {
-            std::cout << "One and only one of the material "
-                         "structure parameters must be true"
-                      << std::endl;
+            std::cout << "The material can only be structured as either"
+                      << "oscillations or layers but not both." << std::endl;
             exit(1);
           }
       }
@@ -276,27 +267,71 @@ namespace Elasticity
 
       prm.enter_subsection("Material parameters");
       {
-        n_layers = prm.get_integer("layers");
+        // Mean value of the first Lamé parameter
+        double lambda_mean;
+        // Mean value of the second Lamé parameter
+        double mu_mean;
 
-        E  = prm.get_double("E");
-        nu = prm.get_double("nu");
 
         if (use_E_and_nu)
           {
-            mu     = E * nu / ((1 + nu) * (1 - 2 * nu));
-            lambda = E / (2 * (1 + nu));
+            // Young's modulus/elastic modulus
+            double E = prm.get_double("E");
+            // Poisson ratio
+            double nu = prm.get_double("nu");
+
+            mu_mean     = E * nu / ((1 + nu) * (1 - 2 * nu));
+            lambda_mean = E / (2 * (1 + nu));
           }
         else
           {
-            mu     = prm.get_double("mu");
-            lambda = prm.get_double("lambda");
+            mu_mean     = prm.get_double("mu");
+            lambda_mean = prm.get_double("lambda");
           }
 
-        mu_fr = prm.get_double("mu frequency");
-        mu_fr = mu_fr / (init_p2[dim - 1] - init_p1[dim - 1]);
+        double mu_fr = prm.get_double("mu frequency");
 
-        lambda_fr = prm.get_double("lambda frequency");
-        lambda_fr = lambda_fr / (init_p2[dim - 1] - init_p1[dim - 1]);
+        double lambda_fr = prm.get_double("lambda frequency");
+
+        if (material_structure.at("oscillations"))
+          {
+            lambda = LamePrm<dim>(
+              lambda_fr, lambda_mean, material_structure, init_p1, init_p2);
+
+            mu = LamePrm<dim>(
+              mu_fr, mu_mean, material_structure, init_p1, init_p2);
+          }
+        else
+          {
+            unsigned int n_x_layers = prm.get_integer("n x layers");
+            unsigned int n_y_layers = prm.get_integer("n y layers");
+            unsigned int n_z_layers = prm.get_integer("n z layers");
+
+            std::vector<unsigned int> index_set(n_x_layers * n_y_layers *
+                                                n_z_layers);
+            std::iota(index_set.begin(), index_set.end(), 0);
+            std::random_device rd;
+            std::mt19937       g(rd());
+            std::shuffle(index_set.begin(), index_set.end(), g);
+
+            lambda = LamePrm<dim>(n_x_layers,
+                                  n_y_layers,
+                                  n_z_layers,
+                                  lambda_mean,
+                                  index_set,
+                                  material_structure,
+                                  init_p1,
+                                  init_p2);
+
+            mu = LamePrm<dim>(n_x_layers,
+                              n_y_layers,
+                              n_z_layers,
+                              mu_mean,
+                              index_set,
+                              material_structure,
+                              init_p1,
+                              init_p2);
+          }
 
         rho = prm.get_double("rho");
       }

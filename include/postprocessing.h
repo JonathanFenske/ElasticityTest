@@ -56,7 +56,7 @@ namespace Elasticity
      *
      * @param other
      */
-    StrainPostprocessor(const StrainPostprocessor<dim> &other);
+    StrainPostprocessor(const StrainPostprocessor<dim> &other) = default;
 
     /**
      * @brief Evaluate the vector field and
@@ -143,7 +143,7 @@ namespace Elasticity
      *
      * @param other Other StressPostprocessor
      */
-    StressPostprocessor(const StressPostprocessor<dim> &other);
+    StressPostprocessor(const StressPostprocessor<dim> &other) = default;
 
     /**
      * @brief Evaluate the vector field and

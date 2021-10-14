@@ -1,4 +1,5 @@
 #include "forces_and_lame_parameters.h"
+
 #include "forces_and_lame_parameters.tpp"
 
 namespace Elasticity
@@ -9,9 +10,6 @@ namespace Elasticity
   template class BodyForce<2>;
   template class BodyForce<3>;
 
-  template class mu<2>;
-  template class mu<3>;
-
-  template class lambda<2>;
-  template class lambda<3>;
+  template class LamePrm<2>;
+  template class LamePrm<3>;
 } // namespace Elasticity

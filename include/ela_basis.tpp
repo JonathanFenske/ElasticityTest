@@ -127,8 +127,6 @@ namespace Elasticity
     const unsigned int dofs_per_cell = fe.n_dofs_per_cell();
     const unsigned int n_q_points    = quadrature_formula.size();
 
-    lambda<dim>                 lambda(global_parameters);
-    mu<dim>                     mu(global_parameters);
     BodyForce<dim>              body_force(global_parameters.rho);
     std::vector<Vector<double>> body_force_values(n_q_points);
     for (unsigned int i = 0; i < n_q_points; ++i)
@@ -144,8 +142,10 @@ namespace Elasticity
         local_cell_matrix = 0.;
         local_cell_rhs    = 0.;
         fe_values.reinit(cell);
-        lambda.value_list(fe_values.get_quadrature_points(), lambda_values);
-        mu.value_list(fe_values.get_quadrature_points(), mu_values);
+        global_parameters.lambda.value_list(fe_values.get_quadrature_points(),
+                                            lambda_values);
+        global_parameters.mu.value_list(fe_values.get_quadrature_points(),
+                                        mu_values);
         body_force.vector_value_list(fe_values.get_quadrature_points(),
                                      body_force_values);
         for (unsigned int q_index = 0; q_index < n_q_points; ++q_index)

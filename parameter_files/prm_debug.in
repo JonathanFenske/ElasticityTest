@@ -1,5 +1,5 @@
 subsection Dimension
-  set dim = 3
+  set dim = 2
 end
 
 subsection Global parameters
@@ -8,7 +8,7 @@ subsection Global parameters
     set neumann boundary condition = false
 	  set use E and nu = true
     set oscillations = false
-    set horizontal layers = false
+    set horizontal layers = true
     set vertical layers = true
     set y-layers = false
   end
@@ -60,7 +60,9 @@ subsection Global parameters
   end
 
   subsection Material parameters
-    set layers = 10
+    set n x layers = 2
+    set n y layers = 2
+    set n z layers = 2
     
     set E = 210.e9
     set nu = 0.3
@@ -82,11 +84,11 @@ end
 subsection Standard method parameters
   subsection Bools
     set verbose = true
-    set use direct solver = false
+    set use direct solver = true
   end
 
   subsection Mesh
-    set refinements = 1
+    set refinements = 0
     set cycles = 1
   end
 end

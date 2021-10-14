@@ -8,8 +8,12 @@
 
 #include <fstream>
 #include <iostream>
+#include <numeric>
+#include <random>
 #include <string>
 #include <vector>
+
+#include "forces_and_lame_parameters.h"
 
 
 /**
@@ -100,8 +104,7 @@ namespace Elasticity
      *
      * @param other Other GlobalParameters object
      */
-    GlobalParameters(
-      const GlobalParameters<dim> &other); // This the the copy constructor
+    GlobalParameters(const GlobalParameters<dim> &other) = default;
 
     /**
      * @brief Declare parameters
@@ -141,29 +144,6 @@ namespace Elasticity
      * True if a Neumann boundary condition are applied.
      */
     bool neumann_bc;
-
-    /**
-     * True if #E and #nu shall be used to declar #mu and #lambda.
-     */
-    bool use_E_and_nu;
-
-    /**
-     * @brief Declare the sort of structure of the material
-     *
-     * The first entry is true if the material parameters oscillate.
-     *
-     * The second entry is true if the material consists of
-     * horizontal layers/layers in x-direction.
-     *
-     * The third entry is true if the material consists of
-     * vertical layers.
-     *
-     * The fourth entry is true if the material consists of
-     * layers in y-directions.
-     *
-     * Only one entry can be true
-     */
-    std::map<std::string, bool> material_structure;
 
     /**
      * @brief First vertex of the body
@@ -236,43 +216,14 @@ namespace Elasticity
     Point<dim> neumann_p2;
 
     /**
-     * Number of layers the material consists of. Only has to be specified
-     * if material parameters do not oscillate.
+     * First Lamé parameter
      */
-    unsigned int n_layers;
+    LamePrm<dim> lambda;
 
     /**
-     * Young's modulus/elastic modulus
+     * Second Lamé parameter/shear modulus
      */
-    double E;
-
-    /**
-     * Poisson ratio
-     */
-    double nu;
-
-    /**
-     * Mean value of the second Lamé parameter/
-     * shear modulus
-     */
-    double mu;
-
-    /**
-     * Number of oscillations of #mu. Only has to be declared if
-     * the material parameters are oscillating.
-     */
-    double mu_fr;
-
-    /**
-     * Mean value of the first Lamé parameter
-     */
-    double lambda;
-
-    /**
-     * Number of oscillations of #lambda. Only has to be declared if
-     * the material parameters are oscillating.
-     */
-    double lambda_fr;
+    LamePrm<dim> mu;
 
     /**
      * Mass density of the body
@@ -308,7 +259,7 @@ namespace Elasticity
      *
      * @param other ParametersStd
      */
-    ParametersStd(const ParametersStd &other);
+    ParametersStd(const ParametersStd &other) = default;
 
     /**
      * @brief Declare parameters
@@ -379,7 +330,7 @@ namespace Elasticity
      *
      * @param other ParametersMs
      */
-    ParametersMs(const ParametersMs &other);
+    ParametersMs(const ParametersMs &other) = default;
 
     /**
      * @brief Declare parameters
@@ -447,7 +398,7 @@ namespace Elasticity
      *
      * @param other Other ParametersBasis object
      */
-    ParametersBasis(const ParametersBasis &other);
+    ParametersBasis(const ParametersBasis &other) = default;
 
     /**
      * @brief Declare parameters

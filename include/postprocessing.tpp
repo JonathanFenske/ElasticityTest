@@ -24,13 +24,6 @@ namespace Elasticity
 
 
   template <int dim>
-  StrainPostprocessor<dim>::StrainPostprocessor(
-    const StrainPostprocessor<dim> &other)
-    : basis_str(other.basis_str)
-  {}
-
-
-  template <int dim>
   void
   StrainPostprocessor<dim>::evaluate_vector_field(
     const DataPostprocessorInputs::Vector<dim> &input_data,
@@ -145,14 +138,6 @@ namespace Elasticity
   {}
 
 
-  template <int dim>
-  StressPostprocessor<dim>::StressPostprocessor(
-    const StressPostprocessor<dim> &other)
-    : basis_str(other.basis_str)
-    , parameters(other.parameters)
-  {}
-
-
   // function that computes the linearized stress (Hooke's law)
   template <int dim>
   void
@@ -162,12 +147,10 @@ namespace Elasticity
   {
     AssertDimension(input_data.solution_gradients.size(),
                     computed_quantities.size());
-    mu<dim>             mu(parameters);
-    lambda<dim>         lambda(parameters);
     std::vector<double> mu_values(input_data.evaluation_points.size()),
       lambda_values(input_data.evaluation_points.size());
-    mu.value_list(input_data.evaluation_points, mu_values);
-    lambda.value_list(input_data.evaluation_points, lambda_values);
+    parameters.mu.value_list(input_data.evaluation_points, mu_values);
+    parameters.lambda.value_list(input_data.evaluation_points, lambda_values);
     for (unsigned int p = 0; p < input_data.solution_gradients.size(); ++p)
       {
         AssertDimension(computed_quantities[p].size(),

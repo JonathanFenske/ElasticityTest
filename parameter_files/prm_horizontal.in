@@ -9,8 +9,8 @@ subsection Global parameters
 	  set use E and nu = true
     set oscillations = false
     set horizontal layers = true
-    set vertical layers = false
-    set y-layers = false
+    set vertical layers = true
+    set y-layers = true
   end
 
   subsection 2D
@@ -35,11 +35,11 @@ subsection Global parameters
 
   subsection 3D
     set init p1[0] = -10.
-    set init p1[1] = 0.
+    set init p1[1] = -10.
     set init p1[2] = 0.
 
     set init p2[0] = 10.
-    set init p2[1] = 1.
+    set init p2[1] = 10.
     set init p2[2] = 1.
 
     set dirichlet p1[0] = -1.
@@ -60,7 +60,9 @@ subsection Global parameters
   end
 
   subsection Material parameters
-    set layers = 100
+    set n x layers = 100
+    set n y layers = 100
+    set n z layers = 10
 
     set E = 210.e9
     set nu = 0.3

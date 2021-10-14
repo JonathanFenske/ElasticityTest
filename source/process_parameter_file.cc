@@ -85,14 +85,6 @@ namespace Elasticity
   }
 
 
-  ParametersStd::ParametersStd(const ParametersStd &other)
-    : verbose(other.verbose)
-    , direct_solver(other.direct_solver)
-    , n_refine(other.n_refine)
-    , n_cycles(other.n_cycles)
-  {}
-
-
   void
   ParametersStd::declare_parameters(ParameterHandler &prm)
   {
@@ -176,13 +168,6 @@ namespace Elasticity
                     /* skip_undefined = */ true);
     parse_parameters(prm);
   }
-
-
-  ParametersMs::ParametersMs(const ParametersMs &other)
-    : verbose(other.verbose)
-    , direct_solver(other.direct_solver)
-    , n_refine(other.n_refine)
-  {}
 
 
   void
@@ -270,14 +255,6 @@ namespace Elasticity
                     /* skip_undefined = */ true);
     parse_parameters(prm);
   }
-
-
-  ParametersBasis::ParametersBasis(const ParametersBasis &other)
-    : verbose(other.verbose)
-    , direct_solver(other.direct_solver)
-    , prevent_output(other.prevent_output)
-    , n_refine(other.n_refine)
-  {}
 
 
   void

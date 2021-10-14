@@ -92,171 +92,119 @@ namespace Elasticity
   }
 
 
+  template <int dim>
+  LamePrm<dim>::LamePrm()
+    : Function<dim>()
+  {}
 
   template <int dim>
-  lambda<dim>::lambda(const GlobalParameters<dim> &global_parameters)
+  LamePrm<dim>::LamePrm(const unsigned int &               n_x_layers,
+                        const unsigned int &               n_y_layers,
+                        const unsigned int &               n_z_layers,
+                        const double &                     mean,
+                        const std::vector<unsigned int> &  index_set,
+                        const std::map<std::string, bool> &material_structure,
+                        const Point<dim> &                 init_p1,
+                        const Point<dim> &                 init_p2)
     : Function<dim>()
-    , global_parameters(global_parameters)
+    , n_x_layers(n_x_layers)
+    , n_y_layers(n_y_layers)
+    , n_z_layers(n_z_layers)
+    , material_structure(material_structure)
+    , init_p1(init_p1)
+    , init_p2(init_p2)
+    , values(n_x_layers * n_y_layers * n_z_layers)
   {
-    if (global_parameters.material_structure.at("horizontal layers") ||
-        global_parameters.material_structure.at("vertical layers") ||
-        global_parameters.material_structure.at("y-layers"))
+    if (material_structure.at("horizontal layers") ||
+        material_structure.at("vertical layers") ||
+        material_structure.at("y-layers"))
       {
-        double value_step_size =
-          global_parameters.lambda / (0.5 * global_parameters.n_layers);
-        for (unsigned int i = 1; i < global_parameters.n_layers + 1; ++i)
+        unsigned int        n_values(n_x_layers * n_y_layers * n_z_layers);
+        double              value_step_size = 2 * mean / (n_values + 1);
+        std::vector<double> values_tmp;
+        for (unsigned int i = 1; i < n_values + 1; ++i)
           {
-            values.push_back(i * value_step_size);
+            values_tmp.push_back(i * value_step_size);
           }
 
-        if (global_parameters.material_structure.at("horizontal layers"))
+        for (unsigned int i = 0; i < n_values; ++i)
           {
-            double length =
-              global_parameters.init_p2(0) - global_parameters.init_p1(0);
-            layer_size_inv = global_parameters.n_layers / length;
+            values[i] = values_tmp[index_set[i]];
           }
 
-        if (global_parameters.material_structure.at("vertical layers"))
+        if (material_structure.at("horizontal layers"))
           {
-            double height = global_parameters.init_p2(dim - 1) -
-                            global_parameters.init_p1(dim - 1);
-            layer_size_inv = global_parameters.n_layers / height;
+            double length    = init_p2(0) - init_p1(0);
+            layer_size_inv_x = n_x_layers / length;
           }
 
-        if (global_parameters.material_structure.at("y-layers"))
+        if (material_structure.at("vertical layers"))
           {
-            double depth =
-              global_parameters.init_p2(1) - global_parameters.init_p1(1);
-            layer_size_inv = global_parameters.n_layers / depth;
+            double height    = init_p2(dim - 1) - init_p1(dim - 1);
+            layer_size_inv_z = n_z_layers / height;
+          }
+
+        if (material_structure.at("y-layers"))
+          {
+            double depth     = init_p2(1) - init_p1(1);
+            layer_size_inv_y = n_y_layers / depth;
           }
       }
+  }
+
+  template <int dim>
+  LamePrm<dim>::LamePrm(const double &                     fr_tmp,
+                        const double &                     mean,
+                        const std::map<std::string, bool> &material_structure,
+                        const Point<dim> &                 init_p1,
+                        const Point<dim> &                 init_p2)
+    : Function<dim>()
+    , material_structure(material_structure)
+    , init_p1(init_p1)
+    , init_p2(init_p2)
+    , values(1)
+  {
+    fr        = fr_tmp / (init_p2[dim - 1] - init_p1[dim - 1]);
+    values[0] = mean;
   }
 
 
   template <int dim>
   double
-  lambda<dim>::value(const Point<dim> &p, const unsigned int) const
+  LamePrm<dim>::value(const Point<dim> &p, const unsigned int) const
   {
     // Case: oscillation in x-direction
-    if (global_parameters.material_structure.at("oscillations"))
-      return global_parameters.lambda *
-             (0.8 * std::sin(2 * global_parameters.lambda_fr * M_PI * p(0)) +
-              1);
+    if (material_structure.at("oscillations"))
+      return values[0] * (0.8 * std::sin(2 * fr * M_PI * p(0)) + 1);
+
+    unsigned int x_layer = 0;
+    unsigned int y_layer = 0;
+    unsigned int z_layer = 0;
 
     // Case: horizontal layers
-    if (global_parameters.material_structure.at("horizontal layers"))
+    if (material_structure.at("horizontal layers"))
       {
-        unsigned int layer =
-          (p(0) - global_parameters.init_p1(0)) * layer_size_inv;
-        layer = std::min(layer, global_parameters.n_layers - 1);
-        if (layer == global_parameters.n_layers)
-          std::cout << layer << std::endl;
-        return values[layer];
+        x_layer = (p(0) - init_p1(0)) * layer_size_inv_x;
+        x_layer = std::min(x_layer, n_x_layers - 1);
       }
 
     // Case: vertical layers
-    if (global_parameters.material_structure.at("vertical layers"))
+    if (material_structure.at("vertical layers"))
       {
-        unsigned int layer =
-          (p(dim - 1) - global_parameters.init_p1(dim - 1)) * layer_size_inv;
-        layer = std::min(layer, global_parameters.n_layers - 1);
-        return values[layer];
+        z_layer = (p(dim - 1) - init_p1(dim - 1)) * layer_size_inv_z;
+        z_layer = std::min(z_layer, n_z_layers - 1);
       }
 
     // Case: layers in y-direction
-    if (global_parameters.material_structure.at("y-layers"))
+    if (material_structure.at("y-layers"))
       {
         AssertDimension(dim, 3);
-        unsigned int layer =
-          (p(1) - global_parameters.init_p1(1)) * layer_size_inv;
-        layer = std::min(layer, global_parameters.n_layers - 1);
-        return values[layer];
+        y_layer = (p(1) - init_p1(1)) * layer_size_inv_y;
+        y_layer = std::min(y_layer, n_y_layers - 1);
       }
 
-    std::cout << "The material structure was not declared." << std::endl;
-    exit(1);
-  }
-
-
-  template <int dim>
-  mu<dim>::mu(const GlobalParameters<dim> &global_parameters)
-    : Function<dim>()
-    , global_parameters(global_parameters)
-  {
-    if (global_parameters.material_structure.at("horizontal layers") ||
-        global_parameters.material_structure.at("vertical layers") ||
-        global_parameters.material_structure.at("y-layers"))
-      {
-        double value_step_size =
-          global_parameters.mu / (0.5 * global_parameters.n_layers);
-        for (unsigned int i = 1; i < global_parameters.n_layers + 1; ++i)
-          {
-            values.push_back(i * value_step_size);
-          }
-
-        if (global_parameters.material_structure.at("horizontal layers"))
-          {
-            double length =
-              global_parameters.init_p2(0) - global_parameters.init_p1(0);
-            layer_size_inv = global_parameters.n_layers / length;
-          }
-
-        if (global_parameters.material_structure.at("vertical layers"))
-          {
-            double height = global_parameters.init_p2(dim - 1) -
-                            global_parameters.init_p1(dim - 1);
-            layer_size_inv = global_parameters.n_layers / height;
-          }
-
-        if (global_parameters.material_structure.at("y-layers"))
-          {
-            double depth =
-              global_parameters.init_p2(1) - global_parameters.init_p1(1);
-            layer_size_inv = global_parameters.n_layers / depth;
-          }
-      }
-  }
-
-
-  template <int dim>
-  double
-  mu<dim>::value(const Point<dim> &p, const unsigned int) const
-  {
-    // Case: oscillation in x-direction
-    if (global_parameters.material_structure.at("oscillations"))
-      return global_parameters.mu *
-             (0.8 * std::sin(2 * global_parameters.mu_fr * M_PI * p(0)) + 1);
-
-    // Case: horizontal layers
-    if (global_parameters.material_structure.at("horizontal layers"))
-      {
-        unsigned int layer =
-          (p(0) - global_parameters.init_p1(0)) * layer_size_inv;
-        layer = std::min(layer, global_parameters.n_layers - 1);
-        return values[layer];
-      }
-
-    // Case: vertical layers
-    if (global_parameters.material_structure.at("vertical layers"))
-      {
-        unsigned int layer =
-          (p(dim - 1) - global_parameters.init_p1(dim - 1)) * layer_size_inv;
-        layer = std::min(layer, global_parameters.n_layers - 1);
-        return values[layer];
-      }
-
-    // Case: layers in y-direction
-    if (global_parameters.material_structure.at("y-layers"))
-      {
-        AssertDimension(dim, 3);
-        unsigned int layer =
-          (p(1) - global_parameters.init_p1(1)) * layer_size_inv;
-        layer = std::min(layer, global_parameters.n_layers - 1);
-        return values[layer];
-      }
-
-    std::cout << "The material structure was not declared." << std::endl;
-    exit(1);
+    return (values[x_layer + n_x_layers * y_layer +
+                   n_x_layers * n_y_layers * z_layer]);
   }
 } // namespace Elasticity
 
