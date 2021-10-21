@@ -1,9 +1,13 @@
 #ifndef _INCLUDE_MY_TOOLS_H_
 #define _INCLUDE_MY_TOOLS_H_
 
+#include <deal.II/base/function.h>
 #include <deal.II/base/point.h>
+#include <deal.II/base/tensor.h>
 
 #include <deal.II/distributed/tria.h>
+
+#include <deal.II/physics/transformations.h>
 
 #include <sys/stat.h>
 
@@ -41,8 +45,8 @@ namespace MyTools
    */
   template <int dim>
   void
-  set_dirichlet_id(const Point<dim> &                         p1,
-                   const Point<dim> &                         p2,
+  set_dirichlet_id(const Point<dim>                          &p1,
+                   const Point<dim>                          &p2,
                    const unsigned int                         face_id,
                    const unsigned int                         id,
                    parallel::distributed::Triangulation<dim> &triangulation);
@@ -72,6 +76,29 @@ namespace MyTools
    */
   void
   create_data_directory(const char *dir_name);
+
+
+  template <int dim>
+  class Rotation : public Function<dim>
+  {
+  public:
+    Rotation(Point<dim> init_p1, Point<dim> init_p2);
+
+    /*!
+     * Evaluate a basis function with a preset index at one given point in 2D or
+     * 3D.
+     *
+     * @param p
+     * @param component
+     */
+    virtual void
+    vector_value(const Point<dim> &p, Vector<double> &values) const override;
+
+  private:
+    double       y;
+    double       z;
+    Tensor<2, 3> R;
+  };
 } // namespace MyTools
 
 #endif // _INCLUDE_MY_TOOLS_H_

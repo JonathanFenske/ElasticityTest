@@ -13,7 +13,7 @@ namespace Elasticity
   // The constructor
   template <int dim>
   ElaStd<dim>::ElaStd(const GlobalParameters<dim> &global_parameters,
-                      const ParametersStd &        parameters_std)
+                      const ParametersStd         &parameters_std)
     : mpi_communicator(MPI_COMM_WORLD)
     , triangulation(mpi_communicator,
                     typename Triangulation<dim>::MeshSmoothing(
@@ -65,6 +65,19 @@ namespace Elasticity
                                              dirichlet_id,
                                              Functions::ZeroFunction<dim>(dim),
                                              constraints);
+
+    if (dim == 3)
+      {
+        if (global_parameters.rotate)
+          {
+            VectorTools::interpolate_boundary_values(
+              dof_handler,
+              1,
+              MyTools::Rotation<dim>(global_parameters.init_p1,
+                                     global_parameters.init_p2),
+              constraints);
+          }
+      }
 
     constraints.close();
     DynamicSparsityPattern dsp(locally_relevant_dofs);

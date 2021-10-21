@@ -145,6 +145,8 @@ namespace Elasticity
      */
     bool neumann_bc;
 
+    bool rotate;
+
     /**
      * @brief First vertex of the body
      *

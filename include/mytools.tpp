@@ -1,6 +1,12 @@
 #ifndef _INCLUDE_MY_TOOLS_TPP_
 #define _INCLUDE_MY_TOOLS_TPP_
 
+#include <deal.II/base/symmetric_tensor.h>
+
+#include <math.h>
+
+#include "mytools.h"
+
 namespace MyTools
 {
   using namespace dealii;
@@ -10,8 +16,8 @@ namespace MyTools
 
   template <>
   void
-  set_dirichlet_id<2>(const Point<2> &                         p1,
-                      const Point<2> &                         p2,
+  set_dirichlet_id<2>(const Point<2>                          &p1,
+                      const Point<2>                          &p2,
                       const unsigned int                       face_id,
                       const unsigned int                       id,
                       parallel::distributed::Triangulation<2> &triangulation)
@@ -28,8 +34,8 @@ namespace MyTools
 
   template <>
   void
-  set_dirichlet_id<3>(const Point<3> &                         p1,
-                      const Point<3> &                         p2,
+  set_dirichlet_id<3>(const Point<3>                          &p1,
+                      const Point<3>                          &p2,
                       const unsigned int                       face_id,
                       const unsigned int                       id,
                       parallel::distributed::Triangulation<3> &triangulation)
@@ -59,6 +65,33 @@ namespace MyTools
       repetitions.push_back((unsigned int)(it / cell_length));
 
     return repetitions;
+  }
+
+
+  template <int dim>
+  Rotation<dim>::Rotation(Point<dim> init_p1, Point<dim> init_p2)
+    : Function<dim>(dim)
+    , y((init_p2(1) - init_p1(1)) / 2)
+    , z((init_p2(2) - init_p1(2)) / 2)
+    , R(Physics::Transformations::Rotations::rotation_matrix_3d({1, 0, 0},
+                                                                M_PI / 2))
+  {
+    AssertDimension(dim, 3);
+  }
+
+  template <int dim>
+  void
+  Rotation<dim>::vector_value(const Point<dim> &p, Vector<double> &values) const
+  {
+    Tensor<1, dim> tmp(p);
+    tmp[1] -= y;
+    tmp[2] -= z;
+    tmp = R * tmp;
+    tmp[1] += y;
+    tmp[2] += z;
+    tmp -= p;
+    for (unsigned int i = 0; i < dim; ++i)
+      values[i] = tmp[i];
   }
 } // namespace MyTools
 

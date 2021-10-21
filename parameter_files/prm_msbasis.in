@@ -1,5 +1,5 @@
 subsection Dimension
-  set dim = 3
+  set dim = 2
 end
 
 subsection Global parameters
@@ -7,10 +7,10 @@ subsection Global parameters
     set other dirichlet id = false
     set neumann boundary condition = false
 	  set use E and nu = true
-    set oscillations = false
+    set oscillations = true
     set horizontal layers = false
     set vertical layers = false
-    set y-layers = true
+    set y-layers = false
   end
 
   subsection 2D
@@ -60,7 +60,9 @@ subsection Global parameters
   end
 
   subsection Material parameters
-    set layers = 10
+    set n x layers = 2
+    set n y layers = 2
+    set n z layers = 2
     
     set E = 210.e9
     set nu = 0.3
@@ -82,7 +84,7 @@ end
 subsection Standard method parameters
   subsection Bools
     set verbose = true
-    set use direct solver = false
+    set use direct solver = true
   end
 
   subsection Mesh
@@ -99,7 +101,8 @@ subsection Multiscale method parameters
     end
 
     subsection Mesh
-      set refinements = 1
+      set refinements = 2
+      set cycles = 1
     end
   end
 
@@ -110,8 +113,8 @@ subsection Multiscale method parameters
     end
 
     subsection Mesh
-      set refinements = 4
-      set prevent output = true
+      set refinements = 3
+      set prevent output = false
     end
   end
 end

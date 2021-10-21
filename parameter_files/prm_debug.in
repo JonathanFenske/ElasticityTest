@@ -1,5 +1,5 @@
 subsection Dimension
-  set dim = 2
+  set dim = 3
 end
 
 subsection Global parameters
@@ -7,10 +7,11 @@ subsection Global parameters
     set other dirichlet id = false
     set neumann boundary condition = false
 	  set use E and nu = true
+    set rotate = true
     set oscillations = false
     set horizontal layers = true
     set vertical layers = true
-    set y-layers = false
+    set y-layers = true
   end
 
   subsection 2D
@@ -60,18 +61,18 @@ subsection Global parameters
   end
 
   subsection Material parameters
-    set n x layers = 2
-    set n y layers = 2
-    set n z layers = 2
+    set n x layers = 1
+    set n y layers = 1
+    set n z layers = 1
     
     set E = 210.e9
     set nu = 0.3
 
     set mu = 1.
-    set mu frequency = 40
+    set mu frequency = 100
 
     set lambda = 1.
-    set lambda frequency = 40
+    set lambda frequency = 100
 
     set rho = 7.85e3
   end
@@ -88,8 +89,8 @@ subsection Standard method parameters
   end
 
   subsection Mesh
-    set refinements = 1
-    set cycles = 2
+    set refinements = 2
+    set cycles = 1
   end
 end
 
@@ -102,7 +103,7 @@ subsection Multiscale method parameters
 
     subsection Mesh
       set refinements = 1
-      set cycles = 2
+      set cycles = 1
     end
   end
 

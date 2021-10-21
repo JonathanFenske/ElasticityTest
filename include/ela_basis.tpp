@@ -19,8 +19,8 @@ namespace Elasticity
     typename Triangulation<dim>::active_cell_iterator &first_cell,
     unsigned int                                       local_subdomain,
     MPI_Comm                                           mpi_communicator,
-    const ParametersBasis &                            parameters_basis,
-    const GlobalParameters<dim> &                      global_parameters,
+    const ParametersBasis                             &parameters_basis,
+    const GlobalParameters<dim>                       &global_parameters,
     const unsigned int                                 cycle)
     : mpi_communicator(mpi_communicator)
     , first_cell(first_cell)
@@ -304,7 +304,7 @@ namespace Elasticity
                   << global_cell_id.to_string() << "   [machine: " << proc_name
                   << " | rank: "
                   << Utilities::MPI::this_mpi_process(MPI_COMM_WORLD)
-                  << "]   .....";
+                  << "]   ..... ";
       }
 
     timer.restart();
@@ -332,6 +332,10 @@ namespace Elasticity
 
     assemble_global_element_matrix();
 
+    if (parameters_basis.prevent_output)
+      if (global_cell_id == first_cell->id())
+        output_basis();
+
     {
       // Free memory as much as possible
       system_matrix.clear();
@@ -347,9 +351,6 @@ namespace Elasticity
                     << std::endl;
         }
     }
-    if (parameters_basis.prevent_output)
-      if (global_cell_id == first_cell->id())
-        output_basis();
   }
 
 
@@ -435,7 +436,7 @@ namespace Elasticity
         data_out.add_data_vector(basis_solution, stress_proc_vector[n_basis]);
       }
 
-    data_out.build_patches();
+    data_out.build_patches(10);
 
     // filename
     filename = "ela_basis";

@@ -62,6 +62,11 @@ namespace Elasticity
           Patterns::Bool(),
           "Choose whether to use Young's modulus and the Poisson ratio"
           " to declare Lamé's parameters");
+        prm.declare_entry(
+          "rotate",
+          "false",
+          Patterns::Bool(),
+          "True if you want to use a rotation as Dirichlet boundary condition.");
         prm.declare_entry("oscillations",
                           "false",
                           Patterns::Bool(),
@@ -211,6 +216,8 @@ namespace Elasticity
 
         // True if E and nu shall be used to declare mu and lambda.
         use_E_and_nu = prm.get_bool("use E and nu");
+
+        rotate = prm.get_bool("rotate");
 
         int m = 0;
         material_structure.insert(
