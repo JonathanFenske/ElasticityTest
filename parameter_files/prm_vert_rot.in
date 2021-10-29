@@ -1,0 +1,121 @@
+subsection Dimension
+  set dim = 3
+end
+
+subsection Global parameters
+  subsection Bools
+    set other dirichlet id = false
+    set neumann boundary condition = false
+	  set use E and nu = true
+    set rotate = true
+    set oscillations = false
+    set horizontal layers = false
+    set vertical layers = true
+    set y-layers = false
+  end
+
+  subsection 2D
+    set init p1[0] = -10.
+    set init p1[1] = 0.
+
+    set init p2[0] = 10.
+    set init p2[1] = 1.
+
+    set dirichlet p1[0] = -1.
+    set dirichlet p1[1] = 0.
+
+    set dirichlet p2[0] = 1.
+    set dirichlet p2[1] = 0.
+
+    set neumann p1[0] = 9.
+    set neumann p1[1] = 1.
+
+    set neumann p2[0] = 10.
+    set neumann p2[1] = 1.
+  end
+
+  subsection 3D
+    set init p1[0] = -10.
+    set init p1[1] = 0.
+    set init p1[2] = 0.
+
+    set init p2[0] = 10.
+    set init p2[1] = 1.
+    set init p2[2] = 1.
+
+    set dirichlet p1[0] = -1.
+    set dirichlet p1[1] = -1.
+    set dirichlet p1[2] = 0.
+
+    set dirichlet p2[0] = 1.
+    set dirichlet p2[1] = 1.
+    set dirichlet p2[2] = 0.
+
+    set neumann p1[0] = 9.
+    set neumann p1[1] = 0.
+    set neumann p1[2] = 1.
+
+    set neumann p2[0] = 10.
+    set neumann p2[1] = 1.
+    set neumann p2[2] = 1.
+  end
+
+  subsection Material parameters
+    set n x layers = 1
+    set n y layers = 1
+    set n z layers = 10
+    
+    set E = 210.e9
+    set nu = 0.3
+
+    set mu = 1.
+    set mu frequency = 100
+
+    set lambda = 1.
+    set lambda frequency = 100
+
+    set rho = 7.85e3
+  end
+
+  subsection Forces
+    set surface force = 1
+  end
+end
+
+subsection Standard method parameters
+  subsection Bools
+    set verbose = true
+    set use direct solver = true
+  end
+
+  subsection Mesh
+    set refinements = 2
+    set cycles = 4
+  end
+end
+
+subsection Multiscale method parameters
+  subsection Coarse scale
+    subsection Bools
+      set verbose = true
+      set use direct solver = false
+    end
+
+    subsection Mesh
+      set refinements = 2
+      set cycles = 1
+    end
+  end
+
+  subsection Fine scale
+    subsection Bools
+      set verbose = true
+      set use direct solver = false
+    end
+
+    subsection Mesh
+      set refinements = 3
+      set prevent output = true
+    end
+  end
+end
