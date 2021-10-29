@@ -74,7 +74,7 @@ namespace MyTools
     , y((init_p2(1) - init_p1(1)) / 2)
     , z((init_p2(2) - init_p1(2)) / 2)
     , R(Physics::Transformations::Rotations::rotation_matrix_3d({1, 0, 0},
-                                                                M_PI / 2))
+                                                                M_PI / 9))
   {
     AssertDimension(dim, 3);
   }

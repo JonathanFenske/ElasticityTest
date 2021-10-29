@@ -313,13 +313,13 @@ namespace Elasticity
             unsigned int n_x_layers = prm.get_integer("n x layers");
             unsigned int n_y_layers = prm.get_integer("n y layers");
             unsigned int n_z_layers = prm.get_integer("n z layers");
+            unsigned int n_layers   = n_x_layers * n_y_layers * n_z_layers;
 
-            std::vector<unsigned int> index_set(n_x_layers * n_y_layers *
-                                                n_z_layers);
+            std::vector<unsigned int> index_set(n_layers);
             std::iota(index_set.begin(), index_set.end(), 0);
-            std::random_device rd;
-            std::mt19937       g(rd());
-            std::shuffle(index_set.begin(), index_set.end(), g);
+            std::seed_seq seq{1, 2, 3, 4, 5};
+            std::mt19937  rd(seq);
+            std::shuffle(index_set.begin(), index_set.end(), rd);
 
             lambda = LamePrm<dim>(n_x_layers,
                                   n_y_layers,

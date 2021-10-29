@@ -46,5 +46,56 @@ namespace MyTools
       }
   }
 
+
+  // RandomNumberUInt::RandomNumberUInt(const unsigned int b,
+  //                                    const bool same_on_all_ranks = true)
+  //   : a(0)
+  //   , b(b)
+  //   , same_on_all_ranks(same_on_all_ranks)
+  //   , timeSeed((
+  //       same_on_all_ranks ?
+  //         0.0 :
+  //         std::chrono::high_resolution_clock::now().time_since_epoch().count()))
+  //   , seed_sequence{uint32_t(timeSeed & 0xffffffff), uint32_t(timeSeed >>
+  //   32)}
+  // {
+  //   rng.seed(seed_sequence);
+  // }
+
+  // RandomNumberUInt::RandomNumberUInt(const unsigned int a,
+  //                                    const unsigned int b,
+  //                                    const bool same_on_all_ranks = true)
+  //   : a(a)
+  //   , b(b)
+  //   , same_on_all_ranks(same_on_all_ranks)
+  //   , timeSeed((
+  //       same_on_all_ranks ?
+  //         0.0 :
+  //         std::chrono::high_resolution_clock::now().time_since_epoch().count()))
+  //   , seed_sequence{uint32_t(timeSeed & 0xffffffff), uint32_t(timeSeed >>
+  //   32)}
+  // {
+  //   rng.seed(seed_sequence);
+  // }
+
+  // void
+  // RandomNumberUInt::reinit()
+  // {
+  //   // re-initialize the random number generator with time-dependent seed
+  //   timeSeed =
+  //     (same_on_all_ranks ?
+  //        0.0 :
+  //        std::chrono::high_resolution_clock::now().time_since_epoch().count());
+  //   std::seed_seq seed_sequence{uint32_t(timeSeed & 0xffffffff),
+  //                               uint32_t(timeSeed >> 32)};
+  //   rng.seed(seed_sequence);
+  // }
+
+  // double
+  // RandomNumberUInt::generate()
+  // {
+  //   return rng();
+  // }
+
   template class Rotation<3>;
 } // namespace MyTools

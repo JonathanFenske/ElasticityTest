@@ -83,14 +83,6 @@ namespace MyTools
   {
   public:
     Rotation(Point<dim> init_p1, Point<dim> init_p2);
-
-    /*!
-     * Evaluate a basis function with a preset index at one given point in 2D or
-     * 3D.
-     *
-     * @param p
-     * @param component
-     */
     virtual void
     vector_value(const Point<dim> &p, Vector<double> &values) const override;
 
@@ -99,6 +91,38 @@ namespace MyTools
     double       z;
     Tensor<2, 3> R;
   };
+
+
+  /*
+   * Generate a random unsigned integer number between [a,b)
+   */
+  // class RandomNumberUInt
+  // {
+  // public:
+  //   RandomNumberUInt(const unsigned int b, const bool same_on_all_ranks =
+  //   true);
+
+  //   RandomNumberUInt(const unsigned int a,
+  //                    const unsigned int b,
+  //                    const bool         same_on_all_ranks = true);
+
+  //   void
+  //   reinit();
+
+  //   double
+  //   generate();
+
+  // private:
+  //   unsigned int a, b;
+
+  //   bool same_on_all_ranks;
+
+  //   uint64_t timeSeed;
+
+  //   std::seed_seq seed_sequence;
+
+  //   std::mt19937_64 rng;
+  // };
 } // namespace MyTools
 
 #endif // _INCLUDE_MY_TOOLS_H_
