@@ -85,7 +85,7 @@ end
 subsection Standard method parameters
   subsection Bools
     set verbose = true
-    set use direct solver = true
+    set use direct solver = false
   end
 
   subsection Mesh
