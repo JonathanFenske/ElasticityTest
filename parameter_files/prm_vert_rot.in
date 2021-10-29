@@ -89,8 +89,8 @@ subsection Standard method parameters
   end
 
   subsection Mesh
-    set refinements = 2
-    set cycles = 4
+    set refinements = 5
+    set cycles = 1
   end
 end
 
