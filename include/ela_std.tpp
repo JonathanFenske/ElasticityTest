@@ -447,7 +447,7 @@ namespace Elasticity
     const Point<dim> p1 = global_parameters.init_p1,
                      p2 = global_parameters.init_p2;
 
-    for (unsigned int cycle = 0; cycle < parameters_std.n_cycles; ++cycle)
+    for (unsigned int cycle = 0; cycle < 2; ++cycle)
       {
         if (parameters_std.verbose)
           {
@@ -462,12 +462,12 @@ namespace Elasticity
             GridGenerator::subdivided_hyper_rectangle(
               triangulation, repetitions, p1, p2, true);
 
-            triangulation.refine_global(parameters_std.n_refine);
+            triangulation.refine_global(global_parameters.coarse_refinements);
           }
         else
           {
             // refine_grid();
-            triangulation.refine_global(1);
+            triangulation.refine_global(global_parameters.fine_refinements);
           }
 
         setup_system();

@@ -63,7 +63,7 @@ subsection Global parameters
   subsection Material parameters
     set n x layers = 1
     set n y layers = 1
-    set n z layers = 10
+    set n z layers = 5
     
     set E = 210.e9
     set nu = 0.3
@@ -79,6 +79,11 @@ subsection Global parameters
 
   subsection Forces
     set surface force = 1
+  end
+
+  subsection Refinements
+    set coarse refinements = 1
+    set fine refinements = 3
   end
 end
 

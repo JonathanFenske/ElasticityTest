@@ -524,7 +524,7 @@ namespace Elasticity
               << " MPI rank(s)..." << std::endl;
       }
 
-    for (unsigned int cycle = 0; cycle < parameters_ms.n_cycles; ++cycle)
+    for (unsigned int cycle = 0; cycle < 1; ++cycle)
       {
         if (parameters_ms.verbose)
           {
@@ -544,7 +544,7 @@ namespace Elasticity
 
             // GridGenerator::cylinder(triangulation, 10., 0.1);
 
-            triangulation.refine_global(parameters_ms.n_refine);
+            triangulation.refine_global(global_parameters.coarse_refinements);
           }
         else
           {

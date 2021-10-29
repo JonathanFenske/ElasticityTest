@@ -312,7 +312,7 @@ namespace Elasticity
     GridGenerator::general_cell(triangulation,
                                 corner_points,
                                 /* colorize faces */ false);
-    triangulation.refine_global(parameters_basis.n_refine);
+    triangulation.refine_global(global_parameters.fine_refinements);
 
     setup_system();
 

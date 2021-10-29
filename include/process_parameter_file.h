@@ -238,6 +238,16 @@ namespace Elasticity
      * there is a Neumann boundary condition.
      */
     double surface_force;
+
+    /**
+     * Number of refinements on the coarse scale.
+     */
+    unsigned int coarse_refinements;
+
+    /**
+     * Number of refinements on the fine scale.
+     */
+    unsigned int fine_refinements;
   };
 
 

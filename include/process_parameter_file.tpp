@@ -196,6 +196,19 @@ namespace Elasticity
                           "Set the surface force.");
       }
       prm.leave_subsection();
+
+      prm.enter_subsection("Refinements");
+      {
+        prm.declare_entry("coarse refinements",
+                          "1",
+                          Patterns::Integer(),
+                          "Set the number of refinements on the coarse scale.");
+        prm.declare_entry("fine refinements",
+                          "1",
+                          Patterns::Integer(),
+                          "Set the number of refinements on the fine scale.");
+      }
+      prm.leave_subsection();
     }
     prm.leave_subsection();
   }
@@ -347,6 +360,13 @@ namespace Elasticity
       prm.enter_subsection("Forces");
       {
         surface_force = prm.get_double("surface force");
+      }
+      prm.leave_subsection();
+
+      prm.enter_subsection("Refinements");
+      {
+        coarse_refinements = prm.get_integer("coarse refinements");
+        fine_refinements   = prm.get_integer("fine refinements");
       }
       prm.leave_subsection();
     }
