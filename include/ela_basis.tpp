@@ -332,7 +332,7 @@ namespace Elasticity
 
     assemble_global_element_matrix();
 
-    if (parameters_basis.prevent_output)
+    if (!parameters_basis.prevent_output)
       if (global_cell_id == first_cell->id())
         output_basis();
 
