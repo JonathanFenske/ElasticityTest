@@ -62,11 +62,6 @@ namespace Elasticity
           Patterns::Bool(),
           "Choose whether to use Young's modulus and the Poisson ratio"
           " to declare Lamé's parameters");
-        prm.declare_entry(
-          "rotate",
-          "false",
-          Patterns::Bool(),
-          "True if you want to use a rotation as Dirichlet boundary condition.");
         prm.declare_entry("oscillations",
                           "false",
                           Patterns::Bool(),
@@ -207,6 +202,20 @@ namespace Elasticity
                           "1",
                           Patterns::Integer(),
                           "Set the number of refinements on the fine scale.");
+      }
+      prm.leave_subsection();
+
+      prm.enter_subsection("Rotation");
+      {
+        prm.declare_entry(
+          "rotate",
+          "false",
+          Patterns::Bool(),
+          "True if you want to use a rotation as Dirichlet boundary condition.");
+        prm.declare_entry("rotation angle",
+                          "0",
+                          Patterns::Double(),
+                          "Set the rotation angle.");
       }
       prm.leave_subsection();
     }
@@ -367,6 +376,13 @@ namespace Elasticity
       {
         coarse_refinements = prm.get_integer("coarse refinements");
         fine_refinements   = prm.get_integer("fine refinements");
+      }
+      prm.leave_subsection();
+
+      prm.enter_subsection("Rotation");
+      {
+        rotate = prm.get_bool("rotate");
+        angle  = prm.get_double("rotation angle") * M_PI;
       }
       prm.leave_subsection();
     }

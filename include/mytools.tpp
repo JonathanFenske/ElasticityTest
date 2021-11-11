@@ -69,12 +69,14 @@ namespace MyTools
 
 
   template <int dim>
-  Rotation<dim>::Rotation(Point<dim> init_p1, Point<dim> init_p2)
+  Rotation<dim>::Rotation(const Point<dim> init_p1,
+                          const Point<dim> init_p2,
+                          const double     angle)
     : Function<dim>(dim)
     , y((init_p2(1) - init_p1(1)) / 2)
     , z((init_p2(2) - init_p1(2)) / 2)
     , R(Physics::Transformations::Rotations::rotation_matrix_3d({1, 0, 0},
-                                                                M_PI / 9))
+                                                                angle))
   {
     AssertDimension(dim, 3);
   }
@@ -83,6 +85,8 @@ namespace MyTools
   void
   Rotation<dim>::vector_value(const Point<dim> &p, Vector<double> &values) const
   {
+    // first translate the point such that the x-axis of the body is at the
+    // origin and then apply the inverted translation to the rotated point
     Tensor<1, dim> tmp(p);
     tmp[1] -= y;
     tmp[2] -= z;

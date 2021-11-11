@@ -85,6 +85,10 @@ subsection Global parameters
     set coarse refinements = 2
     set fine refinements = 3
   end
+
+  subsection Rotation
+    set rotate = true
+    set rotation angle = 0.1 # * pi
 end
 
 subsection Standard method parameters

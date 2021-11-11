@@ -74,7 +74,8 @@ namespace Elasticity
               dof_handler,
               1,
               MyTools::Rotation<dim>(global_parameters.init_p1,
-                                     global_parameters.init_p2),
+                                     global_parameters.init_p2,
+                                     global_parameters.angle),
               constraints);
           }
       }

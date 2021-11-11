@@ -82,7 +82,9 @@ namespace MyTools
   class Rotation : public Function<dim>
   {
   public:
-    Rotation(Point<dim> init_p1, Point<dim> init_p2);
+    Rotation(const Point<dim> init_p1,
+             const Point<dim> init_p2,
+             const double     angle);
     virtual void
     vector_value(const Point<dim> &p, Vector<double> &values) const override;
 

@@ -6,6 +6,7 @@
 
 #include <deal.II/grid/cell_id.h>
 
+#include <cmath>
 #include <fstream>
 #include <iostream>
 #include <numeric>
@@ -146,8 +147,6 @@ namespace Elasticity
      */
     bool neumann_bc;
 
-    bool rotate;
-
     /**
      * @brief First vertex of the body
      *
@@ -248,6 +247,16 @@ namespace Elasticity
      * Number of refinements on the fine scale.
      */
     unsigned int fine_refinements;
+
+    /**
+     * True if one end shall be rotated.
+     */
+    bool rotate;
+
+    /**
+     * Rotation angle
+     */
+    double angle;
   };
 
 
