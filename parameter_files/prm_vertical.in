@@ -60,7 +60,9 @@ subsection Global parameters
   end
 
   subsection Material parameters
-    set layers = 100
+    set n x layers = 1
+    set n y layers = 1
+    set n z layers = 10
     
     set E = 210.e9
     set nu = 0.3
@@ -77,6 +79,16 @@ subsection Global parameters
   subsection Forces
     set surface force = 1
   end
+
+  subsection Refinements
+    set coarse refinements = 2
+    set fine refinements = 3
+  end
+
+  subsection Rotations
+    set rotate = false
+    set rotation angle = 0.05 # * pi
+  end
 end
 
 subsection Standard method parameters
@@ -86,7 +98,7 @@ subsection Standard method parameters
   end
 
   subsection Mesh
-    set refinements = 1
+    set refinements = 5
     set cycles = 1
   end
 end
@@ -99,7 +111,8 @@ subsection Multiscale method parameters
     end
 
     subsection Mesh
-      set refinements = 1
+      set refinements = 2
+      set cycles = 1
     end
   end
 
@@ -110,7 +123,7 @@ subsection Multiscale method parameters
     end
 
     subsection Mesh
-      set refinements = 4
+      set refinements = 3
       set prevent output = true
     end
   end
