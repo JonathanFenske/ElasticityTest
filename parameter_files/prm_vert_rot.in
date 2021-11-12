@@ -87,7 +87,7 @@ subsection Global parameters
 
   subsection Rotations
     set rotate = true
-    set rotation angle = 0.1
+    set rotation angle = 0.05 # * pi
   end
 end
 
