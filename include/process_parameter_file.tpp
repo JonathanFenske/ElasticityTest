@@ -207,11 +207,10 @@ namespace Elasticity
 
       prm.enter_subsection("Rotation");
       {
-        prm.declare_entry(
-          "rotate",
-          "false",
-          Patterns::Bool(),
-          "True if you want to use a rotation as Dirichlet boundary condition.");
+        prm.declare_entry("rotate",
+                          "false",
+                          Patterns::Bool(),
+                          "True if an end of the body shall be rotated.");
         prm.declare_entry("rotation angle",
                           "0",
                           Patterns::Double(),
