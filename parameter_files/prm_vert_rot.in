@@ -73,7 +73,7 @@ subsection Global parameters
     set lambda = 1.
     set lambda frequency = 100
 
-    set rho = 1e9
+    set rho = 0
   end
 
   subsection Forces
