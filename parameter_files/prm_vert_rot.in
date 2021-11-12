@@ -89,6 +89,7 @@ subsection Global parameters
   subsection Rotation
     set rotate = true
     set rotation angle = 0.1 # * pi
+  end
 end
 
 subsection Standard method parameters
