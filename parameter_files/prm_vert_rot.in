@@ -107,7 +107,7 @@ subsection Multiscale method parameters
   subsection Coarse scale
     subsection Bools
       set verbose = true
-      set use direct solver = false
+      set use direct solver = true
     end
 
     subsection Mesh
