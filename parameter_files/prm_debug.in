@@ -80,6 +80,11 @@ subsection Global parameters
   subsection Forces
     set surface force = 1
   end
+
+  subsection Rotations
+    set rotate = true
+    set rotation angle = 0.1
+  end
 end
 
 subsection Standard method parameters

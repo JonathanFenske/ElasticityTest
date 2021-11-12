@@ -205,7 +205,7 @@ namespace Elasticity
       }
       prm.leave_subsection();
 
-      prm.enter_subsection("Rotation");
+      prm.enter_subsection("Rotations");
       {
         prm.declare_entry("rotate",
                           "false",
@@ -237,8 +237,6 @@ namespace Elasticity
 
         // True if E and nu shall be used to declare mu and lambda.
         use_E_and_nu = prm.get_bool("use E and nu");
-
-        rotate = prm.get_bool("rotate");
 
         int m = 0;
         material_structure.insert(
@@ -378,7 +376,7 @@ namespace Elasticity
       }
       prm.leave_subsection();
 
-      prm.enter_subsection("Rotation");
+      prm.enter_subsection("Rotations");
       {
         rotate = prm.get_bool("rotate");
         angle  = prm.get_double("rotation angle") * M_PI;

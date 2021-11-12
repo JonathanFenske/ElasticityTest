@@ -85,7 +85,7 @@ subsection Global parameters
     set fine refinements = 3
   end
 
-  subsection Rotation
+  subsection Rotations
     set rotate = true
     set rotation angle = 0.1
   end
