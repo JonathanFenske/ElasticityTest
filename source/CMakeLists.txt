@@ -21,11 +21,13 @@ set(MsELA_LIBRARY_SRC
   ela_std.cc
   ela_basis.cc
   ela_ms.cc
-  forces_and_lame_parameters.cc
+  lame_parameters.cc
+  body_force.cc
   mytools.cc
   postprocessing.cc
   process_parameter_file.cc
-  run_problem.cc)
+  run_problem.cc
+  ../include/myexceptions.h)
 
 print_all_args (
 	${MsELA_LIBRARY_SRC}

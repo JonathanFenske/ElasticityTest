@@ -59,12 +59,12 @@ subsection Elasticity Parameters
     set direct solver ms = false
     set direct solver basis = false
     
-    set prevent basis output = false
+    set prevent basis output = true
 
-    set coarse refinements = 1
-    set fine refinements = 1
+    set coarse refinements = 2
+    set fine refinements = 3
 
-    set rotate = false
+    set rotate = true
     set rotation angle = 0.05 # * pi
   end
 end

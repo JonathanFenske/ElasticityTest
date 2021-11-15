@@ -12,8 +12,7 @@ namespace Elasticity
 
   // The constructor
   template <int dim>
-  ElaStd<dim>::ElaStd(const GlobalParameters<dim> &global_parameters,
-                      const ParametersStd         &parameters_std)
+  ElaStd<dim>::ElaStd(const ElaParameters<dim> &ela_parameters)
     : mpi_communicator(MPI_COMM_WORLD)
     , triangulation(mpi_communicator,
                     typename Triangulation<dim>::MeshSmoothing(
@@ -21,8 +20,7 @@ namespace Elasticity
                       Triangulation<dim>::smoothing_on_coarsening))
     , fe(FE_Q<dim>(1), dim)
     , dof_handler(triangulation)
-    , global_parameters(global_parameters)
-    , parameters_std(parameters_std)
+    , ela_parameters(ela_parameters)
     , processor_is_used(false)
     , pcout(std::cout,
             (Utilities::MPI::this_mpi_process(mpi_communicator) == 0))
@@ -48,36 +46,23 @@ namespace Elasticity
     constraints.clear();
     constraints.reinit(locally_relevant_dofs);
     DoFTools::make_hanging_node_constraints(dof_handler, constraints);
-    unsigned int dirichlet_id = 0;
-
-    // The next part is used if a Dirichlet boundary condition is only applied
-    // on a part of a face.
-
-    if (global_parameters.other_dirichlet_id)
-      {
-        const Point<dim> p1(global_parameters.dirichlet_p1),
-          p2(global_parameters.dirichlet_p2);
-        MyTools::set_dirichlet_id<dim>(p1, p2, 4, 100, triangulation);
-        dirichlet_id = 100;
-      }
 
     VectorTools::interpolate_boundary_values(dof_handler,
-                                             dirichlet_id,
+                                             0,
                                              Functions::ZeroFunction<dim>(dim),
                                              constraints);
 
-    if (dim == 3)
+    if (ela_parameters.rotate)
       {
-        if (global_parameters.rotate)
-          {
-            VectorTools::interpolate_boundary_values(
-              dof_handler,
-              1,
-              MyTools::Rotation<dim>(global_parameters.init_p1,
-                                     global_parameters.init_p2,
-                                     global_parameters.angle),
-              constraints);
-          }
+        AssertThrow(dim == 3,
+                    ExcMessage("Rotations are only available for 3D problems"));
+        VectorTools::interpolate_boundary_values(
+          dof_handler,
+          1,
+          MyTools::Rotation<dim>(ela_parameters.init_p1,
+                                 ela_parameters.init_p2,
+                                 ela_parameters.angle),
+          constraints);
       }
 
     constraints.close();
@@ -115,27 +100,19 @@ namespace Elasticity
   void
   ElaStd<dim>::assemble_system()
   {
-    TimerOutput::Scope    t(computing_timer, "assembly");
-    const QGauss<dim>     quadrature_formula(fe.degree + 1);
-    const QGauss<dim - 1> face_quadrature_formula(fe.degree + 1);
-    FEValues<dim>         fe_values(fe,
+    TimerOutput::Scope  t(computing_timer, "assembly");
+    const QGauss<dim>   quadrature_formula(fe.degree + 1);
+    FEValues<dim>       fe_values(fe,
                             quadrature_formula,
                             update_values | update_gradients |
                               update_quadrature_points | update_JxW_values);
-    FEFaceValues<dim>     fe_face_values(fe,
-                                     face_quadrature_formula,
-                                     update_values | update_quadrature_points |
-                                       update_normal_vectors |
-                                       update_JxW_values);
-    const unsigned int    dofs_per_cell   = fe.n_dofs_per_cell();
-    const unsigned int    n_q_points      = quadrature_formula.size();
-    const unsigned int    n_face_q_points = face_quadrature_formula.size();
-    std::vector<double>   lambda_values(n_q_points), mu_values(n_q_points);
+    const unsigned int  dofs_per_cell = fe.n_dofs_per_cell();
+    const unsigned int  n_q_points    = quadrature_formula.size();
+    std::vector<double> lambda_values(n_q_points), mu_values(n_q_points);
     std::vector<Vector<double>> body_force_values(n_q_points);
     for (unsigned int i = 0; i < n_q_points; ++i)
       body_force_values[i].reinit(dim);
-    BodyForce<dim>     body_force(global_parameters.rho);
-    SurfaceForce<dim>  surface_force(global_parameters.surface_force);
+    BodyForce<dim>     body_force(ela_parameters.rho);
     FullMatrix<double> cell_matrix(dofs_per_cell, dofs_per_cell);
     Vector<double>     cell_rhs(dofs_per_cell);
     Vector<double>     cell_rhs_tmp(dofs_per_cell);
@@ -149,10 +126,10 @@ namespace Elasticity
             cell_matrix       = 0.;
             cell_rhs          = 0.;
             fe_values.reinit(cell);
-            global_parameters.lambda.value_list(
-              fe_values.get_quadrature_points(), lambda_values);
-            global_parameters.mu.value_list(fe_values.get_quadrature_points(),
-                                            mu_values);
+            ela_parameters.lambda->value_list(fe_values.get_quadrature_points(),
+                                              lambda_values);
+            ela_parameters.mu->value_list(fe_values.get_quadrature_points(),
+                                          mu_values);
             body_force.vector_value_list(fe_values.get_quadrature_points(),
                                          body_force_values);
             for (unsigned int q_point = 0; q_point < n_q_points; ++q_point)
@@ -183,37 +160,17 @@ namespace Elasticity
                       fe_values.shape_value_component(i, q_point, component_i) *
                       body_force_values[q_point][component_i] *
                       fe_values.JxW(q_point);
-                    // Vector<double>          tmp(dim);
-                    // std::vector<Point<dim>> q_points(
-                    //   fe_values.get_quadrature_points());
-                    // body_force.vector_value(q_points[q_point], tmp);
-                    // std::cout << "= " << tmp << std::endl;
                   }
                 cell_rhs_tmp = cell_rhs;
               }
-            if (global_parameters.neumann_bc)
+
+            for (unsigned int i = 0; i < fe.dofs_per_cell; ++i)
               {
-                for (const auto &face : cell->face_iterators())
-                  if (face->at_boundary() && (face->boundary_id() == 1))
-                    {
-                      std::vector<double> surface_force_values(n_face_q_points);
-                      fe_face_values.reinit(cell, face);
-                      surface_force.value_list(
-                        fe_face_values.get_quadrature_points(),
-                        surface_force_values);
-                      for (unsigned int q_point = 0; q_point < n_face_q_points;
-                           ++q_point)
-                        {
-                          for (unsigned int i = 0; i < dofs_per_cell; ++i)
-                            cell_rhs(i) +=
-                              (fe_face_values.shape_value(
-                                 i,
-                                 q_point) *                    // phi_i(x_q)
-                               surface_force_values[q_point] * // g(x_q)
-                               fe_face_values.JxW(q_point));   // dx
-                        }
-                    }
+                for (unsigned int j = 0; j < fe.dofs_per_cell; ++j)
+                  pcout << cell_matrix(i, j) << " ";
+                pcout << std::endl;
               }
+            pcout << std::endl;
 
             cell->get_dof_indices(local_dof_indices);
             constraints.distribute_local_to_global(cell_matrix,
@@ -232,12 +189,12 @@ namespace Elasticity
   void
   ElaStd<dim>::solve()
   {
-    if (parameters_std.direct_solver)
+    if (ela_parameters.direct_solver_std)
       {
         TimerOutput::Scope t(computing_timer,
                              "parallel sparse direct solver (MUMPS)");
 
-        if (parameters_std.verbose)
+        if (ela_parameters.verbose)
           {
             pcout << "   Using direct solver..." << std::endl;
           }
@@ -251,7 +208,7 @@ namespace Elasticity
                      completely_distributed_solution,
                      system_rhs);
 
-        if (parameters_std.verbose)
+        if (ela_parameters.verbose)
           {
             pcout << "   Solved in with parallel sparse direct solver (MUMPS)."
                   << std::endl;
@@ -266,7 +223,7 @@ namespace Elasticity
       {
         TimerOutput::Scope t(computing_timer, "solve");
 
-        if (parameters_std.verbose)
+        if (ela_parameters.verbose)
           {
             pcout << "   Using iterative solver..." << std::endl;
           }
@@ -324,7 +281,7 @@ namespace Elasticity
             Assert(false, ExcMessage(e.what()));
           }
 
-        if (parameters_std.verbose)
+        if (ela_parameters.verbose)
           {
             pcout << "   Solved (iteratively) in " << solver_control.last_step()
                   << " iterations." << std::endl;
@@ -357,7 +314,7 @@ namespace Elasticity
 
   template <int dim>
   void
-  ElaStd<dim>::output_results(const unsigned int cycle) const
+  ElaStd<dim>::output_results(const unsigned int cycle)
   {
     DataOut<dim> data_out;
     data_out.attach_dof_handler(dof_handler);
@@ -380,18 +337,26 @@ namespace Elasticity
         data_out.add_data_vector(locally_relevant_solution, strain_postproc);
 
         // add the linearized stress tensor to the output
-        StressPostprocessor<dim> stress_postproc(global_parameters);
+        StressPostprocessor<dim> stress_postproc(ela_parameters);
         data_out.add_data_vector(locally_relevant_solution, stress_postproc);
 
         data_out.build_patches();
 
         // write the output files
-        const std::string filename =
-          ("output/std_partitioned/std_solution-" +
-           Utilities::int_to_string(cycle, 2) + "." +
-           Utilities::int_to_string(triangulation.locally_owned_subdomain(),
-                                    4) +
-           ".vtu");
+        std::string filename = "output/std_partitioned/std_solution-";
+        if (cycle == 0)
+          {
+            filename += std::string("coarse.");
+          }
+        else
+          {
+            Assert(cycle == 1, ExcCycle(cycle + 1, 2));
+            filename += std::string("fine.");
+          }
+        filename += ".";
+        filename +=
+          Utilities::int_to_string(triangulation.locally_owned_subdomain(), 4);
+        filename += std::string(".vtu");
         std::ofstream output(filename);
         data_out.write_vtu(output);
       }
@@ -416,13 +381,28 @@ namespace Elasticity
         first_used_processor)
       {
         std::vector<std::string> filenames;
+        std::string              filename;
         for (unsigned int i = 0;
              i < Utilities::MPI::n_mpi_processes(mpi_communicator);
              ++i)
           if (used_processors[i])
-            filenames.push_back("std_partitioned/std_solution-" +
-                                Utilities::int_to_string(cycle, 2) + "." +
-                                Utilities::int_to_string(i, 4) + ".vtu");
+            {
+              filename = "output/std_partitioned/std_solution-";
+              if (cycle == 0)
+                {
+                  filename += std::string("coarse.");
+                }
+              else
+                {
+                  Assert(cycle == 1, ExcCycle(cycle + 1, 2));
+                  filename += std::string("fine.");
+                }
+              filename += ".";
+              filename += Utilities::int_to_string(i, 4);
+              filename += std::string(".vtu");
+              filenames.push_back(filename);
+            }
+
 
         std::ofstream master_output("output/std_solution-" +
                                     Utilities::int_to_string(cycle, 2) +
@@ -436,7 +416,7 @@ namespace Elasticity
   void
   ElaStd<dim>::run()
   {
-    if (parameters_std.verbose)
+    if (ela_parameters.verbose)
       {
         pcout << "Running with "
               << "Trilinos"
@@ -445,14 +425,21 @@ namespace Elasticity
       }
 
 
-    const Point<dim> p1 = global_parameters.init_p1,
-                     p2 = global_parameters.init_p2;
+    const Point<dim> p1 = ela_parameters.init_p1, p2 = ela_parameters.init_p2;
 
     for (unsigned int cycle = 0; cycle < 2; ++cycle)
       {
-        if (parameters_std.verbose)
+        if (ela_parameters.verbose)
           {
-            pcout << "Cycle " << cycle << ':' << std::endl;
+            if (cycle == 0)
+              {
+                pcout << "Coarse Scale Standard FEM:" << std::endl;
+              }
+            else
+              {
+                Assert(cycle == 1, ExcCycle(cycle + 1, 2));
+                pcout << "Fine Scale Standard FEM:" << std::endl;
+              }
           }
 
         if (cycle == 0)
@@ -463,17 +450,16 @@ namespace Elasticity
             GridGenerator::subdivided_hyper_rectangle(
               triangulation, repetitions, p1, p2, true);
 
-            triangulation.refine_global(global_parameters.coarse_refinements);
+            triangulation.refine_global(ela_parameters.coarse_refinements);
           }
         else
           {
-            // refine_grid();
-            triangulation.refine_global(global_parameters.fine_refinements);
+            triangulation.refine_global(ela_parameters.fine_refinements);
           }
 
         setup_system();
 
-        if (parameters_std.verbose)
+        if (ela_parameters.verbose)
           {
             pcout << "   Number of active cells:       "
                   << triangulation.n_global_active_cells() << std::endl

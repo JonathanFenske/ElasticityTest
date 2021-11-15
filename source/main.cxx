@@ -1,3 +1,4 @@
+#include "myexceptions.h"
 #include "run_problem.h"
 
 int
@@ -89,19 +90,17 @@ main(int argc, char *argv[])
       const Dimension dimension(input_file);
       const int       dim = dimension.dim;
 
-      switch (dim)
+      AssertThrow((dim == 2) || (dim == 3), MyExcDims(dim, 2, 3));
+
+      if (dim == 2)
         {
-          case 2:
-            run_2d_problem(input_file);
-            break;
-
-          case 3:
-            run_3d_problem(input_file);
-            break;
-
-          default:
-            std::cout << "The dimension must be 2 or 3." << std::endl;
-            exit(1);
+          AssertThrow(dim == 2, ExcDimensionMismatch(dim, 2));
+          run_2d_problem(input_file);
+        }
+      else
+        {
+          AssertThrow(dim == 3, ExcDimensionMismatch(dim, 3));
+          run_3d_problem(input_file);
         }
     }
   catch (std::exception &exc)

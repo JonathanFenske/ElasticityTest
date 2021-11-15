@@ -45,7 +45,6 @@
 #include <deal.II/physics/transformations.h>
 
 #include "ela_basis.h"
-#include "forces_and_lame_parameters.h"
 #include "mytools.h"
 #include "postprocessing.h"
 #include "process_parameter_file.h"
@@ -82,14 +81,8 @@ namespace Elasticity
   public:
     /**
      * @brief Construct a new ElaMs object.
-     *
-     * @param global_parameters Parameters that many classes need.
-     * @param parameters_ms Parameters that only this class needs.
-     * @param parameters_basis Parameters for the fine-scale part of the MsFEM.
      */
-    ElaMs(const GlobalParameters<dim> &global_parameters,
-          const ParametersMs &         parameters_ms,
-          const ParametersBasis &      parameters_basis);
+    ElaMs(const ElaParameters<dim> &ela_parameters);
 
     /**
      * @brief Function that runs the problem.
@@ -122,7 +115,7 @@ namespace Elasticity
      * each cell and computing the basis functions with these objects.
      */
     void
-    initialize_and_compute_basis(unsigned int cycle);
+    initialize_and_compute_basis();
 
     /**
      * @brief Assembles the system.
@@ -178,7 +171,7 @@ namespace Elasticity
      * single pvtu file.
      */
     void
-    output_results(unsigned int cycle);
+    output_results();
 
     MPI_Comm                                  mpi_communicator;
     parallel::distributed::Triangulation<dim> triangulation;
@@ -192,9 +185,7 @@ namespace Elasticity
     TrilinosWrappers::MPI::Vector             locally_relevant_solution;
     TrilinosWrappers::MPI::Vector             system_rhs;
     std::map<CellId, ElaBasis<dim>>           cell_basis_map;
-    const GlobalParameters<dim>               global_parameters;
-    const ParametersMs                        parameters_ms;
-    ParametersBasis                           parameters_basis;
+    const ElaParameters<dim>                  ela_parameters;
     bool                                      processor_is_used;
     /**< True if this processor is assigned at least one coarse cell. */
 

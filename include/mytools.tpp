@@ -14,43 +14,6 @@ namespace MyTools
   /****************************************************************************/
   /* Tools */
 
-  template <>
-  void
-  set_dirichlet_id<2>(const Point<2>                          &p1,
-                      const Point<2>                          &p2,
-                      const unsigned int                       face_id,
-                      const unsigned int                       id,
-                      parallel::distributed::Triangulation<2> &triangulation)
-  {
-    for (auto &face : triangulation.active_face_iterators())
-      {
-        if (face->at_boundary() && (face->boundary_id() == face_id) &&
-            (face->center()[0] > p1[0]) && (face->center()[0] < p2[0]) &&
-            (face->center()[1] > p1[1]) && (face->center()[1] < p2[1]))
-          face->set_boundary_id(id);
-      }
-  }
-
-
-  template <>
-  void
-  set_dirichlet_id<3>(const Point<3>                          &p1,
-                      const Point<3>                          &p2,
-                      const unsigned int                       face_id,
-                      const unsigned int                       id,
-                      parallel::distributed::Triangulation<3> &triangulation)
-  {
-    for (auto &face : triangulation.active_face_iterators())
-      {
-        if (face->at_boundary() && (face->boundary_id() == face_id) &&
-            (face->center()[0] > p1[0]) && (face->center()[0] < p2[0]) &&
-            (face->center()[1] > p1[1]) && (face->center()[1] < p2[1]) &&
-            (face->center()[2] > p1[2]) && (face->center()[2] < p2[2]))
-          face->set_boundary_id(id);
-      }
-  }
-
-
   template <int dim>
   const std::vector<unsigned int>
   get_repetitions(const Point<dim> &p1, const Point<dim> &p2)

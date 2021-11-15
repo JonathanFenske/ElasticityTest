@@ -3,6 +3,7 @@
 #define _INCLUDE_ELA_STD_H_
 
 #include <deal.II/base/conditional_ostream.h>
+#include <deal.II/base/exceptions.h>
 #include <deal.II/base/function.h>
 #include <deal.II/base/index_set.h>
 #include <deal.II/base/logstream.h>
@@ -43,7 +44,7 @@
 
 #include <deal.II/physics/transformations.h>
 
-#include "forces_and_lame_parameters.h"
+#include "body_force.h"
 #include "mytools.h"
 #include "postprocessing.h"
 #include "process_parameter_file.h"
@@ -58,6 +59,32 @@
 namespace Elasticity
 {
   using namespace dealii;
+
+
+
+  // class ExcCycle : public ExceptionBase
+  // {
+  // public:
+  //   ExcCycle(const unsigned int a1, const unsigned int a2)
+  //     : arg1(a1)
+  //     , arg2(a2)
+  //   {}
+  //   virtual void
+  //   print_info(std::ostream &out) const
+  //   {
+  //     out << "    " outsequence << std::endl;
+  //   }
+
+  // private:
+  //   unsigned int arg1;
+  //   unsigned int arg2;
+  // };
+
+  DeclException2(ExcCycle,
+                 unsigned int,
+                 unsigned int,
+                 "You are in cycle " << arg1 << " but currently only " << arg2
+                                     << " cycles are allowed to be run.");
 
   /**
    * @brief Class for solving linear elasticity problems using the FEM.
@@ -81,12 +108,8 @@ namespace Elasticity
   public:
     /**
      * @brief Construct a new ElaStd object.
-     *
-     * @param global_parameters Parameters that many classes need.
-     * @param parameters_std Parameters that only this class needs.
      */
-    ElaStd(const GlobalParameters<dim> &global_parameters,
-           const ParametersStd &        parameters_std);
+    ElaStd(const ElaParameters<dim> &ela_parameters);
 
     /**
      * @brief Function that runs the problem.
@@ -151,7 +174,7 @@ namespace Elasticity
      * a single pvtu file.
      */
     void
-    output_results(const unsigned int cycle) const;
+    output_results(unsigned int cycle);
 
     MPI_Comm                                  mpi_communicator;
     parallel::distributed::Triangulation<dim> triangulation;
@@ -164,8 +187,7 @@ namespace Elasticity
     TrilinosWrappers::SparseMatrix            preconditioner_matrix;
     TrilinosWrappers::MPI::Vector             locally_relevant_solution;
     TrilinosWrappers::MPI::Vector             system_rhs;
-    const GlobalParameters<dim>               global_parameters;
-    const ParametersStd                       parameters_std;
+    const ElaParameters<dim>                  ela_parameters;
     bool                                      processor_is_used;
     /**< True if this processor is assigned at least one coarse cell. */
 

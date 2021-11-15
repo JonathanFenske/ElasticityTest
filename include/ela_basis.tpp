@@ -19,9 +19,7 @@ namespace Elasticity
     typename Triangulation<dim>::active_cell_iterator &first_cell,
     unsigned int                                       local_subdomain,
     MPI_Comm                                           mpi_communicator,
-    const ParametersBasis                             &parameters_basis,
-    const GlobalParameters<dim>                       &global_parameters,
-    const unsigned int                                 cycle)
+    const ElaParameters<dim>                          &ela_parameters)
     : mpi_communicator(mpi_communicator)
     , first_cell(first_cell)
     , triangulation()
@@ -35,10 +33,8 @@ namespace Elasticity
     , global_weights(fe.dofs_per_cell)
     , global_cell_id(global_cell->id())
     , local_subdomain(local_subdomain)
-    , parameters_basis(parameters_basis)
-    , global_parameters(global_parameters)
+    , ela_parameters(ela_parameters)
     , basis_q1(global_cell)
-    , cycle(cycle)
   {
     // set corner points
     for (unsigned int vertex_n = 0;
@@ -65,10 +61,8 @@ namespace Elasticity
     , global_weights(other.global_weights)
     , global_cell_id(other.global_cell_id)
     , local_subdomain(other.local_subdomain)
-    , parameters_basis(other.parameters_basis)
-    , global_parameters(other.global_parameters)
+    , ela_parameters(other.ela_parameters)
     , basis_q1(other.basis_q1)
-    , cycle(other.cycle)
   {}
 
 
@@ -130,7 +124,7 @@ namespace Elasticity
     const unsigned int dofs_per_cell = fe.n_dofs_per_cell();
     const unsigned int n_q_points    = quadrature_formula.size();
 
-    BodyForce<dim>              body_force(global_parameters.rho);
+    BodyForce<dim>              body_force(ela_parameters.rho);
     std::vector<Vector<double>> body_force_values(n_q_points);
     for (unsigned int i = 0; i < n_q_points; ++i)
       body_force_values[i].reinit(dim);
@@ -145,10 +139,10 @@ namespace Elasticity
         local_cell_matrix = 0.;
         local_cell_rhs    = 0.;
         fe_values.reinit(cell);
-        global_parameters.lambda.value_list(fe_values.get_quadrature_points(),
-                                            lambda_values);
-        global_parameters.mu.value_list(fe_values.get_quadrature_points(),
-                                        mu_values);
+        ela_parameters.lambda->value_list(fe_values.get_quadrature_points(),
+                                          lambda_values);
+        ela_parameters.mu->value_list(fe_values.get_quadrature_points(),
+                                      mu_values);
         body_force.vector_value_list(fe_values.get_quadrature_points(),
                                      body_force_values);
         for (unsigned int q_index = 0; q_index < n_q_points; ++q_index)
@@ -200,7 +194,7 @@ namespace Elasticity
   void
   ElaBasis<dim>::solve(unsigned int q_point)
   {
-    if (parameters_basis.direct_solver)
+    if (ela_parameters.direct_solver_basis)
       {
         SparseDirectUMFPACK A_inv;
         A_inv.initialize(system_matrix);
@@ -220,8 +214,9 @@ namespace Elasticity
 
         SolverCG<> solver(solver_control);
 
-        PreconditionSSOR<> preconditioner;
-        preconditioner.initialize(system_matrix, 1.6);
+        // PreconditionSSOR<> preconditioner;
+        PreconditionJacobi preconditioner;
+        preconditioner.initialize(system_matrix);
 
         try
           {
@@ -298,7 +293,7 @@ namespace Elasticity
     MPI_Get_processor_name(processor_name, &name_len);
     std::string proc_name(processor_name, name_len);
 
-    if (parameters_basis.verbose)
+    if (ela_parameters.verbose)
       {
         std::cout << "	Solving for basis in cell   "
                   << global_cell_id.to_string() << "   [machine: " << proc_name
@@ -312,7 +307,7 @@ namespace Elasticity
     GridGenerator::general_cell(triangulation,
                                 corner_points,
                                 /* colorize faces */ false);
-    triangulation.refine_global(global_parameters.fine_refinements);
+    triangulation.refine_global(ela_parameters.fine_refinements);
 
     setup_system();
 
@@ -332,7 +327,7 @@ namespace Elasticity
 
     assemble_global_element_matrix();
 
-    if (!parameters_basis.prevent_output)
+    if (!ela_parameters.prevent_basis_output)
       if (global_cell_id == first_cell->id())
         output_basis();
 
@@ -345,7 +340,7 @@ namespace Elasticity
         }
 
       timer.stop();
-      if (parameters_basis.verbose)
+      if (ela_parameters.verbose)
         {
           std::cout << "done in   " << timer.cpu_time() << "   seconds."
                     << std::endl;
@@ -432,7 +427,7 @@ namespace Elasticity
 
         // add the linearized stress tensor to the output
         stress_proc_vector[n_basis] =
-          StressPostprocessor<dim>(n_basis, global_parameters);
+          StressPostprocessor<dim>(n_basis, ela_parameters);
         data_out.add_data_vector(basis_solution, stress_proc_vector[n_basis]);
       }
 
@@ -440,7 +435,6 @@ namespace Elasticity
 
     // filename
     filename = "ela_basis";
-    filename += "." + Utilities::int_to_string(cycle, 2);
     filename += "." + Utilities::int_to_string(local_subdomain, 5);
     filename += ".cell-" + global_cell_id.to_string();
     filename += ".vtu";
@@ -473,7 +467,7 @@ namespace Elasticity
     data_out.add_data_vector(global_solution, strain_postproc);
 
     // add the linearized stress tensor to the output
-    StressPostprocessor<dim> stress_postproc(global_parameters);
+    StressPostprocessor<dim> stress_postproc(ela_parameters);
     data_out.add_data_vector(global_solution, stress_postproc);
 
     data_out.build_patches();
@@ -481,7 +475,6 @@ namespace Elasticity
     // filename
     filename = std::string("global_basis_output/");
     filename += std::string("basis_solution");
-    filename += "." + Utilities::int_to_string(cycle, 2);
     filename += "." + Utilities::int_to_string(local_subdomain, 5);
     filename += std::string(".cell-") + global_cell_id.to_string();
     filename += std::string(".vtu");

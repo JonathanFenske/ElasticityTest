@@ -9,20 +9,6 @@
 
 namespace MyTools
 {
-  template void
-  set_dirichlet_id(const Point<2>                          &p1,
-                   const Point<2>                          &p2,
-                   const unsigned int                       face_id,
-                   const unsigned int                       id,
-                   parallel::distributed::Triangulation<2> &triangulation);
-
-  template void
-  set_dirichlet_id(const Point<3>                          &p1,
-                   const Point<3>                          &p2,
-                   const unsigned int                       face_id,
-                   const unsigned int                       id,
-                   parallel::distributed::Triangulation<3> &triangulation);
-
   template const std::vector<unsigned int>
   get_repetitions(const Point<2> &p1, const Point<2> &p2);
 
