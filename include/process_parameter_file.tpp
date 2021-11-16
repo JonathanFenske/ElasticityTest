@@ -217,9 +217,6 @@ namespace Elasticity
   void
   ElaParameters<dim>::parse_parameters(ParameterHandler &prm)
   {
-    bool                        use_E_and_nu;
-    std::map<std::string, bool> material_structure;
-
     prm.enter_subsection("Elasticity Parameters");
     {
       std::string dim_str = std::to_string(dim) + "D";
@@ -239,32 +236,43 @@ namespace Elasticity
       prm.enter_subsection("Material Parameters");
       {
         // True if E and nu shall be used to declare mu and lambda.
-        use_E_and_nu = prm.get_bool("use E and nu");
+        bool use_E_and_nu = prm.get_bool("use E and nu");
+
+        bool              oscillations = false;
+        std::vector<bool> layers(dim, false);
 
         int m = 0;
-        material_structure.insert(
-          std::make_pair("oscillations", prm.get_bool("oscillations")));
+        // material_structure.insert(
+        //   std::make_pair("oscillations", prm.get_bool("oscillations")));
+        oscillations = prm.get_bool("oscillations");
 
-        material_structure.insert(
-          std::make_pair("x-layers", prm.get_bool("x-layers")));
-        if (material_structure["x-layers"] == true)
+        // material_structure.insert(
+        //   std::make_pair("x-layers", prm.get_bool("x-layers")));
+        layers[0] = prm.get_bool("x-layers");
+        if (layers[0])
           ++m;
 
-        material_structure.insert(
-          std::make_pair("y-layers", prm.get_bool("y-layers")));
-        if (material_structure["y-layers"] == true)
+        // material_structure.insert(
+        //   std::make_pair("y-layers", prm.get_bool("y-layers")));
+        layers[1] = prm.get_bool("y-layers");
+        if (layers[1])
           ++m;
 
-        material_structure.insert(
-          std::make_pair("z-layers", prm.get_bool("z-layers")));
-        if ((material_structure["z-layers"] == true) && (dim == 3))
-          ++m;
-
-        if (material_structure["oscillations"] && m != 0)
+        // material_structure.insert(
+        //   std::make_pair("z-layers", prm.get_bool("z-layers")));
+        if (dim == 3)
           {
-            std::cout << "The material can only depend on either "
-                      << "oscillations or layers but not both." << std::endl;
-            exit(1);
+            layers[dim] = prm.get_bool("z-layers");
+            if ((layers[dim]) && (dim == 3))
+              ++m;
+          }
+
+
+        if (oscillations && m != 0)
+          {
+            AssertThrow((oscillations && m != 0),
+                        ExcMessage("The material can only depend on either "
+                                   " oscillations or layers but not both."));
           }
 
         // Mean value of the first Lamé parameter
@@ -293,7 +301,7 @@ namespace Elasticity
 
         double lambda_fr = prm.get_double("lambda frequency");
 
-        if (material_structure.at("oscillations"))
+        if (oscillations)
           {
             lambda =
               new LamePrmOsc<dim>(lambda_fr, lambda_mean, init_p1, init_p2);
@@ -304,48 +312,25 @@ namespace Elasticity
           {
             if (dim == 3)
               {
-                if (material_structure.at("x-layers") ||
-                    material_structure.at("y-layers") ||
-                    material_structure.at("z-layers"))
+                if (layers[0] || layers[1] || layers[dim])
                   {
                     unsigned int n_x_layers = 1;
                     unsigned int n_y_layers = 1;
                     unsigned int n_z_layers = 1;
-                    if (material_structure.at("x-layers"))
+                    if (layers[0])
                       {
-                        unsigned int n_x_layers =
-                          prm.get_integer("no. of x-layers");
-                        if (n_x_layers < 1)
-                          {
-                            std::cout
-                              << "The number of x-layers must be greater than 0 "
-                              << "if x-layers are used" << std::endl;
-                            exit(-1);
-                          }
+                        n_x_layers = prm.get_integer("no. of x-layers");
+                        AssertThrow(n_x_layers > 0, ExcLayers());
                       }
-                    if (material_structure.at("y-layers"))
+                    if (layers[1])
                       {
-                        unsigned int n_y_layers =
-                          prm.get_integer("no. of y-layers");
-                        if (n_y_layers < 1)
-                          {
-                            std::cout
-                              << "The number of y-layers must be greater than 0 "
-                              << "if y-layers are used" << std::endl;
-                            exit(-1);
-                          }
+                        n_y_layers = prm.get_integer("no. of y-layers");
+                        AssertThrow(n_y_layers > 0, ExcLayers());
                       }
-                    if (material_structure.at("z-layers"))
+                    if (layers[dim])
                       {
-                        unsigned int n_z_layers =
-                          prm.get_integer("no. of z-layers");
-                        if (n_z_layers < 1)
-                          {
-                            std::cout
-                              << "The number of z-layers must be greater than 0 "
-                              << "if z-layers are used" << std::endl;
-                            exit(-1);
-                          }
+                        n_z_layers = prm.get_integer("no. of z-layers");
+                        AssertThrow(n_z_layers > 0, ExcLayers());
                       }
 
                     unsigned int n_layers =
@@ -359,7 +344,7 @@ namespace Elasticity
 
                     lambda = new LamePrmLayers<dim>(lambda_mean,
                                                     index_set,
-                                                    material_structure,
+                                                    layers,
                                                     init_p1,
                                                     init_p2,
                                                     n_x_layers,
@@ -368,7 +353,7 @@ namespace Elasticity
 
                     mu = new LamePrmLayers<dim>(mu_mean,
                                                 index_set,
-                                                material_structure,
+                                                layers,
                                                 init_p1,
                                                 init_p2,
                                                 n_x_layers,
@@ -384,30 +369,19 @@ namespace Elasticity
             else
               {
                 AssertDimension(dim, 2);
-                if (material_structure.at("x-layers") ||
-                    material_structure.at("y-layers"))
+                if (layers[0] || layers[1])
                   {
                     unsigned int n_x_layers = 1;
                     unsigned int n_y_layers = 1;
-                    if (material_structure.at("x-layers"))
+                    if (layers[0])
                       {
-                        unsigned int n_x_layers =
-                          prm.get_integer("no. of x-layers");
-                        if (n_x_layers < 1)
-                          std::cout
-                            << "The number of x-layers must be greater than 0 "
-                            << "if x-layers are used" << std::endl;
-                        exit(-1);
+                        n_x_layers = prm.get_integer("no. of x-layers");
+                        AssertThrow(n_x_layers > 0, ExcLayers());
                       }
-                    if (material_structure.at("y-layers"))
+                    if (layers[1])
                       {
-                        unsigned int n_y_layers =
-                          prm.get_integer("no. of y-layers");
-                        if (n_y_layers < 1)
-                          std::cout
-                            << "The number of y-layers must be greater than 0 "
-                            << "if y-layers are used" << std::endl;
-                        exit(-1);
+                        n_y_layers = prm.get_integer("no. of y-layers");
+                        AssertThrow(n_y_layers > 0, ExcLayers());
                       }
 
                     unsigned int n_layers = n_x_layers * n_y_layers;
@@ -420,7 +394,7 @@ namespace Elasticity
 
                     lambda = new LamePrmLayers<dim>(lambda_mean,
                                                     index_set,
-                                                    material_structure,
+                                                    layers,
                                                     init_p1,
                                                     init_p2,
                                                     n_x_layers,
@@ -428,7 +402,7 @@ namespace Elasticity
 
                     mu = new LamePrmLayers<dim>(mu_mean,
                                                 index_set,
-                                                material_structure,
+                                                layers,
                                                 init_p1,
                                                 init_p2,
                                                 n_x_layers,
@@ -441,7 +415,6 @@ namespace Elasticity
                   }
               }
           }
-
 
         rho = prm.get_double("rho");
       }

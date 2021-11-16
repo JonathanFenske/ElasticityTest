@@ -1,6 +1,7 @@
 #ifndef _INCLUDE_PARAMETER_FILE_H_
 #define _INCLUDE_PARAMETER_FILE_H_
 
+#include <deal.II/base/exceptions.h>
 #include <deal.II/base/parameter_handler.h>
 #include <deal.II/base/point.h>
 
@@ -28,6 +29,10 @@
 namespace Elasticity
 {
   using namespace dealii;
+
+  DeclExceptionMsg(
+    ExcLayers,
+    "The number of layers in each used direction must be at least 1.");
 
   /**
    * @brief Get the space dimesion from parameter files.

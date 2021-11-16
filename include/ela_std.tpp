@@ -164,14 +164,6 @@ namespace Elasticity
                 cell_rhs_tmp = cell_rhs;
               }
 
-            for (unsigned int i = 0; i < fe.dofs_per_cell; ++i)
-              {
-                for (unsigned int j = 0; j < fe.dofs_per_cell; ++j)
-                  pcout << cell_matrix(i, j) << " ";
-                pcout << std::endl;
-              }
-            pcout << std::endl;
-
             cell->get_dof_indices(local_dof_indices);
             constraints.distribute_local_to_global(cell_matrix,
                                                    cell_rhs,
@@ -344,16 +336,16 @@ namespace Elasticity
 
         // write the output files
         std::string filename = "output/std_partitioned/std_solution-";
-        if (cycle == 0)
-          {
-            filename += std::string("coarse.");
-          }
-        else
-          {
-            Assert(cycle == 1, ExcCycle(cycle + 1, 2));
-            filename += std::string("fine.");
-          }
-        filename += ".";
+        // if (cycle == 0)
+        //   {
+        //     filename += std::string("coarse.");
+        //   }
+        // else
+        //   {
+        //     Assert(cycle == 1, ExcCycle(cycle + 1, 2));
+        //     filename += std::string("fine.");
+        //   }
+        filename += Utilities::int_to_string(cycle, 2) + '.';
         filename +=
           Utilities::int_to_string(triangulation.locally_owned_subdomain(), 4);
         filename += std::string(".vtu");
@@ -387,26 +379,35 @@ namespace Elasticity
              ++i)
           if (used_processors[i])
             {
-              filename = "output/std_partitioned/std_solution-";
-              if (cycle == 0)
-                {
-                  filename += std::string("coarse.");
-                }
-              else
-                {
-                  Assert(cycle == 1, ExcCycle(cycle + 1, 2));
-                  filename += std::string("fine.");
-                }
-              filename += ".";
+              filename = "std_partitioned/std_solution-";
+              // if (cycle == 0)
+              //   {
+              //     filename += std::string("coarse.");
+              //   }
+              // else
+              //   {
+              //     Assert(cycle == 1, ExcCycle(cycle + 1, 2));
+              //     filename += std::string("fine.");
+              //   }
+              filename += Utilities::int_to_string(cycle, 2) + '.';
               filename += Utilities::int_to_string(i, 4);
               filename += std::string(".vtu");
               filenames.push_back(filename);
             }
 
-
-        std::ofstream master_output("output/std_solution-" +
-                                    Utilities::int_to_string(cycle, 2) +
-                                    ".pvtu");
+        std::string master_file("output/std_solution-");
+        // if (cycle == 0)
+        //   {
+        //     master_file += std::string("coarse");
+        //   }
+        // else
+        //   {
+        //     Assert(cycle == 1, ExcCycle(cycle + 1, 2));
+        //     master_file += std::string("fine");
+        //   }
+        master_file += Utilities::int_to_string(cycle, 2);
+        master_file += std::string(".pvtu");
+        std::ofstream master_output(master_file);
         data_out.write_pvtu_record(master_output, filenames);
       }
   }
