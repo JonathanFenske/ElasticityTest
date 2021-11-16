@@ -262,8 +262,8 @@ namespace Elasticity
         //   std::make_pair("z-layers", prm.get_bool("z-layers")));
         if (dim == 3)
           {
-            layers[dim] = prm.get_bool("z-layers");
-            if ((layers[dim]) && (dim == 3))
+            layers[dim - 1] = prm.get_bool("z-layers");
+            if ((layers[dim - 1]) && (dim == 3))
               ++m;
           }
 
@@ -314,7 +314,7 @@ namespace Elasticity
           {
             if (dim == 3)
               {
-                if (layers[0] || layers[1] || layers[2])
+                if (layers[0] || layers[1] || layers[dim - 1])
                   {
                     unsigned int n_x_layers = 1;
                     unsigned int n_y_layers = 1;
@@ -329,7 +329,7 @@ namespace Elasticity
                         n_y_layers = prm.get_integer("no. of y-layers");
                         AssertThrow(n_y_layers > 0, ExcLayers());
                       }
-                    if (layers[2])
+                    if (layers[dim - 1])
                       {
                         n_z_layers = prm.get_integer("no. of z-layers");
                         AssertThrow(n_z_layers > 0, ExcLayers());
