@@ -269,24 +269,12 @@ namespace Elasticity
     bool              oscillations = false;
     std::vector<bool> layers(2, false);
 
-    int m = 0;
-    // material_structure.insert(
-    //   std::make_pair("oscillations", prm.get_bool("oscillations")));
     oscillations = prm.get_bool("oscillations");
 
-    // material_structure.insert(
-    //   std::make_pair("x-layers", prm.get_bool("x-layers")));
     layers[0] = prm.get_bool("x-layers");
-    if (layers[0])
-      ++m;
-
-    // material_structure.insert(
-    //   std::make_pair("y-layers", prm.get_bool("y-layers")));
     layers[1] = prm.get_bool("y-layers");
-    if (layers[1])
-      ++m;
 
-    AssertThrow(!(oscillations && (m != 0)),
+    AssertThrow(!(oscillations && (layers[0] || layers[1])),
                 ExcMessage("The material can only depend on either "
                            "oscillations or layers but not both."));
 
@@ -388,30 +376,13 @@ namespace Elasticity
     bool              oscillations = false;
     std::vector<bool> layers(3, false);
 
-    int m = 0;
-    // material_structure.insert(
-    //   std::make_pair("oscillations", prm.get_bool("oscillations")));
     oscillations = prm.get_bool("oscillations");
 
-    // material_structure.insert(
-    //   std::make_pair("x-layers", prm.get_bool("x-layers")));
     layers[0] = prm.get_bool("x-layers");
-    if (layers[0])
-      ++m;
-
-    // material_structure.insert(
-    //   std::make_pair("y-layers", prm.get_bool("y-layers")));
     layers[1] = prm.get_bool("y-layers");
-    if (layers[1])
-      ++m;
-
-    // material_structure.insert(
-    //   std::make_pair("z-layers", prm.get_bool("z-layers")));
     layers[2] = prm.get_bool("z-layers");
-    if (layers[2])
-      ++m;
 
-    AssertThrow(!(oscillations && (m != 0)),
+    AssertThrow(!(oscillations && (layers[0] || layers[1] || layers[2])),
                 ExcMessage("The material can only depend on either "
                            "oscillations or layers but not both."));
 
