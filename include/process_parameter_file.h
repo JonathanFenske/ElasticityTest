@@ -137,6 +137,9 @@ namespace Elasticity
     void
     parse_parameters(ParameterHandler &prm);
 
+    void
+    parse_material_parameters(ParameterHandler &prm);
+
     /**
      * @brief First vertex of the body
      *
@@ -226,6 +229,13 @@ namespace Elasticity
     double angle;
   };
 
+  template <>
+  void
+  ElaParameters<2>::parse_material_parameters(ParameterHandler &prm);
+
+  template <>
+  void
+  ElaParameters<3>::parse_material_parameters(ParameterHandler &prm);
 
   extern template struct ElaParameters<2>;
   extern template struct ElaParameters<3>;

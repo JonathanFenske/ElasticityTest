@@ -235,190 +235,7 @@ namespace Elasticity
 
       prm.enter_subsection("Material Parameters");
       {
-        // True if E and nu shall be used to declare mu and lambda.
-        bool use_E_and_nu = prm.get_bool("use E and nu");
-
-        bool              oscillations = false;
-        std::vector<bool> layers(dim, false);
-
-        int m = 0;
-        // material_structure.insert(
-        //   std::make_pair("oscillations", prm.get_bool("oscillations")));
-        oscillations = prm.get_bool("oscillations");
-
-        // material_structure.insert(
-        //   std::make_pair("x-layers", prm.get_bool("x-layers")));
-        layers[0] = prm.get_bool("x-layers");
-        if (layers[0])
-          ++m;
-
-        // material_structure.insert(
-        //   std::make_pair("y-layers", prm.get_bool("y-layers")));
-        layers[1] = prm.get_bool("y-layers");
-        if (layers[1])
-          ++m;
-
-        // material_structure.insert(
-        //   std::make_pair("z-layers", prm.get_bool("z-layers")));
-        if (dim == 3)
-          {
-            layers[dim - 1] = prm.get_bool("z-layers");
-            if ((layers[dim - 1]) && (dim == 3))
-              ++m;
-          }
-
-        AssertThrow(!(oscillations && (m != 0)),
-                    ExcMessage("The material can only depend on either "
-                               "oscillations or layers but not both."));
-
-        // Mean value of the first Lamé parameter
-        double lambda_mean;
-        // Mean value of the second Lamé parameter
-        double mu_mean;
-
-
-        if (use_E_and_nu)
-          {
-            // Young's modulus/elastic modulus
-            double E = prm.get_double("E");
-            // Poisson ratio
-            double nu = prm.get_double("nu");
-
-            mu_mean     = E * nu / ((1 + nu) * (1 - 2 * nu));
-            lambda_mean = E / (2 * (1 + nu));
-          }
-        else
-          {
-            mu_mean     = prm.get_double("mu");
-            lambda_mean = prm.get_double("lambda");
-          }
-
-        AssertThrow(
-          (mu_mean > 0) && ((3 * lambda_mean + 2 * mu_mean) > 0),
-          ExcMessage(
-            "The conditions mu>0 and 3lambda+2mu>0 must be "
-            "satisfied to ensure the existence of a unique solution."));
-
-        double mu_fr = prm.get_double("mu frequency");
-
-        double lambda_fr = prm.get_double("lambda frequency");
-
-        if (oscillations)
-          {
-            lambda =
-              new LamePrmOsc<dim>(lambda_fr, lambda_mean, init_p1, init_p2);
-
-            mu = new LamePrmOsc<dim>(mu_fr, mu_mean, init_p1, init_p2);
-          }
-        else
-          {
-            if (dim == 3)
-              {
-                if (layers[0] || layers[1] || layers[dim - 1])
-                  {
-                    unsigned int n_x_layers = 1;
-                    unsigned int n_y_layers = 1;
-                    unsigned int n_z_layers = 1;
-                    if (layers[0])
-                      {
-                        n_x_layers = prm.get_integer("no. of x-layers");
-                        AssertThrow(n_x_layers > 0, ExcLayers());
-                      }
-                    if (layers[1])
-                      {
-                        n_y_layers = prm.get_integer("no. of y-layers");
-                        AssertThrow(n_y_layers > 0, ExcLayers());
-                      }
-                    if (layers[dim - 1])
-                      {
-                        n_z_layers = prm.get_integer("no. of z-layers");
-                        AssertThrow(n_z_layers > 0, ExcLayers());
-                      }
-
-                    unsigned int n_layers =
-                      n_x_layers * n_y_layers * n_z_layers;
-
-                    std::vector<unsigned int> index_set(n_layers);
-                    std::iota(index_set.begin(), index_set.end(), 0);
-                    std::seed_seq seq{1, 2, 3, 4, 5};
-                    std::mt19937  rd(seq);
-                    std::shuffle(index_set.begin(), index_set.end(), rd);
-
-                    lambda = new LamePrmLayers<dim>(lambda_mean,
-                                                    index_set,
-                                                    layers,
-                                                    init_p1,
-                                                    init_p2,
-                                                    n_x_layers,
-                                                    n_y_layers,
-                                                    n_z_layers);
-
-                    mu = new LamePrmLayers<dim>(mu_mean,
-                                                index_set,
-                                                layers,
-                                                init_p1,
-                                                init_p2,
-                                                n_x_layers,
-                                                n_y_layers,
-                                                n_z_layers);
-                  }
-                else
-                  {
-                    lambda = new LamePrmConst<dim>(lambda_mean);
-                    mu     = new LamePrmConst<dim>(mu_mean);
-                  }
-              }
-            else
-              {
-                AssertDimension(dim, 2);
-                if (layers[0] || layers[1])
-                  {
-                    unsigned int n_x_layers = 1;
-                    unsigned int n_y_layers = 1;
-                    if (layers[0])
-                      {
-                        n_x_layers = prm.get_integer("no. of x-layers");
-                        AssertThrow(n_x_layers > 0, ExcLayers());
-                      }
-                    if (layers[1])
-                      {
-                        n_y_layers = prm.get_integer("no. of y-layers");
-                        AssertThrow(n_y_layers > 0, ExcLayers());
-                      }
-
-                    unsigned int n_layers = n_x_layers * n_y_layers;
-
-                    std::vector<unsigned int> index_set(n_layers);
-                    std::iota(index_set.begin(), index_set.end(), 0);
-                    std::seed_seq seq{1, 2, 3, 4, 5};
-                    std::mt19937  rd(seq);
-                    std::shuffle(index_set.begin(), index_set.end(), rd);
-
-                    lambda = new LamePrmLayers<dim>(lambda_mean,
-                                                    index_set,
-                                                    layers,
-                                                    init_p1,
-                                                    init_p2,
-                                                    n_x_layers,
-                                                    n_y_layers);
-
-                    mu = new LamePrmLayers<dim>(mu_mean,
-                                                index_set,
-                                                layers,
-                                                init_p1,
-                                                init_p2,
-                                                n_x_layers,
-                                                n_y_layers);
-                  }
-                else
-                  {
-                    lambda = new LamePrmConst<dim>(lambda_mean);
-                    mu     = new LamePrmConst<dim>(mu_mean);
-                  }
-              }
-          }
-
-        rho = prm.get_double("rho");
+        parse_material_parameters(prm);
       }
       prm.leave_subsection();
 
@@ -440,6 +257,257 @@ namespace Elasticity
       }
     }
     prm.leave_subsection();
+  }
+
+  template <>
+  void
+  ElaParameters<2>::parse_material_parameters(ParameterHandler &prm)
+  {
+    // True if E and nu shall be used to declare mu and lambda.
+    bool use_E_and_nu = prm.get_bool("use E and nu");
+
+    bool              oscillations = false;
+    std::vector<bool> layers(2, false);
+
+    int m = 0;
+    // material_structure.insert(
+    //   std::make_pair("oscillations", prm.get_bool("oscillations")));
+    oscillations = prm.get_bool("oscillations");
+
+    // material_structure.insert(
+    //   std::make_pair("x-layers", prm.get_bool("x-layers")));
+    layers[0] = prm.get_bool("x-layers");
+    if (layers[0])
+      ++m;
+
+    // material_structure.insert(
+    //   std::make_pair("y-layers", prm.get_bool("y-layers")));
+    layers[1] = prm.get_bool("y-layers");
+    if (layers[1])
+      ++m;
+
+    AssertThrow(!(oscillations && (m != 0)),
+                ExcMessage("The material can only depend on either "
+                           "oscillations or layers but not both."));
+
+    // Mean value of the first Lamé parameter
+    double lambda_mean;
+    // Mean value of the second Lamé parameter
+    double mu_mean;
+
+
+    if (use_E_and_nu)
+      {
+        // Young's modulus/elastic modulus
+        double E = prm.get_double("E");
+        // Poisson ratio
+        double nu = prm.get_double("nu");
+
+        mu_mean     = E * nu / ((1 + nu) * (1 - 2 * nu));
+        lambda_mean = E / (2 * (1 + nu));
+      }
+    else
+      {
+        mu_mean     = prm.get_double("mu");
+        lambda_mean = prm.get_double("lambda");
+      }
+
+    AssertThrow((mu_mean > 0) && ((3 * lambda_mean + 2 * mu_mean) > 0),
+                ExcMessage(
+                  "The conditions mu>0 and 3lambda+2mu>0 must be "
+                  "satisfied to ensure the existence of a unique solution."));
+
+    double mu_fr = prm.get_double("mu frequency");
+
+    double lambda_fr = prm.get_double("lambda frequency");
+
+    if (oscillations)
+      {
+        lambda = new LamePrmOsc<2>(lambda_fr, lambda_mean, init_p1, init_p2);
+
+        mu = new LamePrmOsc<2>(mu_fr, mu_mean, init_p1, init_p2);
+      }
+    else
+      {
+        if (layers[0] || layers[1])
+          {
+            unsigned int n_x_layers = 1;
+            unsigned int n_y_layers = 1;
+            if (layers[0])
+              {
+                n_x_layers = prm.get_integer("no. of x-layers");
+                AssertThrow(n_x_layers > 0, ExcLayers());
+              }
+            if (layers[1])
+              {
+                n_y_layers = prm.get_integer("no. of y-layers");
+                AssertThrow(n_y_layers > 0, ExcLayers());
+              }
+
+            unsigned int n_layers = n_x_layers * n_y_layers;
+
+            std::vector<unsigned int> index_set(n_layers);
+            std::iota(index_set.begin(), index_set.end(), 0);
+            std::seed_seq seq{1, 2, 3, 4, 5};
+            std::mt19937  rd(seq);
+            std::shuffle(index_set.begin(), index_set.end(), rd);
+
+            lambda = new LamePrmLayers<2>(lambda_mean,
+                                          index_set,
+                                          layers,
+                                          init_p1,
+                                          init_p2,
+                                          n_x_layers,
+                                          n_y_layers);
+
+            mu = new LamePrmLayers<2>(mu_mean,
+                                      index_set,
+                                      layers,
+                                      init_p1,
+                                      init_p2,
+                                      n_x_layers,
+                                      n_y_layers);
+          }
+        else
+          {
+            lambda = new LamePrmConst<2>(lambda_mean);
+            mu     = new LamePrmConst<2>(mu_mean);
+          }
+      }
+
+    rho = prm.get_double("rho");
+  }
+
+  template <>
+  void
+  ElaParameters<3>::parse_material_parameters(ParameterHandler &prm)
+  {
+    // True if E and nu shall be used to declare mu and lambda.
+    bool use_E_and_nu = prm.get_bool("use E and nu");
+
+    bool              oscillations = false;
+    std::vector<bool> layers(3, false);
+
+    int m = 0;
+    // material_structure.insert(
+    //   std::make_pair("oscillations", prm.get_bool("oscillations")));
+    oscillations = prm.get_bool("oscillations");
+
+    // material_structure.insert(
+    //   std::make_pair("x-layers", prm.get_bool("x-layers")));
+    layers[0] = prm.get_bool("x-layers");
+    if (layers[0])
+      ++m;
+
+    // material_structure.insert(
+    //   std::make_pair("y-layers", prm.get_bool("y-layers")));
+    layers[1] = prm.get_bool("y-layers");
+    if (layers[1])
+      ++m;
+
+    // material_structure.insert(
+    //   std::make_pair("z-layers", prm.get_bool("z-layers")));
+    layers[2] = prm.get_bool("z-layers");
+    if (layers[2])
+      ++m;
+
+    AssertThrow(!(oscillations && (m != 0)),
+                ExcMessage("The material can only depend on either "
+                           "oscillations or layers but not both."));
+
+    // Mean value of the first Lamé parameter
+    double lambda_mean;
+    // Mean value of the second Lamé parameter
+    double mu_mean;
+
+
+    if (use_E_and_nu)
+      {
+        // Young's modulus/elastic modulus
+        double E = prm.get_double("E");
+        // Poisson ratio
+        double nu = prm.get_double("nu");
+
+        mu_mean     = E * nu / ((1 + nu) * (1 - 2 * nu));
+        lambda_mean = E / (2 * (1 + nu));
+      }
+    else
+      {
+        mu_mean     = prm.get_double("mu");
+        lambda_mean = prm.get_double("lambda");
+      }
+
+    AssertThrow((mu_mean > 0) && ((3 * lambda_mean + 2 * mu_mean) > 0),
+                ExcMessage(
+                  "The conditions mu>0 and 3lambda+2mu>0 must be "
+                  "satisfied to ensure the existence of a unique solution."));
+
+    double mu_fr = prm.get_double("mu frequency");
+
+    double lambda_fr = prm.get_double("lambda frequency");
+
+    if (oscillations)
+      {
+        lambda = new LamePrmOsc<3>(lambda_fr, lambda_mean, init_p1, init_p2);
+
+        mu = new LamePrmOsc<3>(mu_fr, mu_mean, init_p1, init_p2);
+      }
+    else
+      {
+        if (layers[0] || layers[1] || layers[2])
+          {
+            unsigned int n_x_layers = 1;
+            unsigned int n_y_layers = 1;
+            unsigned int n_z_layers = 1;
+            if (layers[0])
+              {
+                n_x_layers = prm.get_integer("no. of x-layers");
+                AssertThrow(n_x_layers > 0, ExcLayers());
+              }
+            if (layers[1])
+              {
+                n_y_layers = prm.get_integer("no. of y-layers");
+                AssertThrow(n_y_layers > 0, ExcLayers());
+              }
+            if (layers[2])
+              {
+                n_z_layers = prm.get_integer("no. of z-layers");
+                AssertThrow(n_z_layers > 0, ExcLayers());
+              }
+
+            unsigned int n_layers = n_x_layers * n_y_layers * n_z_layers;
+
+            std::vector<unsigned int> index_set(n_layers);
+            std::iota(index_set.begin(), index_set.end(), 0);
+            std::seed_seq seq{1, 2, 3, 4, 5};
+            std::mt19937  rd(seq);
+            std::shuffle(index_set.begin(), index_set.end(), rd);
+
+            lambda = new LamePrmLayers<3>(lambda_mean,
+                                          index_set,
+                                          layers,
+                                          init_p1,
+                                          init_p2,
+                                          n_x_layers,
+                                          n_y_layers,
+                                          n_z_layers);
+
+            mu = new LamePrmLayers<3>(mu_mean,
+                                      index_set,
+                                      layers,
+                                      init_p1,
+                                      init_p2,
+                                      n_x_layers,
+                                      n_y_layers,
+                                      n_z_layers);
+          }
+        else
+          {
+            lambda = new LamePrmConst<3>(lambda_mean);
+            mu     = new LamePrmConst<3>(mu_mean);
+          }
+      }
+    rho = prm.get_double("rho");
   }
 } // namespace Elasticity
 
