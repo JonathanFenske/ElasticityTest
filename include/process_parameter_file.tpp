@@ -267,13 +267,9 @@ namespace Elasticity
               ++m;
           }
 
-
-        if (oscillations && m != 0)
-          {
-            AssertThrow((oscillations && m != 0),
-                        ExcMessage("The material can only depend on either "
-                                   " oscillations or layers but not both."));
-          }
+        AssertThrow(!(oscillations && (m != 0)),
+                    ExcMessage("The material can only depend on either "
+                               "oscillations or layers but not both."));
 
         // Mean value of the first Lamé parameter
         double lambda_mean;
@@ -297,6 +293,12 @@ namespace Elasticity
             lambda_mean = prm.get_double("lambda");
           }
 
+        AssertThrow(
+          (mu_mean > 0) && ((3 * lambda_mean + 2 * mu_mean) > 0),
+          ExcMessage(
+            "The conditions mu>0 and 3lambda+2mu>0 must be "
+            "satisfied to ensure the existence of a unique solution."));
+
         double mu_fr = prm.get_double("mu frequency");
 
         double lambda_fr = prm.get_double("lambda frequency");
@@ -312,7 +314,7 @@ namespace Elasticity
           {
             if (dim == 3)
               {
-                if (layers[0] || layers[1] || layers[dim])
+                if (layers[0] || layers[1] || layers[2])
                   {
                     unsigned int n_x_layers = 1;
                     unsigned int n_y_layers = 1;
@@ -327,7 +329,7 @@ namespace Elasticity
                         n_y_layers = prm.get_integer("no. of y-layers");
                         AssertThrow(n_y_layers > 0, ExcLayers());
                       }
-                    if (layers[dim])
+                    if (layers[2])
                       {
                         n_z_layers = prm.get_integer("no. of z-layers");
                         AssertThrow(n_z_layers > 0, ExcLayers());
