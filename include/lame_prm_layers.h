@@ -20,14 +20,14 @@ namespace Elasticity
     /**
      * @brief Constructor
      */
-    LamePrmLayers(const double                      &mean,
-                  const std::vector<unsigned int>   &index_set,
-                  const std::map<std::string, bool> &material_structure,
-                  const Point<dim>                  &init_p1,
-                  const Point<dim>                  &init_p2,
-                  const unsigned int                &n_x_layers,
-                  const unsigned int                &n_y_layers,
-                  const unsigned int                &n_z_layers = 1);
+    LamePrmLayers(const double                    &mean,
+                  const std::vector<unsigned int> &index_set,
+                  const std::vector<bool>         &layers,
+                  const Point<dim>                &init_p1,
+                  const Point<dim>                &init_p2,
+                  const unsigned int              &n_x_layers,
+                  const unsigned int              &n_y_layers,
+                  const unsigned int              &n_z_layers = 1);
 
     /**
      * @brief Returns the value of lambda at the point p.
@@ -79,30 +79,28 @@ namespace Elasticity
 
   // declare specializations
   template <>
-  LamePrmLayers<3>::LamePrmLayers(
-    const double                      &mean,
-    const std::vector<unsigned int>   &index_set,
-    const std::map<std::string, bool> &material_structure,
-    const Point<3>                    &init_p1,
-    const Point<3>                    &init_p2,
-    const unsigned int                &n_x_layers,
-    const unsigned int                &n_y_layers,
-    const unsigned int                &n_z_layers);
+  LamePrmLayers<3>::LamePrmLayers(const double                    &mean,
+                                  const std::vector<unsigned int> &index_set,
+                                  const std::vector<bool>         &layers,
+                                  const Point<3>                  &init_p1,
+                                  const Point<3>                  &init_p2,
+                                  const unsigned int              &n_x_layers,
+                                  const unsigned int              &n_y_layers,
+                                  const unsigned int              &n_z_layers);
 
   template <>
   double
   LamePrmLayers<3>::value(const Point<3> &p, const unsigned int) const;
 
   template <>
-  LamePrmLayers<2>::LamePrmLayers(
-    const double                      &mean,
-    const std::vector<unsigned int>   &index_set,
-    const std::map<std::string, bool> &material_structure,
-    const Point<2>                    &init_p1,
-    const Point<2>                    &init_p2,
-    const unsigned int                &n_x_layers,
-    const unsigned int                &n_y_layers,
-    const unsigned int                &n_z_layers);
+  LamePrmLayers<2>::LamePrmLayers(const double                    &mean,
+                                  const std::vector<unsigned int> &index_set,
+                                  const std::vector<bool>         &layers,
+                                  const Point<2>                  &init_p1,
+                                  const Point<2>                  &init_p2,
+                                  const unsigned int              &n_x_layers,
+                                  const unsigned int              &n_y_layers,
+                                  const unsigned int              &n_z_layers);
 
   template <>
   double
