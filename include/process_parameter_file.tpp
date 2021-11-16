@@ -12,7 +12,6 @@ namespace Elasticity
 
   template <int dim>
   ElaParameters<dim>::ElaParameters(const std::string &parameter_filename)
-
   {
     ParameterHandler prm;
 
@@ -266,8 +265,8 @@ namespace Elasticity
     // True if E and nu shall be used to declare mu and lambda.
     bool use_E_and_nu = prm.get_bool("use E and nu");
 
-    bool              oscillations = false;
-    std::vector<bool> layers(2, false);
+    bool              oscillations;
+    std::vector<bool> layers(2);
 
     oscillations = prm.get_bool("oscillations");
 
@@ -283,13 +282,19 @@ namespace Elasticity
     // Mean value of the second Lamé parameter
     double mu_mean;
 
-
     if (use_E_and_nu)
       {
         // Young's modulus/elastic modulus
         double E = prm.get_double("E");
+        AssertThrow(E > 0, ExcMessage("Young's modulus must be positive."));
         // Poisson ratio
         double nu = prm.get_double("nu");
+        AssertThrow(
+          (nu < 0.4) && (nu > 0),
+          ExcMessage(
+            "The Poisson ratio must be positive and should not be near 0.5 "
+            "(which would implies that the material is nearly"
+            " incompressible)."));
 
         mu_mean     = E * nu / ((1 + nu) * (1 - 2 * nu));
         lambda_mean = E / (2 * (1 + nu));
@@ -373,8 +378,8 @@ namespace Elasticity
     // True if E and nu shall be used to declare mu and lambda.
     bool use_E_and_nu = prm.get_bool("use E and nu");
 
-    bool              oscillations = false;
-    std::vector<bool> layers(3, false);
+    bool              oscillations;
+    std::vector<bool> layers(3);
 
     oscillations = prm.get_bool("oscillations");
 
@@ -391,13 +396,19 @@ namespace Elasticity
     // Mean value of the second Lamé parameter
     double mu_mean;
 
-
     if (use_E_and_nu)
       {
         // Young's modulus/elastic modulus
         double E = prm.get_double("E");
+        AssertThrow(E > 0, ExcMessage("Young's modulus must be positive."));
         // Poisson ratio
         double nu = prm.get_double("nu");
+        AssertThrow(
+          (nu < 0.4) && (nu > 0),
+          ExcMessage(
+            "The Poisson ratio must be positive and should not be near 0.5 "
+            "(which would implies that the material is nearly"
+            " incompressible)."));
 
         mu_mean     = E * nu / ((1 + nu) * (1 - 2 * nu));
         lambda_mean = E / (2 * (1 + nu));

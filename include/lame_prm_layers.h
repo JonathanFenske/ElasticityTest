@@ -16,7 +16,6 @@ namespace Elasticity
   class LamePrmLayers : public LamePrmBase<dim>
   {
   public:
-    LamePrmLayers();
     /**
      * @brief Constructor
      */
