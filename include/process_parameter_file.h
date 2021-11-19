@@ -169,22 +169,17 @@ namespace Elasticity
     /**
      * First Lamé parameter
      */
-    LamePrmBase<dim> *lambda;
+    std::shared_ptr<LamePrmBase<dim>> lambda;
 
     /**
      * Second Lamé parameter/shear modulus
      */
-    LamePrmBase<dim> *mu;
+    std::shared_ptr<LamePrmBase<dim>> mu;
 
     /**
      * Mass density of the body
      */
     double rho;
-
-    /**
-     * Verbose
-     */
-    bool verbose;
 
     /**
      * If true a direct solver will be used. This is often better

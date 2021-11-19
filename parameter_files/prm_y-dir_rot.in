@@ -53,15 +53,16 @@ subsection Elasticity Parameters
   end
 
   subsection Other Parameters
-    set verbose = true
-
     set direct solver std = false
     set direct solver ms = false
     set direct solver basis = false
     
     set prevent basis output = true
 
+    # number of refinements on the coarse level
     set coarse refinements = 2
+
+    # additional refinements on the fine level
     set fine refinements = 3
 
     set rotate = true

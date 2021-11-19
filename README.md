@@ -58,10 +58,13 @@ make release
 make -jN
 ```
 
-Finally, to run the executable, type:
+This creates two executables in the folder `source`. The executable solving the problem with the standard
+FEM is called `StdEla` and the executable solving the problem with the MsFEM is called `MsEla`. Finally, 
+to run the executables, type:
 
 ```
 mpirun -n N source/MsEla -p ../ElasticityTest/parameter_files/PARAMETER_FILE
+mpirun -n N source/StdEla -p ../ElasticityTest/parameter_files/PARAMETER_FILE
 ```
 
 Here, `PARAMETER_FILE` is a placeholder for parameter files. In the folder `ElasticityTest/parameter_files` are 

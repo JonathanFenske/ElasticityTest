@@ -100,24 +100,30 @@ namespace Elasticity
   void
   ElaStd<dim>::assemble_system()
   {
-    TimerOutput::Scope  t(computing_timer, "assembly");
-    const QGauss<dim>   quadrature_formula(fe.degree + 1);
-    FEValues<dim>       fe_values(fe,
+    TimerOutput::Scope t(computing_timer, "assembly");
+    const QGauss<dim>  quadrature_formula(fe.degree + 1);
+    FEValues<dim>      fe_values(fe,
                             quadrature_formula,
                             update_values | update_gradients |
                               update_quadrature_points | update_JxW_values);
-    const unsigned int  dofs_per_cell = fe.n_dofs_per_cell();
-    const unsigned int  n_q_points    = quadrature_formula.size();
+    const unsigned int dofs_per_cell = fe.n_dofs_per_cell();
+    const unsigned int n_q_points    = quadrature_formula.size();
+
+    std::shared_ptr<LamePrmBase<dim>> mu     = ela_parameters.mu;
+    std::shared_ptr<LamePrmBase<dim>> lambda = ela_parameters.lambda;
+    BodyForce<dim>                    body_force(ela_parameters.rho);
+
     std::vector<double> lambda_values(n_q_points), mu_values(n_q_points);
     std::vector<Vector<double>> body_force_values(n_q_points);
     for (unsigned int i = 0; i < n_q_points; ++i)
       body_force_values[i].reinit(dim);
-    BodyForce<dim>     body_force(ela_parameters.rho);
+
     FullMatrix<double> cell_matrix(dofs_per_cell, dofs_per_cell);
     Vector<double>     cell_rhs(dofs_per_cell);
     Vector<double>     cell_rhs_tmp(dofs_per_cell);
 
     std::vector<types::global_dof_index> local_dof_indices(dofs_per_cell);
+
     for (const auto &cell : dof_handler.active_cell_iterators())
       {
         if (cell->is_locally_owned())
@@ -126,10 +132,9 @@ namespace Elasticity
             cell_matrix       = 0.;
             cell_rhs          = 0.;
             fe_values.reinit(cell);
-            ela_parameters.lambda->value_list(fe_values.get_quadrature_points(),
-                                              lambda_values);
-            ela_parameters.mu->value_list(fe_values.get_quadrature_points(),
-                                          mu_values);
+            lambda->value_list(fe_values.get_quadrature_points(),
+                               lambda_values);
+            mu->value_list(fe_values.get_quadrature_points(), mu_values);
             body_force.vector_value_list(fe_values.get_quadrature_points(),
                                          body_force_values);
             for (unsigned int q_point = 0; q_point < n_q_points; ++q_point)
@@ -186,10 +191,7 @@ namespace Elasticity
         TimerOutput::Scope t(computing_timer,
                              "parallel sparse direct solver (MUMPS)");
 
-        if (ela_parameters.verbose)
-          {
-            pcout << "   Using direct solver..." << std::endl;
-          }
+        pcout << "   Using direct solver..." << std::endl;
 
         TrilinosWrappers::MPI::Vector completely_distributed_solution(
           locally_owned_dofs, mpi_communicator);
@@ -200,12 +202,8 @@ namespace Elasticity
                      completely_distributed_solution,
                      system_rhs);
 
-        if (ela_parameters.verbose)
-          {
-            pcout << "   Solved in with parallel sparse direct solver (MUMPS)."
-                  << std::endl;
-          }
-
+        pcout << "   Solved in with parallel sparse direct solver (MUMPS)."
+              << std::endl;
 
         constraints.distribute(completely_distributed_solution);
 
@@ -215,11 +213,7 @@ namespace Elasticity
       {
         TimerOutput::Scope t(computing_timer, "solve");
 
-        if (ela_parameters.verbose)
-          {
-            pcout << "   Using iterative solver..." << std::endl;
-          }
-
+        pcout << "   Using iterative solver..." << std::endl;
 
         TrilinosWrappers::MPI::Vector completely_distributed_solution(
           locally_owned_dofs, mpi_communicator);
@@ -273,11 +267,8 @@ namespace Elasticity
             Assert(false, ExcMessage(e.what()));
           }
 
-        if (ela_parameters.verbose)
-          {
-            pcout << "   Solved (iteratively) in " << solver_control.last_step()
-                  << " iterations." << std::endl;
-          }
+        pcout << "   Solved (iteratively) in " << solver_control.last_step()
+              << " iterations." << std::endl;
 
         constraints.distribute(completely_distributed_solution);
         locally_relevant_solution = completely_distributed_solution;
@@ -417,30 +408,23 @@ namespace Elasticity
   void
   ElaStd<dim>::run()
   {
-    if (ela_parameters.verbose)
-      {
-        pcout << "Running with "
-              << "Trilinos"
-              << " on " << Utilities::MPI::n_mpi_processes(mpi_communicator)
-              << " MPI rank(s)..." << std::endl;
-      }
-
+    pcout << "Running with "
+          << "Trilinos"
+          << " on " << Utilities::MPI::n_mpi_processes(mpi_communicator)
+          << " MPI rank(s)..." << std::endl;
 
     const Point<dim> p1 = ela_parameters.init_p1, p2 = ela_parameters.init_p2;
 
     for (unsigned int cycle = 0; cycle < 2; ++cycle)
       {
-        if (ela_parameters.verbose)
+        if (cycle == 0)
           {
-            if (cycle == 0)
-              {
-                pcout << "Coarse Scale Standard FEM:" << std::endl;
-              }
-            else
-              {
-                Assert(cycle == 1, ExcCycle(cycle + 1, 2));
-                pcout << "Fine Scale Standard FEM:" << std::endl;
-              }
+            pcout << "Coarse Scale Standard FEM:" << std::endl;
+          }
+        else
+          {
+            Assert(cycle == 1, ExcCycle(cycle + 1, 2));
+            pcout << "Fine Scale Standard FEM:" << std::endl;
           }
 
         if (cycle == 0)
@@ -460,13 +444,10 @@ namespace Elasticity
 
         setup_system();
 
-        if (ela_parameters.verbose)
-          {
-            pcout << "   Number of active cells:       "
-                  << triangulation.n_global_active_cells() << std::endl
-                  << "   Number of degrees of freedom: " << dof_handler.n_dofs()
-                  << std::endl;
-          }
+        pcout << "   Number of active cells:       "
+              << triangulation.n_global_active_cells() << std::endl
+              << "   Number of degrees of freedom: " << dof_handler.n_dofs()
+              << std::endl;
 
         assemble_system();
 

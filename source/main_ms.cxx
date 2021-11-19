@@ -1,5 +1,5 @@
 #include "myexceptions.h"
-#include "run_problem.h"
+#include "run_problem_ms.h"
 
 int
 main(int argc, char *argv[])
@@ -95,12 +95,12 @@ main(int argc, char *argv[])
       if (dim == 2)
         {
           AssertThrow(dim == 2, ExcDimensionMismatch(dim, 2));
-          run_2d_problem(input_file);
+          run_2d_problem_ms(input_file);
         }
       else
         {
           AssertThrow(dim == 3, ExcDimensionMismatch(dim, 3));
-          run_3d_problem(input_file);
+          run_3d_problem_ms(input_file);
         }
     }
   catch (std::exception &exc)

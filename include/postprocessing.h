@@ -193,7 +193,7 @@ namespace Elasticity
      * shape function in ElaBasis.
      */
     std::string        basis_str;
-    ElaParameters<dim> parameters;
+    ElaParameters<dim> ela_parameters;
   };
 } // namespace Elasticity
 

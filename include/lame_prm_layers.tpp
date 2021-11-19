@@ -8,30 +8,20 @@ namespace Elasticity
   using namespace dealii;
 
   template <>
-  LamePrmLayers<3>::LamePrmLayers(const double                    &mean,
+  LamePrmLayers<3>::LamePrmLayers(const double &                   mean,
                                   const std::vector<unsigned int> &index_set,
-                                  const std::vector<bool>         &layers,
-                                  const Point<3>                  &init_p1,
-                                  const Point<3>                  &init_p2,
-                                  const unsigned int              &n_x_layers,
-                                  const unsigned int              &n_y_layers,
-                                  const unsigned int              &n_z_layers)
+                                  const std::vector<bool> &        layers,
+                                  const std::vector<unsigned int> &n_layers,
+                                  const Point<3> &                 init_p1,
+                                  const Point<3> &                 init_p2)
     : LamePrmBase<3>()
-    , n_layers(3)
     , layers(layers)
+    , n_layers(3)
     , layer_size_inv(3)
     , init_p1(init_p1)
     , init_p2(init_p2)
-    , values(n_x_layers * n_y_layers)
+    , values(n_layers[0] * n_layers[1] * n_layers[2])
   {
-    // layers[0] = material_structure.at("x-layers");
-    // layers[1] = material_structure.at("y-layers");
-    // layers[2] = material_structure.at("z-layers");
-
-    n_layers[0] = layers[0] ? n_x_layers : 1;
-    n_layers[1] = layers[1] ? n_y_layers : 1;
-    n_layers[2] = layers[2] ? n_z_layers : 1;
-
     unsigned int        n_values(n_layers[0] * n_layers[1] * n_layers[2]);
     double              value_step_size = 2 * mean / (n_values + 1);
     std::vector<double> values_tmp;
@@ -111,28 +101,20 @@ namespace Elasticity
   }
 
   template <>
-  LamePrmLayers<2>::LamePrmLayers(const double                    &mean,
+  LamePrmLayers<2>::LamePrmLayers(const double &                   mean,
                                   const std::vector<unsigned int> &index_set,
-                                  const std::vector<bool>         &layers,
-                                  const Point<2>                  &init_p1,
-                                  const Point<2>                  &init_p2,
-                                  const unsigned int              &n_x_layers,
-                                  const unsigned int              &n_y_layers,
-                                  const unsigned int              &n_z_layers)
+                                  const std::vector<bool> &        layers,
+                                  const std::vector<unsigned int> &n_layers,
+                                  const Point<2> &                 init_p1,
+                                  const Point<2> &                 init_p2)
     : LamePrmBase<2>()
-    , n_layers(2)
     , layers(layers)
+    , n_layers(n_layers)
     , layer_size_inv(2)
     , init_p1(init_p1)
     , init_p2(init_p2)
-    , values(n_x_layers * n_y_layers)
+    , values(n_layers[0] * n_layers[1])
   {
-    // layers[0] = material_structure.at("x-layers");
-    // layers[1] = material_structure.at("y-layers");
-
-    n_layers[0] = layers[0] ? n_x_layers : 1;
-    n_layers[1] = layers[1] ? n_y_layers : 1;
-
     unsigned int        n_values(n_layers[0] * n_layers[1]);
     double              value_step_size = 2 * mean / (n_values + 1);
     std::vector<double> values_tmp;

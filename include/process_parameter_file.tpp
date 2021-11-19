@@ -151,12 +151,6 @@ namespace Elasticity
 
       prm.enter_subsection("Other Parameters");
       {
-        prm.declare_entry("verbose",
-                          "true",
-                          Patterns::Bool(),
-                          "Verbose",
-                          /* has_to_be_set = */ true);
-
         prm.declare_entry(
           "direct solver std",
           "false",
@@ -240,8 +234,6 @@ namespace Elasticity
 
       prm.enter_subsection("Other Parameters");
       {
-        verbose = prm.get_bool("verbose");
-
         direct_solver_std   = prm.get_bool("direct solver std");
         direct_solver_ms    = prm.get_bool("direct solver ms");
         direct_solver_basis = prm.get_bool("direct solver basis");
@@ -310,61 +302,53 @@ namespace Elasticity
                   "The conditions mu>0 and 3lambda+2mu>0 must be "
                   "satisfied to ensure the existence of a unique solution."));
 
-    double mu_fr = prm.get_double("mu frequency");
-
-    double lambda_fr = prm.get_double("lambda frequency");
-
     if (oscillations)
       {
-        lambda = new LamePrmOsc<2>(lambda_fr, lambda_mean, init_p1, init_p2);
+        double mu_fr     = prm.get_double("mu frequency");
+        double lambda_fr = prm.get_double("lambda frequency");
 
-        mu = new LamePrmOsc<2>(mu_fr, mu_mean, init_p1, init_p2);
+        lambda = std::shared_ptr<LamePrmBase<2>>(
+          new LamePrmOsc<2>(lambda_fr, lambda_mean, init_p1, init_p2));
+
+        mu = std::shared_ptr<LamePrmBase<2>>(
+          new LamePrmOsc<2>(mu_fr, mu_mean, init_p1, init_p2));
       }
     else
       {
         if (layers[0] || layers[1])
           {
-            unsigned int n_x_layers = 1;
-            unsigned int n_y_layers = 1;
+            std::vector<unsigned int> n_layers(2, 1);
+
             if (layers[0])
               {
-                n_x_layers = prm.get_integer("no. of x-layers");
-                AssertThrow(n_x_layers > 0, ExcLayers());
+                n_layers[0] = prm.get_integer("no. of x-layers");
+                AssertThrow(n_layers[0] > 0, ExcLayers());
               }
             if (layers[1])
               {
-                n_y_layers = prm.get_integer("no. of y-layers");
-                AssertThrow(n_y_layers > 0, ExcLayers());
+                n_layers[1] = prm.get_integer("no. of y-layers");
+                AssertThrow(n_layers[1] > 0, ExcLayers());
               }
 
-            unsigned int n_layers = n_x_layers * n_y_layers;
+            unsigned int n_values = n_layers[0] * n_layers[1];
 
-            std::vector<unsigned int> index_set(n_layers);
+            std::vector<unsigned int> index_set(n_values);
             std::iota(index_set.begin(), index_set.end(), 0);
             std::seed_seq seq{1, 2, 3, 4, 5};
             std::mt19937  rd(seq);
             std::shuffle(index_set.begin(), index_set.end(), rd);
 
-            lambda = new LamePrmLayers<2>(lambda_mean,
-                                          index_set,
-                                          layers,
-                                          init_p1,
-                                          init_p2,
-                                          n_x_layers,
-                                          n_y_layers);
+            lambda = std::shared_ptr<LamePrmBase<2>>(new LamePrmLayers<2>(
+              lambda_mean, index_set, layers, n_layers, init_p1, init_p2));
 
-            mu = new LamePrmLayers<2>(mu_mean,
-                                      index_set,
-                                      layers,
-                                      init_p1,
-                                      init_p2,
-                                      n_x_layers,
-                                      n_y_layers);
+            mu = std::shared_ptr<LamePrmBase<2>>(new LamePrmLayers<2>(
+              mu_mean, index_set, layers, n_layers, init_p1, init_p2));
           }
         else
           {
-            lambda = new LamePrmConst<2>(lambda_mean);
-            mu     = new LamePrmConst<2>(mu_mean);
+            lambda =
+              std::shared_ptr<LamePrmBase<2>>(new LamePrmConst<2>(lambda_mean));
+            mu = std::shared_ptr<LamePrmBase<2>>(new LamePrmConst<2>(mu_mean));
           }
       }
 
@@ -424,69 +408,59 @@ namespace Elasticity
                   "The conditions mu>0 and 3lambda+2mu>0 must be "
                   "satisfied to ensure the existence of a unique solution."));
 
-    double mu_fr = prm.get_double("mu frequency");
-
-    double lambda_fr = prm.get_double("lambda frequency");
 
     if (oscillations)
       {
-        lambda = new LamePrmOsc<3>(lambda_fr, lambda_mean, init_p1, init_p2);
+        double mu_fr     = prm.get_double("mu frequency");
+        double lambda_fr = prm.get_double("lambda frequency");
 
-        mu = new LamePrmOsc<3>(mu_fr, mu_mean, init_p1, init_p2);
+        lambda = std::shared_ptr<LamePrmBase<3>>(
+          new LamePrmOsc<3>(lambda_fr, lambda_mean, init_p1, init_p2));
+
+        mu = std::shared_ptr<LamePrmBase<3>>(
+          new LamePrmOsc<3>(mu_fr, mu_mean, init_p1, init_p2));
       }
     else
       {
         if (layers[0] || layers[1] || layers[2])
           {
-            unsigned int n_x_layers = 1;
-            unsigned int n_y_layers = 1;
-            unsigned int n_z_layers = 1;
+            std::vector<unsigned int> n_layers(3, 1);
+
             if (layers[0])
               {
-                n_x_layers = prm.get_integer("no. of x-layers");
-                AssertThrow(n_x_layers > 0, ExcLayers());
+                n_layers[0] = prm.get_integer("no. of x-layers");
+                AssertThrow(n_layers[0] > 0, ExcLayers());
               }
             if (layers[1])
               {
-                n_y_layers = prm.get_integer("no. of y-layers");
-                AssertThrow(n_y_layers > 0, ExcLayers());
+                n_layers[1] = prm.get_integer("no. of y-layers");
+                AssertThrow(n_layers[1] > 0, ExcLayers());
               }
             if (layers[2])
               {
-                n_z_layers = prm.get_integer("no. of z-layers");
-                AssertThrow(n_z_layers > 0, ExcLayers());
+                n_layers[2] = prm.get_integer("no. of z-layers");
+                AssertThrow(n_layers[2] > 0, ExcLayers());
               }
 
-            unsigned int n_layers = n_x_layers * n_y_layers * n_z_layers;
+            unsigned int n_values = n_layers[0] * n_layers[1] * n_layers[2];
 
-            std::vector<unsigned int> index_set(n_layers);
+            std::vector<unsigned int> index_set(n_values);
             std::iota(index_set.begin(), index_set.end(), 0);
             std::seed_seq seq{1, 2, 3, 4, 5};
             std::mt19937  rd(seq);
             std::shuffle(index_set.begin(), index_set.end(), rd);
 
-            lambda = new LamePrmLayers<3>(lambda_mean,
-                                          index_set,
-                                          layers,
-                                          init_p1,
-                                          init_p2,
-                                          n_x_layers,
-                                          n_y_layers,
-                                          n_z_layers);
+            lambda = std::shared_ptr<LamePrmBase<3>>(new LamePrmLayers<3>(
+              lambda_mean, index_set, layers, n_layers, init_p1, init_p2));
 
-            mu = new LamePrmLayers<3>(mu_mean,
-                                      index_set,
-                                      layers,
-                                      init_p1,
-                                      init_p2,
-                                      n_x_layers,
-                                      n_y_layers,
-                                      n_z_layers);
+            mu = std::shared_ptr<LamePrmBase<3>>(new LamePrmLayers<3>(
+              mu_mean, index_set, layers, n_layers, init_p1, init_p2));
           }
         else
           {
-            lambda = new LamePrmConst<3>(lambda_mean);
-            mu     = new LamePrmConst<3>(mu_mean);
+            lambda =
+              std::shared_ptr<LamePrmBase<3>>(new LamePrmConst<3>(lambda_mean));
+            mu = std::shared_ptr<LamePrmBase<3>>(new LamePrmConst<3>(mu_mean));
           }
       }
     rho = prm.get_double("rho");

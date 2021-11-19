@@ -19,7 +19,7 @@ namespace Elasticity
     typename Triangulation<dim>::active_cell_iterator &first_cell,
     unsigned int                                       local_subdomain,
     MPI_Comm                                           mpi_communicator,
-    const ElaParameters<dim>                          &ela_parameters)
+    const ElaParameters<dim> &                         ela_parameters)
     : mpi_communicator(mpi_communicator)
     , first_cell(first_cell)
     , triangulation()
@@ -124,25 +124,27 @@ namespace Elasticity
     const unsigned int dofs_per_cell = fe.n_dofs_per_cell();
     const unsigned int n_q_points    = quadrature_formula.size();
 
-    BodyForce<dim>              body_force(ela_parameters.rho);
+    std::shared_ptr<LamePrmBase<dim>> mu     = ela_parameters.mu;
+    std::shared_ptr<LamePrmBase<dim>> lambda = ela_parameters.lambda;
+    BodyForce<dim>                    body_force(ela_parameters.rho);
+
+    std::vector<double> lambda_values(n_q_points), mu_values(n_q_points);
     std::vector<Vector<double>> body_force_values(n_q_points);
     for (unsigned int i = 0; i < n_q_points; ++i)
       body_force_values[i].reinit(dim);
-    std::vector<double> lambda_values(n_q_points), mu_values(n_q_points);
 
     FullMatrix<double> local_cell_matrix(dofs_per_cell, dofs_per_cell);
     Vector<double>     local_cell_rhs(dofs_per_cell);
 
     std::vector<types::global_dof_index> local_dof_indices(dofs_per_cell);
+
     for (const auto &cell : dof_handler.active_cell_iterators())
       {
         local_cell_matrix = 0.;
         local_cell_rhs    = 0.;
         fe_values.reinit(cell);
-        ela_parameters.lambda->value_list(fe_values.get_quadrature_points(),
-                                          lambda_values);
-        ela_parameters.mu->value_list(fe_values.get_quadrature_points(),
-                                      mu_values);
+        lambda->value_list(fe_values.get_quadrature_points(), lambda_values);
+        mu->value_list(fe_values.get_quadrature_points(), mu_values);
         body_force.vector_value_list(fe_values.get_quadrature_points(),
                                      body_force_values);
         for (unsigned int q_index = 0; q_index < n_q_points; ++q_index)
@@ -293,14 +295,10 @@ namespace Elasticity
     MPI_Get_processor_name(processor_name, &name_len);
     std::string proc_name(processor_name, name_len);
 
-    if (ela_parameters.verbose)
-      {
-        std::cout << "	Solving for basis in cell   "
-                  << global_cell_id.to_string() << "   [machine: " << proc_name
-                  << " | rank: "
-                  << Utilities::MPI::this_mpi_process(MPI_COMM_WORLD)
-                  << "]   ..... ";
-      }
+    std::cout << "	Solving for basis in cell   " << global_cell_id.to_string()
+              << "   [machine: " << proc_name
+              << " | rank: " << Utilities::MPI::this_mpi_process(MPI_COMM_WORLD)
+              << "]   ..... ";
 
     timer.restart();
 
@@ -340,11 +338,9 @@ namespace Elasticity
         }
 
       timer.stop();
-      if (ela_parameters.verbose)
-        {
-          std::cout << "done in   " << timer.cpu_time() << "   seconds."
-                    << std::endl;
-        }
+
+      std::cout << "done in   " << timer.cpu_time() << "   seconds."
+                << std::endl;
     }
   }
 
