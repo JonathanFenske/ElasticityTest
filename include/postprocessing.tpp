@@ -1,7 +1,6 @@
 #ifndef _INCLUDE_POSTPROCESSING_TPP_
 #define _INCLUDE_POSTPROCESSING_TPP_
 
-#include "forces_and_lame_parameters.h"
 #include "postprocessing.h"
 
 namespace Elasticity
@@ -123,18 +122,18 @@ namespace Elasticity
 
   template <int dim>
   StressPostprocessor<dim>::StressPostprocessor(
-    unsigned int                 basis_index,
-    const GlobalParameters<dim> &global_parameters)
+    unsigned int              basis_index,
+    const ElaParameters<dim> &ela_parameters)
     : basis_str("_" + Utilities::int_to_string(basis_index, 2))
-    , parameters(global_parameters)
+    , ela_parameters(ela_parameters)
   {}
 
 
   template <int dim>
   StressPostprocessor<dim>::StressPostprocessor(
-    const GlobalParameters<dim> &global_parameters)
+    const ElaParameters<dim> &ela_parameters)
     : basis_str("")
-    , parameters(global_parameters)
+    , ela_parameters(ela_parameters)
   {}
 
 
@@ -147,10 +146,16 @@ namespace Elasticity
   {
     AssertDimension(input_data.solution_gradients.size(),
                     computed_quantities.size());
-    std::vector<double> mu_values(input_data.evaluation_points.size()),
-      lambda_values(input_data.evaluation_points.size());
-    parameters.mu.value_list(input_data.evaluation_points, mu_values);
-    parameters.lambda.value_list(input_data.evaluation_points, lambda_values);
+
+    std::shared_ptr<LamePrmBase<dim>> mu     = ela_parameters.mu;
+    std::shared_ptr<LamePrmBase<dim>> lambda = ela_parameters.lambda;
+
+    std::vector<double> mu_values(input_data.evaluation_points.size());
+    std::vector<double> lambda_values(input_data.evaluation_points.size());
+
+    mu->value_list(input_data.evaluation_points, mu_values);
+    lambda->value_list(input_data.evaluation_points, lambda_values);
+
     for (unsigned int p = 0; p < input_data.solution_gradients.size(); ++p)
       {
         AssertDimension(computed_quantities[p].size(),

@@ -49,7 +49,7 @@
 #include <deal.II/physics/transformations.h>
 
 #include "basis_funs.h"
-#include "forces_and_lame_parameters.h"
+#include "body_force.h"
 #include "mytools.h"
 #include "postprocessing.h"
 #include "process_parameter_file.h"
@@ -89,22 +89,17 @@ namespace Elasticity
     /**
      * @brief Construct a new ElaBasis object.
      *
-     * @param global_cell The cell for which this class constructs basis
-     *                    functions.
+     * @param global_cell The cell id of the cell for which
+     *                    this class constructs basis functions.
      * @param first_cell The first cell on this processor.
      * @param local_subdomain The id of the local subdomain, i.e. the id of the
      *                        processor that solves this problem.
-     * @param mpi_communicator The MPI-communicator
-     * @param parameters_basis Parameters that only this class needs.
-     * @param global_parameters Parameters that many classes need.
      */
     ElaBasis(typename Triangulation<dim>::active_cell_iterator &global_cell,
              typename Triangulation<dim>::active_cell_iterator &first_cell,
              unsigned int                                       local_subdomain,
-             MPI_Comm                     mpi_communicator,
-             const ParametersBasis &      parameters_basis,
-             const GlobalParameters<dim> &global_parameters,
-             const unsigned int           cycle);
+             MPI_Comm                  mpi_communicator,
+             const ElaParameters<dim> &ela_parameters);
 
     /**
      * @brief Copy Constructor for Ela Basis.
@@ -244,11 +239,9 @@ namespace Elasticity
     Vector<double>                                    global_solution;
     const CellId                                      global_cell_id;
     const unsigned int                                local_subdomain;
-    const ParametersBasis                             parameters_basis;
-    const GlobalParameters<dim>                       global_parameters;
+    const ElaParameters<dim>                          ela_parameters;
     std::string                                       filename;
     BasisFun::BasisQ1<dim>                            basis_q1;
-    const unsigned int                                cycle;
   };
 } // namespace Elasticity
 

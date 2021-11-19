@@ -5,6 +5,7 @@
 
 #include <deal.II/numerics/data_postprocessor.h>
 
+#include "body_force.h"
 #include "process_parameter_file.h"
 
 /**
@@ -126,17 +127,17 @@ namespace Elasticity
      * @brief Construct a new StressPostprocessor object for ElaBasis.
      *
      * @param basis_index Index of the basis function
-     * @param global_parameters Parameters that many classes need
+     * @param ela_parameters Parameters that many classes need
      */
-    StressPostprocessor(unsigned int                 basis_index,
-                        const GlobalParameters<dim> &global_parameters);
+    StressPostprocessor(unsigned int              basis_index,
+                        const ElaParameters<dim> &ela_parameters);
 
     /**
      * @brief Construct a new Stress Postprocessor object
      *
-     * @param global_parameters Parameters that many classes need
+     * @param ela_parameters Parameters that many classes need
      */
-    StressPostprocessor(const GlobalParameters<dim> &global_parameters);
+    StressPostprocessor(const ElaParameters<dim> &ela_parameters);
 
     /**
      * @brief Copy constructor for StressPostprocessor objects
@@ -191,8 +192,8 @@ namespace Elasticity
      * String that contains the index of the local shape
      * shape function in ElaBasis.
      */
-    std::string           basis_str;
-    GlobalParameters<dim> parameters;
+    std::string        basis_str;
+    ElaParameters<dim> ela_parameters;
   };
 } // namespace Elasticity
 

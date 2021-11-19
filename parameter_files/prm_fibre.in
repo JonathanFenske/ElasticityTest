@@ -27,17 +27,17 @@ subsection Elasticity Parameters
     set use E and nu = true
 
     set oscillations = false
-    set x-layers = true
+    set x-layers = false
     set y-layers = true
     set z-layers = true
 
     # Only need to be set if the corresponding flag is true.
-    set no. of x-layers = 2
-    set no. of y-layers = 2
-    set no. of z-layers = 2
+    set no. of x-layers = 1
+    set no. of y-layers = 10
+    set no. of z-layers = 10
     
     # E and nu only need to be set if "use E and nu" is true.
-    set E = 210.e7
+    set E = 210.e9
     set nu = 0.3
 
     # mu and lambda only need to be set if E and nu are not used.
@@ -49,18 +49,18 @@ subsection Elasticity Parameters
     set mu frequency = 100
     set lambda frequency = 100
 
-    set rho = 1e3
+    set rho = 0
   end
 
   subsection Other Parameters
-    set direct solver std = true
+    set direct solver std = false
     set direct solver ms = false
     set direct solver basis = false
     
-    set prevent basis output = false
+    set prevent basis output = true
 
-    set coarse refinements = 1
-    set fine refinements = 1
+    set coarse refinements = 2
+    set fine refinements = 3
 
     set rotate = false
     set rotation angle = 0.05 # * pi
