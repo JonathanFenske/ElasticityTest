@@ -53,8 +53,6 @@ subsection Elasticity Parameters
   end
 
   subsection Other Parameters
-    set verbose = true
-
     set direct solver std = true
     set direct solver ms = false
     set direct solver basis = false
