@@ -16,12 +16,11 @@ namespace Elasticity
   template <int dim>
   ElaBasis<dim>::ElaBasis(
     typename Triangulation<dim>::active_cell_iterator &global_cell,
-    typename Triangulation<dim>::active_cell_iterator &first_cell,
+    const CellId &                                     first_cell_id,
     unsigned int                                       local_subdomain,
     MPI_Comm                                           mpi_communicator,
     const ElaParameters<dim> &                         ela_parameters)
     : mpi_communicator(mpi_communicator)
-    , first_cell(first_cell)
     , triangulation()
     , fe(FE_Q<dim>(1), dim)
     , dof_handler(triangulation)
@@ -32,6 +31,7 @@ namespace Elasticity
     , global_element_matrix(fe.dofs_per_cell, fe.dofs_per_cell)
     , global_weights(fe.dofs_per_cell)
     , global_cell_id(global_cell->id())
+    , first_cell_id(first_cell_id)
     , local_subdomain(local_subdomain)
     , ela_parameters(ela_parameters)
     , basis_q1(global_cell)
@@ -49,7 +49,6 @@ namespace Elasticity
   template <int dim>
   ElaBasis<dim>::ElaBasis(const ElaBasis<dim> &other)
     : mpi_communicator(other.mpi_communicator)
-    , first_cell(other.first_cell)
     , triangulation()
     , fe(FE_Q<dim>(1), dim)
     , dof_handler(triangulation)
@@ -60,6 +59,7 @@ namespace Elasticity
     , global_element_matrix(other.global_element_matrix)
     , global_weights(other.global_weights)
     , global_cell_id(other.global_cell_id)
+    , first_cell_id(other.first_cell_id)
     , local_subdomain(other.local_subdomain)
     , ela_parameters(other.ela_parameters)
     , basis_q1(other.basis_q1)
@@ -326,7 +326,7 @@ namespace Elasticity
     assemble_global_element_matrix();
 
     if (!ela_parameters.prevent_basis_output)
-      if (global_cell_id == first_cell->id())
+      if (global_cell_id == first_cell_id)
         output_basis();
 
     {

@@ -96,7 +96,7 @@ namespace Elasticity
      *                        processor that solves this problem.
      */
     ElaBasis(typename Triangulation<dim>::active_cell_iterator &global_cell,
-             typename Triangulation<dim>::active_cell_iterator &first_cell,
+             const CellId &                                     first_cell_id,
              unsigned int                                       local_subdomain,
              MPI_Comm                  mpi_communicator,
              const ElaParameters<dim> &ela_parameters);
@@ -220,28 +220,28 @@ namespace Elasticity
     void
     output_basis();
 
-    MPI_Comm                                          mpi_communicator;
-    typename Triangulation<dim>::active_cell_iterator first_cell;
-    Triangulation<dim>                                triangulation;
-    FESystem<dim>                                     fe;
-    DoFHandler<dim>                                   dof_handler;
-    std::vector<AffineConstraints<double>>            constraints_vector;
-    std::vector<Point<dim>>                           corner_points;
-    std::vector<Vector<double>>                       solution_vector;
-    SparsityPattern                                   sparsity_pattern;
-    Vector<double>                                    assembled_cell_rhs;
-    SparseMatrix<double>                              assembled_cell_matrix;
-    Vector<double>                                    global_element_rhs;
-    FullMatrix<double>                                global_element_matrix;
-    std::vector<double>                               global_weights;
-    Vector<double>                                    system_rhs;
-    SparseMatrix<double>                              system_matrix;
-    Vector<double>                                    global_solution;
-    const CellId                                      global_cell_id;
-    const unsigned int                                local_subdomain;
-    const ElaParameters<dim>                          ela_parameters;
-    std::string                                       filename;
-    BasisFun::BasisQ1<dim>                            basis_q1;
+    MPI_Comm                               mpi_communicator;
+    Triangulation<dim>                     triangulation;
+    FESystem<dim>                          fe;
+    DoFHandler<dim>                        dof_handler;
+    std::vector<AffineConstraints<double>> constraints_vector;
+    std::vector<Point<dim>>                corner_points;
+    std::vector<Vector<double>>            solution_vector;
+    SparsityPattern                        sparsity_pattern;
+    Vector<double>                         assembled_cell_rhs;
+    SparseMatrix<double>                   assembled_cell_matrix;
+    Vector<double>                         global_element_rhs;
+    FullMatrix<double>                     global_element_matrix;
+    std::vector<double>                    global_weights;
+    Vector<double>                         system_rhs;
+    SparseMatrix<double>                   system_matrix;
+    Vector<double>                         global_solution;
+    const CellId                           global_cell_id;
+    const CellId                           first_cell_id;
+    const unsigned int                     local_subdomain;
+    const ElaParameters<dim>               ela_parameters;
+    std::string                            filename;
+    BasisFun::BasisQ1<dim>                 basis_q1;
   };
 } // namespace Elasticity
 
