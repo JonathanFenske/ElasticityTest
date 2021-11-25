@@ -37,7 +37,7 @@ subsection Elasticity Parameters
     set no. of z-layers = 1
     
     # E and nu only need to be set if "use E and nu" is true.
-    set E = 1.e5
+    set E = 1.e6
     set nu = 0.3
 
     # mu and lambda only need to be set if E and nu are not used.

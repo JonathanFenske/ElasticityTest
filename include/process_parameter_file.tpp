@@ -353,6 +353,7 @@ namespace Elasticity
       }
 
     rho = prm.get_double("rho");
+    AssertThrow(rho >= 0, ExcMessage("rho must be nonnegative"));
   }
 
   template <>
@@ -464,6 +465,7 @@ namespace Elasticity
           }
       }
     rho = prm.get_double("rho");
+    AssertThrow(rho >= 0, ExcMessage("rho must be nonnegative"));
   }
 } // namespace Elasticity
 
