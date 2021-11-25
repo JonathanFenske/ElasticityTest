@@ -28,13 +28,13 @@ subsection Elasticity Parameters
 
     set oscillations = false
     set x-layers = false
-    set y-layers = true
-    set z-layers = false
+    set y-layers = false
+    set z-layers = true
 
     # Only need to be set if the corresponding flag is true.
     set no. of x-layers = 1
-    set no. of y-layers = 10
-    set no. of z-layers = 0
+    set no. of y-layers = 1
+    set no. of z-layers = 10
     
     # E and nu only need to be set if "use E and nu" is true.
     set E = 210.e9
