@@ -345,23 +345,9 @@ namespace Elasticity
       }
 
     std::vector<bool> used_processors =
-      Utilities::MPI::all_gather(mpi_communicator, processor_is_used);
+      Utilities::MPI::gather(mpi_communicator, processor_is_used);
 
-    unsigned int first_used_processor;
-    for (unsigned int i = 0;
-         i < Utilities::MPI::n_mpi_processes(mpi_communicator);
-         ++i)
-      {
-        if (used_processors[i])
-          {
-            first_used_processor = i;
-
-            break;
-          }
-      }
-
-    if (Utilities::MPI::this_mpi_process(mpi_communicator) ==
-        first_used_processor)
+    if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0)
       {
         std::vector<std::string> filenames;
         std::string              filename;

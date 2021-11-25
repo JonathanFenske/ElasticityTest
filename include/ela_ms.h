@@ -184,6 +184,7 @@ namespace Elasticity
     TrilinosWrappers::SparseMatrix            preconditioner_matrix;
     TrilinosWrappers::MPI::Vector             locally_relevant_solution;
     TrilinosWrappers::MPI::Vector             system_rhs;
+    CellId                                    first_cell_id;
     std::map<CellId, ElaBasis<dim>>           cell_basis_map;
     const ElaParameters<dim>                  ela_parameters;
     bool                                      processor_is_used;

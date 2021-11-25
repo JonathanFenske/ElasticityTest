@@ -21,6 +21,7 @@ namespace Elasticity
                       Triangulation<dim>::smoothing_on_coarsening))
     , fe(FE_Q<dim>(1), dim)
     , dof_handler(triangulation)
+    , first_cell_id()
     , cell_basis_map()
     , ela_parameters(ela_parameters)
     , processor_is_used(false)
@@ -114,20 +115,31 @@ namespace Elasticity
 
     cell_basis_map.clear();
 
-    typename Triangulation<dim>::active_cell_iterator first_cell,
-      cell = dof_handler.begin_active(), endc = dof_handler.end();
-
-    unsigned int i = 0;
+    typename Triangulation<dim>::active_cell_iterator cell = dof_handler
+                                                               .begin_active(),
+                                                      endc = dof_handler.end();
 
     for (; cell != endc; ++cell)
       {
         if (cell->is_locally_owned())
           {
-            if (i++ == 0)
-              first_cell = cell;
+            if (!processor_is_used)
+              {
+                processor_is_used = true;
+                std::vector<CellId> first_cells =
+                  Utilities::MPI::all_gather(mpi_communicator, cell->id());
+                first_cell_id = first_cells[1];
+              }
+            else
+              {
+                Assert(first_cell_id.get_coarse_cell_id() !=
+                         numbers::invalid_coarse_cell_id,
+                       ExcMessage("first cell id not initialized"));
+              }
+
             ElaBasis<dim> current_cell_problem(
               cell,
-              first_cell,
+              first_cell_id,
               triangulation.locally_owned_subdomain(),
               mpi_communicator,
               ela_parameters);
@@ -180,7 +192,6 @@ namespace Elasticity
       {
         if (cell->is_locally_owned())
           {
-            processor_is_used = true;
             typename std::map<CellId, ElaBasis<dim>>::iterator it_basis =
               cell_basis_map.find(cell->id());
 
@@ -387,19 +398,7 @@ namespace Elasticity
       }
 
     std::vector<bool> used_processors =
-      Utilities::MPI::all_gather(mpi_communicator, processor_is_used);
-
-    unsigned int first_used_processor;
-    for (unsigned int i = 0;
-         i < Utilities::MPI::n_mpi_processes(mpi_communicator);
-         ++i)
-      {
-        if (used_processors[i])
-          {
-            first_used_processor = i;
-            break;
-          }
-      }
+      Utilities::MPI::gather(mpi_communicator, processor_is_used);
 
     std::vector<std::string> basis_filenames;
 
@@ -415,20 +414,17 @@ namespace Elasticity
       }
 
     std::vector<std::vector<std::string>> gathered_basis_filenames =
-      Utilities::MPI::gather(mpi_communicator,
-                             basis_filenames,
-                             first_used_processor);
+      Utilities::MPI::gather(mpi_communicator, basis_filenames);
 
-    std::vector<std::string> ordered_basis_filenames;
-    for (unsigned int i = 0; i < gathered_basis_filenames.size(); ++i)
-      for (unsigned int j = 0; j < gathered_basis_filenames[i].size(); ++j)
-        {
-          ordered_basis_filenames.push_back(gathered_basis_filenames[i][j]);
-        }
-
-    if (Utilities::MPI::this_mpi_process(mpi_communicator) ==
-        first_used_processor)
+    if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0)
       {
+        std::vector<std::string> ordered_basis_filenames;
+        for (unsigned int i = 0; i < gathered_basis_filenames.size(); ++i)
+          for (unsigned int j = 0; j < gathered_basis_filenames[i].size(); ++j)
+            {
+              ordered_basis_filenames.push_back(gathered_basis_filenames[i][j]);
+            }
+
         std::vector<std::string> coarse_filenames;
         for (unsigned int i = 0;
              i < Utilities::MPI::n_mpi_processes(mpi_communicator);
