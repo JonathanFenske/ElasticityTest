@@ -16,7 +16,7 @@ namespace Elasticity
                                   const Point<3> &                 init_p2)
     : LamePrmBase<3>()
     , layers(layers)
-    , n_layers(3)
+    , n_layers(n_layers)
     , layer_size_inv(3)
     , init_p1(init_p1)
     , init_p2(init_p2)
@@ -65,6 +65,9 @@ namespace Elasticity
       {
         layer_size_inv[2] = 1;
       }
+
+    for (unsigned int i : n_layers)
+      std::cout << i << std::endl;
   }
 
   template <>
