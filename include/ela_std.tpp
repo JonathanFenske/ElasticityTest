@@ -120,7 +120,6 @@ namespace Elasticity
 
     FullMatrix<double> cell_matrix(dofs_per_cell, dofs_per_cell);
     Vector<double>     cell_rhs(dofs_per_cell);
-    Vector<double>     cell_rhs_tmp(dofs_per_cell);
 
     std::vector<types::global_dof_index> local_dof_indices(dofs_per_cell);
 
@@ -166,7 +165,6 @@ namespace Elasticity
                       body_force_values[q_point][component_i] *
                       fe_values.JxW(q_point);
                   }
-                cell_rhs_tmp = cell_rhs;
               }
 
             cell->get_dof_indices(local_dof_indices);
@@ -218,8 +216,9 @@ namespace Elasticity
         TrilinosWrappers::MPI::Vector completely_distributed_solution(
           locally_owned_dofs, mpi_communicator);
 
-        unsigned int  n_iterations     = dof_handler.n_dofs();
-        const double  solver_tolerance = 1e-8 * system_rhs.l2_norm();
+        unsigned int n_iterations = dof_handler.n_dofs();
+        const double solver_tolerance =
+          std::max(1.e-10, 1.e-8 * system_rhs.l2_norm());
         SolverControl solver_control(
           /* n_max_iter */ n_iterations,
           solver_tolerance,

@@ -178,58 +178,9 @@ namespace Elasticity
   void
   ElaMs<dim>::assemble_system()
   {
-    // TimerOutput::Scope t(computing_timer, "assembly");
-
-    // const unsigned int dofs_per_cell = fe.n_dofs_per_cell();
-
-    // FullMatrix<double> cell_matrix(dofs_per_cell, dofs_per_cell);
-    // Vector<double>     cell_rhs(dofs_per_cell);
-    // Vector<double>     cell_rhs_tmp(dofs_per_cell);
-
-    // std::vector<types::global_dof_index> local_dof_indices(dofs_per_cell);
-
-    // for (const auto &cell : dof_handler.active_cell_iterators())
-    //   {
-    //     if (cell->is_locally_owned())
-    //       {
-    //         typename std::map<CellId, ElaBasis<dim>>::iterator it_basis =
-    //           cell_basis_map.find(cell->id());
-
-    //         cell_matrix = 0.;
-    //         cell_rhs    = 0.;
-
-    //         cell_matrix = (it_basis->second).get_global_element_matrix();
-    //         cell_rhs    = (it_basis->second).get_global_element_rhs();
-
-    //         cell->get_dof_indices(local_dof_indices);
-    //         constraints.distribute_local_to_global(cell_matrix,
-    //                                                cell_rhs,
-    //                                                local_dof_indices,
-    //                                                system_matrix,
-    //                                                system_rhs);
-    //       }
-    //   }
-
-    // system_matrix.compress(VectorOperation::add);
-    // system_rhs.compress(VectorOperation::add);
-
     TimerOutput::Scope t(computing_timer, "assembly");
-    const QGauss<dim>  quadrature_formula(fe.degree + 1);
-    FEValues<dim>      fe_values(fe,
-                            quadrature_formula,
-                            update_values | update_gradients |
-                              update_quadrature_points | update_JxW_values);
+
     const unsigned int dofs_per_cell = fe.n_dofs_per_cell();
-    const unsigned int n_q_points    = quadrature_formula.size();
-
-    std::shared_ptr<LamePrmBase<dim>> mu     = ela_parameters.mu;
-    std::shared_ptr<LamePrmBase<dim>> lambda = ela_parameters.lambda;
-    BodyForce<dim>                    body_force(ela_parameters.rho);
-
-    std::vector<double> lambda_values(n_q_points), mu_values(n_q_points);
-    std::vector<Vector<double>> body_force_values(n_q_points);
-    for (unsigned int i = 0; i < n_q_points; ++i)
-      body_force_values[i].reinit(dim);
 
     FullMatrix<double> cell_matrix(dofs_per_cell, dofs_per_cell);
     Vector<double>     cell_rhs(dofs_per_cell);
@@ -241,46 +192,14 @@ namespace Elasticity
       {
         if (cell->is_locally_owned())
           {
-            processor_is_used = true;
-            cell_matrix       = 0.;
-            cell_rhs          = 0.;
-            fe_values.reinit(cell);
-            lambda->value_list(fe_values.get_quadrature_points(),
-                               lambda_values);
-            mu->value_list(fe_values.get_quadrature_points(), mu_values);
-            body_force.vector_value_list(fe_values.get_quadrature_points(),
-                                         body_force_values);
-            for (unsigned int q_point = 0; q_point < n_q_points; ++q_point)
-              {
-                for (unsigned int i = 0; i < fe.dofs_per_cell; ++i)
-                  {
-                    const unsigned int component_i =
-                      fe.system_to_component_index(i).first;
-                    for (unsigned int j = 0; j < fe.dofs_per_cell; ++j)
-                      {
-                        const unsigned int component_j =
-                          fe.system_to_component_index(j).first;
-                        cell_matrix(i, j) +=
-                          ((fe_values.shape_grad(i, q_point)[component_i] *
-                            fe_values.shape_grad(j, q_point)[component_j] *
-                            lambda_values[q_point]) +
-                           (fe_values.shape_grad(i, q_point)[component_j] *
-                            fe_values.shape_grad(j, q_point)[component_i] *
-                            mu_values[q_point]) +
-                           ((component_i == component_j) ?
-                              (fe_values.shape_grad(i, q_point) *
-                               fe_values.shape_grad(j, q_point) *
-                               mu_values[q_point]) :
-                              0)) *
-                          fe_values.JxW(q_point);
-                      }
-                    cell_rhs(i) +=
-                      fe_values.shape_value_component(i, q_point, component_i) *
-                      body_force_values[q_point][component_i] *
-                      fe_values.JxW(q_point);
-                  }
-                cell_rhs_tmp = cell_rhs;
-              }
+            typename std::map<CellId, ElaBasis<dim>>::iterator it_basis =
+              cell_basis_map.find(cell->id());
+
+            cell_matrix = 0.;
+            cell_rhs    = 0.;
+
+            cell_matrix = (it_basis->second).get_global_element_matrix();
+            cell_rhs    = (it_basis->second).get_global_element_rhs();
 
             cell->get_dof_indices(local_dof_indices);
             constraints.distribute_local_to_global(cell_matrix,
@@ -290,6 +209,7 @@ namespace Elasticity
                                                    system_rhs);
           }
       }
+
     system_matrix.compress(VectorOperation::add);
     system_rhs.compress(VectorOperation::add);
   }
@@ -332,8 +252,9 @@ namespace Elasticity
         TrilinosWrappers::MPI::Vector completely_distributed_solution(
           locally_owned_dofs, mpi_communicator);
 
-        unsigned int  n_iterations     = dof_handler.n_dofs();
-        const double  solver_tolerance = 1e-8 * system_rhs.l2_norm();
+        unsigned int n_iterations = dof_handler.n_dofs();
+        const double solver_tolerance =
+          std::max(1.e-10, 1e-8 * system_rhs.l2_norm());
         SolverControl solver_control(
           /* n_max_iter */ n_iterations,
           solver_tolerance,
