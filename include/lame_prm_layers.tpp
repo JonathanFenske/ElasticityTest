@@ -65,9 +65,6 @@ namespace Elasticity
       {
         layer_size_inv[2] = 1;
       }
-
-    for (unsigned int i : n_layers)
-      std::cout << i << std::endl;
   }
 
   template <>
