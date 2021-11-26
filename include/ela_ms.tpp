@@ -252,8 +252,9 @@ namespace Elasticity
         TrilinosWrappers::MPI::Vector completely_distributed_solution(
           locally_owned_dofs, mpi_communicator);
 
-        unsigned int  n_iterations     = dof_handler.n_dofs();
-        const double  solver_tolerance = 1e-8 * system_rhs.l2_norm();
+        unsigned int n_iterations = dof_handler.n_dofs();
+        const double solver_tolerance =
+          std::max(1.e-10, 1e-8 * system_rhs.l2_norm());
         SolverControl solver_control(
           /* n_max_iter */ n_iterations,
           solver_tolerance,

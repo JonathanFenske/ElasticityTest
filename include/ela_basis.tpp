@@ -177,6 +177,7 @@ namespace Elasticity
                   fe_values.JxW(q_index);
               }
           }
+
         cell->get_dof_indices(local_dof_indices);
         for (unsigned int i = 0; i < dofs_per_cell; ++i)
           {
@@ -206,8 +207,9 @@ namespace Elasticity
       }
     else
       {
-        unsigned int  n_iterations     = dof_handler.n_dofs();
-        const double  solver_tolerance = 1e-8 * assembled_cell_rhs.l2_norm();
+        unsigned int n_iterations = dof_handler.n_dofs();
+        const double solver_tolerance =
+          std::max(1.e-10, 1.e-8 * assembled_cell_rhs.l2_norm());
         SolverControl solver_control(
           /* n_max_iter */ n_iterations,
           solver_tolerance,
@@ -216,10 +218,17 @@ namespace Elasticity
 
         SolverCG<> solver(solver_control);
 
-        // PreconditionSSOR<> preconditioner;
-        PreconditionJacobi preconditioner;
-        preconditioner.initialize(system_matrix);
+        // PreconditionIdentity preconditioner;
+        // PreconditionRichardson preconditioner;
+        // preconditioner.initialize(system_matrix,
+        //                           PreconditionRichardson::AdditionalData(1.));
 
+        // PreconditionSSOR<SparseMatrix<double>> preconditioner;
+        // preconditioner.initialize(
+        //   system_matrix,
+        //   PreconditionSSOR<SparseMatrix<double>>::AdditionalData(1.2));
+        PreconditionJacobi<> preconditioner;
+        preconditioner.initialize(system_matrix);
         try
           {
             solver.solve(system_matrix,
@@ -229,15 +238,10 @@ namespace Elasticity
           }
         catch (std::exception &e)
           {
-            Assert(false, ExcMessage(e.what()));
+            AssertThrow(false, ExcMessage(e.what()));
           }
 
         constraints_vector[q_point].distribute(solution_vector[q_point]);
-
-        // std::cout << "   Solved (iteratively) in " <<
-        // solver_control.last_step()
-        //           << " iterations with an error of "
-        //           << solver_control.last_value() << std::endl;
       }
   }
 
