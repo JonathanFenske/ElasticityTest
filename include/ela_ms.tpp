@@ -465,7 +465,6 @@ namespace Elasticity
 
     TrilinosWrappers::MPI::Vector locally_relevant_solution_fine;
     locally_relevant_solution_fine.reinit(locally_owned_dofs_fine,
-                                          locally_relevant_dofs_fine,
                                           mpi_communicator);
 
     unsigned int dofs_per_cell =
@@ -476,31 +475,32 @@ namespace Elasticity
 
     std::vector<types::global_dof_index> cell_dof_indices(dofs_per_cell);
 
-    AffineConstraints<double> constraints_fine;
-    constraints_fine.clear();
-    constraints_fine.reinit(locally_relevant_dofs_fine);
-    DoFTools::make_hanging_node_constraints(dof_handler_fine, constraints_fine);
+    // AffineConstraints<double> constraints_fine;
+    // constraints_fine.clear();
+    // constraints_fine.reinit(locally_relevant_dofs_fine);
+    // DoFTools::make_hanging_node_constraints(dof_handler_fine,
+    // constraints_fine);
 
-    VectorTools::interpolate_boundary_values(dof_handler_fine,
-                                             0,
-                                             Functions::ZeroFunction<dim>(dim),
-                                             constraints_fine);
+    // VectorTools::interpolate_boundary_values(dof_handler_fine,
+    //                                          0,
+    //                                          Functions::ZeroFunction<dim>(dim),
+    //                                          constraints_fine);
 
-    if (dim == 3)
-      {
-        if (ela_parameters.rotate)
-          {
-            VectorTools::interpolate_boundary_values(
-              dof_handler_fine,
-              1,
-              MyTools::Rotation(ela_parameters.init_p1,
-                                ela_parameters.init_p2,
-                                ela_parameters.angle),
-              constraints_fine);
-          }
-      }
+    // if (dim == 3)
+    //   {
+    //     if (ela_parameters.rotate)
+    //       {
+    //         VectorTools::interpolate_boundary_values(
+    //           dof_handler_fine,
+    //           1,
+    //           MyTools::Rotation(ela_parameters.init_p1,
+    //                             ela_parameters.init_p2,
+    //                             ela_parameters.angle),
+    //           constraints_fine);
+    //       }
+    //   }
 
-    constraints_fine.close();
+    // constraints_fine.close();
 
     for (const auto &cell : dof_handler_fine.cell_iterators())
       {
@@ -519,10 +519,10 @@ namespace Elasticity
             for (const auto &fine_cell :
                  GridTools::get_active_child_cells<DoFHandler<dim>>(cell))
               {
-                fine_cell->get_dof_indices(local_dof_indices);
-                constraints_fine.distribute_local_to_global(
+                // fine_cell->get_dof_indices(local_dof_indices);
+                fine_cell->distribute_local_to_global(
                   local_solution[i],
-                  local_dof_indices,
+                  // local_dof_indices,
                   locally_relevant_solution_fine);
                 ++i;
               }
