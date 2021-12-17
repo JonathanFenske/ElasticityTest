@@ -19,6 +19,10 @@ namespace Elasticity
                     typename Triangulation<dim>::MeshSmoothing(
                       Triangulation<dim>::smoothing_on_refinement |
                       Triangulation<dim>::smoothing_on_coarsening))
+    , triangulation_fine(mpi_communicator,
+                         typename Triangulation<dim>::MeshSmoothing(
+                           Triangulation<dim>::smoothing_on_refinement |
+                           Triangulation<dim>::smoothing_on_coarsening))
     , fe(FE_Q<dim>(1), dim)
     , dof_handler(triangulation)
     , first_cell_id()
@@ -447,6 +451,93 @@ namespace Elasticity
 
 
   template <int dim>
+  const Vector<double>
+  ElaMs<dim>::get_fine_solution()
+  {
+    DoFHandler<dim> dof_handler_fine(triangulation_fine);
+    dof_handler_fine.distribute_dofs(fe);
+
+    IndexSet locally_owned_dofs_fine;
+    locally_owned_dofs_fine = dof_handler_fine.locally_owned_dofs();
+    IndexSet locally_relevant_dofs_fine;
+    DoFTools::extract_locally_relevant_dofs(dof_handler_fine,
+                                            locally_relevant_dofs_fine);
+
+    TrilinosWrappers::MPI::Vector locally_relevant_solution_fine;
+    locally_relevant_solution_fine.reinit(locally_owned_dofs_fine,
+                                          locally_relevant_dofs_fine,
+                                          mpi_communicator);
+
+    unsigned int dofs_per_cell =
+      pow(fe.n_dofs_per_cell(), ela_parameters.fine_refinements);
+
+    std::vector<types::global_dof_index> local_dof_indices(
+      fe.n_dofs_per_cell());
+
+    std::vector<types::global_dof_index> cell_dof_indices(dofs_per_cell);
+
+    AffineConstraints<double> constraints_fine;
+    constraints_fine.clear();
+    constraints_fine.reinit(locally_relevant_dofs_fine);
+    DoFTools::make_hanging_node_constraints(dof_handler_fine, constraints_fine);
+
+    VectorTools::interpolate_boundary_values(dof_handler_fine,
+                                             0,
+                                             Functions::ZeroFunction<dim>(dim),
+                                             constraints_fine);
+
+    if (dim == 3)
+      {
+        if (ela_parameters.rotate)
+          {
+            VectorTools::interpolate_boundary_values(
+              dof_handler_fine,
+              1,
+              MyTools::Rotation(ela_parameters.init_p1,
+                                ela_parameters.init_p2,
+                                ela_parameters.angle),
+              constraints_fine);
+          }
+      }
+
+    constraints_fine.close();
+
+    for (const auto &cell : dof_handler_fine.cell_iterators())
+      {
+        if (cell_basis_map.find(cell->id()) != cell_basis_map.end())
+          {
+            typename std::map<CellId, ElaBasis<dim>>::iterator it_basis =
+              cell_basis_map.find(cell->id());
+
+            std::vector<Vector<double>> local_solution =
+              (it_basis->second).get_global_solution();
+
+            cell_dof_indices.clear();
+
+            unsigned int i = 0;
+
+            for (const auto &fine_cell :
+                 GridTools::get_active_child_cells<DoFHandler<dim>>(cell))
+              {
+                fine_cell->get_dof_indices(local_dof_indices);
+                constraints_fine.distribute_local_to_global(
+                  local_solution[i],
+                  local_dof_indices,
+                  locally_relevant_solution_fine);
+                ++i;
+              }
+          }
+      }
+
+    locally_relevant_solution_fine.compress(VectorOperation::add);
+
+    Vector<double> fine_scale_ms_solution(locally_relevant_solution_fine);
+
+    return fine_scale_ms_solution;
+  }
+
+
+  template <int dim>
   void
   ElaMs<dim>::run()
   {
@@ -465,7 +556,12 @@ namespace Elasticity
       GridGenerator::subdivided_hyper_rectangle(
         triangulation, repetitions, p1, p2, true);
 
+      triangulation_fine.copy_triangulation(triangulation);
+
       triangulation.refine_global(ela_parameters.coarse_refinements);
+
+      triangulation_fine.refine_global(ela_parameters.coarse_refinements +
+                                       ela_parameters.fine_refinements);
     }
 
     setup_system();

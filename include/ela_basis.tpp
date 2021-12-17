@@ -16,10 +16,10 @@ namespace Elasticity
   template <int dim>
   ElaBasis<dim>::ElaBasis(
     typename Triangulation<dim>::active_cell_iterator &global_cell,
-    const CellId &                                     first_cell_id,
+    const CellId                                      &first_cell_id,
     unsigned int                                       local_subdomain,
     MPI_Comm                                           mpi_communicator,
-    const ElaParameters<dim> &                         ela_parameters)
+    const ElaParameters<dim>                          &ela_parameters)
     : mpi_communicator(mpi_communicator)
     , triangulation()
     , fe(FE_Q<dim>(1), dim)
@@ -489,6 +489,28 @@ namespace Elasticity
   ElaBasis<dim>::get_filename() const
   {
     return filename;
+  }
+
+  template <int dim>
+  const std::vector<Vector<double>>
+  ElaBasis<dim>::get_global_solution()
+  {
+    const unsigned int                   dofs_per_cell = fe.n_dofs_per_cell();
+    std::vector<types::global_dof_index> local_dof_indices(dofs_per_cell);
+
+    std::vector<Vector<double>> fine_cell_solutions;
+
+    for (const auto &cell : dof_handler.active_cell_iterators())
+      {
+        cell->get_dof_indices(local_dof_indices);
+        Vector<double> tmp_solution(dofs_per_cell);
+        for (unsigned int q_point = 0; q_point < dofs_per_cell; ++q_point)
+          {
+            tmp_solution[q_point] = global_solution[local_dof_indices[q_point]];
+          }
+        fine_cell_solutions.push_back(tmp_solution);
+      }
+    return fine_cell_solutions;
   }
 } // namespace Elasticity
 

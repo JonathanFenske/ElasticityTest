@@ -60,8 +60,6 @@ namespace Elasticity
 {
   using namespace dealii;
 
-
-
   // class ExcCycle : public ExceptionBase
   // {
   // public:
@@ -123,6 +121,12 @@ namespace Elasticity
     void
     run();
 
+    /**
+     * @brief Compares the MsFEM and the coarse solution to the fine solution
+     */
+    void
+    compare_solutions(const Vector<double> ms_solution);
+
   private:
     /**
      * @brief Sets up the system.
@@ -178,6 +182,7 @@ namespace Elasticity
 
     MPI_Comm                                  mpi_communicator;
     parallel::distributed::Triangulation<dim> triangulation;
+    parallel::distributed::Triangulation<dim> triangulation_coarse;
     FESystem<dim>                             fe;
     DoFHandler<dim>                           dof_handler;
     IndexSet                                  locally_owned_dofs;
@@ -186,6 +191,7 @@ namespace Elasticity
     TrilinosWrappers::SparseMatrix            system_matrix;
     TrilinosWrappers::SparseMatrix            preconditioner_matrix;
     TrilinosWrappers::MPI::Vector             locally_relevant_solution;
+    TrilinosWrappers::MPI::Vector             locally_relevant_solution_coarse;
     TrilinosWrappers::MPI::Vector             system_rhs;
     const ElaParameters<dim>                  ela_parameters;
     bool                                      processor_is_used;

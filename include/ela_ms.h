@@ -49,6 +49,10 @@
 #include "postprocessing.h"
 #include "process_parameter_file.h"
 
+// include headers that implement a archive in simple text format
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+
 // STL
 #include <cmath>
 #include <cstring>
@@ -92,6 +96,16 @@ namespace Elasticity
      */
     void
     run();
+
+    /**
+     * @brief Saves the fine scale solution
+     *
+     * This function saves the fine scale solution by getting all local
+     * contributions to the global solution vector that use linear
+     * finite elements on the fine scale.
+     */
+    const Vector<double>
+    get_fine_solution();
 
   private:
     /**
@@ -175,6 +189,7 @@ namespace Elasticity
 
     MPI_Comm                                  mpi_communicator;
     parallel::distributed::Triangulation<dim> triangulation;
+    parallel::distributed::Triangulation<dim> triangulation_fine;
     FESystem<dim>                             fe;
     DoFHandler<dim>                           dof_handler;
     IndexSet                                  locally_owned_dofs;

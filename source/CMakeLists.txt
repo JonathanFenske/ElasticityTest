@@ -34,10 +34,17 @@ set(StdFEM_LIBRARY_SRC
   ela_std.cc
   run_problem_std.cc)
 
+set(COMPARE_LIBRARY_SRC
+  ela_basis.cc
+  ela_ms.cc
+  ela_std.cc
+  run_problem_compare.cc)
+
 print_all_args (
 	${ELA_LIBRARY_SRC}
   ${MsFEM_LIBRARY_SRC}
   ${StdFEM_LIBRARY_SRC}
+  ${COMPARE_LIBRARY_SRC}
 )
 
 ###############################################################################
@@ -59,6 +66,9 @@ DEAL_II_SETUP_TARGET(MsFEM_LIBRARY)
 add_library(StdFEM_LIBRARY SHARED ${StdFEM_LIBRARY_SRC})
 DEAL_II_SETUP_TARGET(StdFEM_LIBRARY)
 
+add_library(COMPARE_LIBRARY SHARED ${COMPARE_LIBRARY_SRC})
+DEAL_II_SETUP_TARGET(COMPARE_LIBRARY)
+
 #
 # Install into the DESTINATION provided by CMAKE_INSTALL_PREFIX
 #
@@ -75,6 +85,12 @@ DEAL_II_SETUP_TARGET(StdEla)
 TARGET_LINK_LIBRARIES(StdEla
   ELA_LIBRARY
   StdFEM_LIBRARY)
+
+  add_executable(compare_ela "main_compare.cxx")
+  DEAL_II_SETUP_TARGET(compare_ela)
+  TARGET_LINK_LIBRARIES(compare_ela
+    ELA_LIBRARY
+    COMPARE_LIBRARY)
 
 ###############################################################################
 ###############################################################################

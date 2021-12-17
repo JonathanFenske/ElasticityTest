@@ -18,6 +18,10 @@ namespace Elasticity
                     typename Triangulation<dim>::MeshSmoothing(
                       Triangulation<dim>::smoothing_on_refinement |
                       Triangulation<dim>::smoothing_on_coarsening))
+    , triangulation_coarse(mpi_communicator,
+                           typename Triangulation<dim>::MeshSmoothing(
+                             Triangulation<dim>::smoothing_on_refinement |
+                             Triangulation<dim>::smoothing_on_coarsening))
     , fe(FE_Q<dim>(1), dim)
     , dof_handler(triangulation)
     , ela_parameters(ela_parameters)
@@ -420,7 +424,12 @@ namespace Elasticity
             GridGenerator::subdivided_hyper_rectangle(
               triangulation, repetitions, p1, p2, true);
 
+            triangulation_coarse.copy_triangulation(triangulation);
+
             triangulation.refine_global(ela_parameters.coarse_refinements);
+
+            triangulation_coarse.refine_global(
+              ela_parameters.coarse_refinements);
           }
         else
           {
@@ -445,7 +454,40 @@ namespace Elasticity
         computing_timer.print_summary();
         computing_timer.reset();
         pcout << std::endl;
+
+        if (cycle == 0)
+          {
+            locally_relevant_solution_coarse.reinit(locally_relevant_solution);
+          }
       }
+  }
+
+  template <int dim>
+  void
+  ElaStd<dim>::compare_solutions(const Vector<double> ms_solution)
+  {
+    DoFHandler<dim> dof_handler_coarse;
+    dof_handler_coarse.initialize(triangulation_coarse, fe);
+
+    TrilinosWrappers::MPI::Vector coarse_solution_fine_grid;
+    coarse_solution_fine_grid.reinit(locally_relevant_dofs, mpi_communicator);
+    VectorTools::interpolate_to_different_mesh(dof_handler_coarse,
+                                               locally_relevant_solution_coarse,
+                                               dof_handler,
+                                               coarse_solution_fine_grid);
+
+    TrilinosWrappers::MPI::Vector difference;
+    difference.reinit(locally_relevant_dofs, mpi_communicator);
+    difference = ms_solution;
+
+    difference -= locally_relevant_solution;
+    pcout << "The difference between the fine solution and the MsFEM solution"
+          << " in the l2-norm is " << difference.l2_norm() << "." << std::endl;
+
+    difference.reinit(coarse_solution_fine_grid);
+    difference -= locally_relevant_solution;
+    pcout << "The difference between the fine solution and the coarse solution"
+          << " in the l2-norm is " << difference.l2_norm() << "." << std::endl;
   }
 } // namespace Elasticity
 
