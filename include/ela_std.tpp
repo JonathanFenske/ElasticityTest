@@ -476,18 +476,45 @@ namespace Elasticity
                                                dof_handler,
                                                coarse_solution_fine_grid);
 
-    TrilinosWrappers::MPI::Vector difference;
-    difference.reinit(locally_relevant_dofs, mpi_communicator);
-    difference = ms_solution;
+    Vector<double> difference(ms_solution);
+    // difference.reinit(locally_relevant_dofs, mpi_communicator);
+    // difference = ms_solution;
 
-    difference -= locally_relevant_solution;
+    difference -= Vector<double>(locally_relevant_solution);
+
+    const double L2error_ms =
+      VectorTools::compute_global_error(triangulation,
+                                        difference,
+                                        VectorTools::L2_norm);
+
+    const double H1error_ms =
+      VectorTools::compute_global_error(triangulation,
+                                        difference,
+                                        VectorTools::H1_seminorm);
+
     pcout << "The difference between the fine solution and the MsFEM solution"
-          << " in the l2-norm is " << difference.l2_norm() << "." << std::endl;
+          << " in the L2-norm is " << L2error_ms << "." << std::endl;
 
-    difference.reinit(coarse_solution_fine_grid);
-    difference -= locally_relevant_solution;
+    pcout << "The difference between the fine solution and the MsFEM solution"
+          << " in the H1-seminorm is " << H1error_ms << "." << std::endl;
+
+    difference = Vector<double>(coarse_solution_fine_grid);
+    difference -= Vector<double>(locally_relevant_solution);
+
+    const double L2error_coarse =
+      VectorTools::compute_global_error(triangulation,
+                                        difference,
+                                        VectorTools::L2_norm);
+    const double H1error_coarse =
+      VectorTools::compute_global_error(triangulation,
+                                        difference,
+                                        VectorTools::H1_seminorm);
+
     pcout << "The difference between the fine solution and the coarse solution"
-          << " in the l2-norm is " << difference.l2_norm() << "." << std::endl;
+          << " in the L2-norm is " << L2error_coarse << "." << std::endl;
+
+    pcout << "The difference between the fine solution and the MsFEM solution"
+          << " in the H1-seminorm is " << H1error_coarse << "." << std::endl;
   }
 } // namespace Elasticity
 
