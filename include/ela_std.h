@@ -40,6 +40,7 @@
 
 #include <deal.II/numerics/data_out.h>
 #include <deal.II/numerics/error_estimator.h>
+#include <deal.II/numerics/fe_field_function.h>
 #include <deal.II/numerics/vector_tools.h>
 
 #include <deal.II/physics/transformations.h>

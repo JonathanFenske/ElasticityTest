@@ -492,18 +492,17 @@ namespace Elasticity
             for (const auto &fine_cell :
                  GridTools::get_active_child_cells<DoFHandler<dim>>(cell))
               {
-                fine_cell->distribute_local_to_global(
-                  local_solution[i], locally_relevant_solution_fine);
+                if (fine_cell->is_locally_owned())
+                  {
+                    fine_cell->distribute_local_to_global(
+                      local_solution[i], locally_relevant_solution_fine);
+                  }
                 ++i;
               }
           }
       }
 
     locally_relevant_solution_fine.compress(VectorOperation::add);
-
-    std::cout << "vector on "
-              << Utilities::MPI::this_mpi_process(mpi_communicator)
-              << std::endl;
 
     Vector<double> fine_scale_ms_solution(locally_relevant_solution_fine);
 

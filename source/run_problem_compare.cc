@@ -6,7 +6,7 @@ namespace Elasticity
   void
   run_2d_problem_compare(const std::string &input_file)
   {
-    ElaParameters<2> ela_parameters(input_file);
+    ElaParameters<2> ela_parameters(input_file, true);
 
     dealii::Vector<double> ms_solution;
 
@@ -28,7 +28,7 @@ namespace Elasticity
   void
   run_3d_problem_compare(const std::string &input_file)
   {
-    ElaParameters<3> ela_parameters(input_file);
+    ElaParameters<3> ela_parameters(input_file, true);
 
     dealii::Vector<double> ms_solution;
 

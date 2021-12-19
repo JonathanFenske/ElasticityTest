@@ -424,12 +424,14 @@ namespace Elasticity
             GridGenerator::subdivided_hyper_rectangle(
               triangulation, repetitions, p1, p2, true);
 
-            triangulation_coarse.copy_triangulation(triangulation);
+            if (ela_parameters.compare)
+              {
+                triangulation_coarse.copy_triangulation(triangulation);
+                triangulation_coarse.refine_global(
+                  ela_parameters.coarse_refinements);
+              }
 
             triangulation.refine_global(ela_parameters.coarse_refinements);
-
-            triangulation_coarse.refine_global(
-              ela_parameters.coarse_refinements);
           }
         else
           {
@@ -455,7 +457,7 @@ namespace Elasticity
         computing_timer.reset();
         pcout << std::endl;
 
-        if (cycle == 0)
+        if (cycle == 0 && ela_parameters.compare)
           {
             locally_relevant_solution_coarse.reinit(locally_relevant_solution);
           }
@@ -466,55 +468,100 @@ namespace Elasticity
   void
   ElaStd<dim>::compare_solutions(const Vector<double> ms_solution)
   {
-    DoFHandler<dim> dof_handler_coarse;
-    dof_handler_coarse.initialize(triangulation_coarse, fe);
+    {
+      TimerOutput::Scope t(computing_timer, "comparing solution");
 
-    TrilinosWrappers::MPI::Vector coarse_solution_fine_grid;
-    coarse_solution_fine_grid.reinit(locally_relevant_dofs, mpi_communicator);
-    VectorTools::interpolate_to_different_mesh(dof_handler_coarse,
-                                               locally_relevant_solution_coarse,
-                                               dof_handler,
-                                               coarse_solution_fine_grid);
+      Vector<double> difference_per_cell(triangulation.n_active_cells());
 
-    Vector<double> difference(ms_solution);
-    // difference.reinit(locally_relevant_dofs, mpi_communicator);
-    // difference = ms_solution;
+      double L2error_ms, H1error_ms, L2error_coarse, H1error_coarse;
 
-    difference -= Vector<double>(locally_relevant_solution);
+      {
+        Functions::FEFieldFunction<dim> ms_solution_function(dof_handler,
+                                                             ms_solution);
 
-    const double L2error_ms =
-      VectorTools::compute_global_error(triangulation,
-                                        difference,
-                                        VectorTools::L2_norm);
+        VectorTools::integrate_difference(dof_handler,
+                                          locally_relevant_solution,
+                                          ms_solution_function,
+                                          difference_per_cell,
+                                          QGauss<dim>(fe.degree + 1),
+                                          VectorTools::L2_norm);
+        L2error_ms = VectorTools::compute_global_error(triangulation,
+                                                       difference_per_cell,
+                                                       VectorTools::L2_norm);
 
-    const double H1error_ms =
-      VectorTools::compute_global_error(triangulation,
-                                        difference,
-                                        VectorTools::H1_seminorm);
+        VectorTools::integrate_difference(dof_handler,
+                                          locally_relevant_solution,
+                                          ms_solution_function,
+                                          difference_per_cell,
+                                          QGauss<dim>(fe.degree + 1),
+                                          VectorTools::H1_seminorm);
 
-    pcout << "The difference between the fine solution and the MsFEM solution"
-          << " in the L2-norm is " << L2error_ms << "." << std::endl;
+        H1error_ms =
+          VectorTools::compute_global_error(triangulation,
+                                            difference_per_cell,
+                                            VectorTools::H1_seminorm);
+      }
 
-    pcout << "The difference between the fine solution and the MsFEM solution"
-          << " in the H1-seminorm is " << H1error_ms << "." << std::endl;
+      {
+        DoFHandler<dim> dof_handler_coarse;
+        dof_handler_coarse.initialize(triangulation_coarse, fe);
+        Vector<double> coarse_solution(locally_relevant_solution_coarse);
+        Functions::FEFieldFunction<dim> coarse_solution_function(
+          dof_handler_coarse, coarse_solution);
 
-    difference = Vector<double>(coarse_solution_fine_grid);
-    difference -= Vector<double>(locally_relevant_solution);
+        VectorTools::integrate_difference(dof_handler,
+                                          locally_relevant_solution,
+                                          coarse_solution_function,
+                                          difference_per_cell,
+                                          QGauss<dim>(fe.degree + 1),
+                                          VectorTools::L2_norm);
 
-    const double L2error_coarse =
-      VectorTools::compute_global_error(triangulation,
-                                        difference,
-                                        VectorTools::L2_norm);
-    const double H1error_coarse =
-      VectorTools::compute_global_error(triangulation,
-                                        difference,
-                                        VectorTools::H1_seminorm);
+        L2error_coarse =
+          VectorTools::compute_global_error(triangulation,
+                                            difference_per_cell,
+                                            VectorTools::L2_norm);
 
-    pcout << "The difference between the fine solution and the coarse solution"
-          << " in the L2-norm is " << L2error_coarse << "." << std::endl;
+        VectorTools::integrate_difference(dof_handler,
+                                          locally_relevant_solution,
+                                          coarse_solution_function,
+                                          difference_per_cell,
+                                          QGauss<dim>(fe.degree + 1),
+                                          VectorTools::H1_seminorm);
 
-    pcout << "The difference between the fine solution and the MsFEM solution"
-          << " in the H1-seminorm is " << H1error_coarse << "." << std::endl;
+        H1error_coarse =
+          VectorTools::compute_global_error(triangulation,
+                                            difference_per_cell,
+                                            VectorTools::H1_seminorm);
+      }
+
+      std::string header("+");
+      header += std::string(15, '-');
+      header += '+';
+      header += std::string(15, '-');
+      header += '+';
+      header += std::string(15, '-');
+      header += '+';
+
+
+      pcout << header << std::endl;
+      pcout << "| " << std::left << std::setw(13) << "Error"
+            << " | " << std::left << std::setw(13) << "MsFEM"
+            << " | " << std::left << std::setw(13) << "Standard FEM"
+            << " |" << std::endl;
+      pcout << header << std::endl;
+      pcout << "| " << std::left << std::setw(13) << "L2-norm"
+            << " | " << std::right << std::setw(13) << L2error_ms << " | "
+            << std::right << std::setw(13) << L2error_coarse << " |"
+            << std::endl;
+      pcout << "| " << std::left << std::setw(13) << "H1-seminorm"
+            << " | " << std::right << std::setw(13) << H1error_ms << " | "
+            << std::right << std::setw(13) << H1error_coarse << " |"
+            << std::endl;
+      pcout << header << std::endl;
+    }
+
+    computing_timer.print_summary();
+    computing_timer.reset();
   }
 } // namespace Elasticity
 

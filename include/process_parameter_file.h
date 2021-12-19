@@ -104,7 +104,8 @@ namespace Elasticity
      * declare_parameters() and parse_parameters() to
      * get the needed parameters from a parameter file.
      */
-    ElaParameters(const std::string &parameter_filename);
+    ElaParameters(const std::string &parameter_filename,
+                  const bool         compare = false);
 
     /**
      * @brief Copy constructor for ElaParameters
@@ -222,6 +223,11 @@ namespace Elasticity
      * Rotation angle
      */
     double angle;
+
+    /**
+     * True if solution will be compared in this run
+     */
+    bool compare;
   };
 
   template <>

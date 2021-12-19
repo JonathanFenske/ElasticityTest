@@ -11,7 +11,9 @@ namespace Elasticity
   using namespace dealii;
 
   template <int dim>
-  ElaParameters<dim>::ElaParameters(const std::string &parameter_filename)
+  ElaParameters<dim>::ElaParameters(const std::string &parameter_filename,
+                                    const bool         compare)
+    : compare(compare)
   {
     ParameterHandler prm;
 
