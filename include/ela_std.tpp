@@ -292,8 +292,10 @@ namespace Elasticity
       std::map<types::boundary_id, const Function<dim> *>(),
       locally_relevant_solution,
       estimated_error_per_cell);
-    parallel::distributed::GridRefinement::refine_and_coarsen_fixed_number(
-      triangulation, estimated_error_per_cell, 0.3, 0.03);
+    GridRefinement::refine_and_coarsen_fixed_number(triangulation,
+                                                    estimated_error_per_cell,
+                                                    0.3,
+                                                    0.03);
     triangulation.execute_coarsening_and_refinement();
   }
 
@@ -424,13 +426,6 @@ namespace Elasticity
             GridGenerator::subdivided_hyper_rectangle(
               triangulation, repetitions, p1, p2, true);
 
-            if (ela_parameters.compare)
-              {
-                triangulation_coarse.copy_triangulation(triangulation);
-                triangulation_coarse.refine_global(
-                  ela_parameters.coarse_refinements);
-              }
-
             triangulation.refine_global(ela_parameters.coarse_refinements);
           }
         else
@@ -453,28 +448,31 @@ namespace Elasticity
           output_results(cycle);
         }
 
+        if (cycle == 0 && ela_parameters.compare)
+          {
+            triangulation_coarse.copy_triangulation(triangulation);
+
+            locally_relevant_solution_coarse.reinit(locally_relevant_solution);
+          }
+
         computing_timer.print_summary();
         computing_timer.reset();
         pcout << std::endl;
-
-        if (cycle == 0 && ela_parameters.compare)
-          {
-            locally_relevant_solution_coarse.reinit(locally_relevant_solution);
-          }
       }
   }
 
   template <int dim>
   void
-  ElaStd<dim>::compare_solutions(const Vector<double> ms_solution)
+  ElaStd<dim>::compare_solutions(const Vector<double> &ms_solution)
   {
     {
       TimerOutput::Scope t(computing_timer, "comparing solution");
+      DoFHandler<dim>    dof_handler_coarse(triangulation_coarse);
+      dof_handler_coarse.distribute_dofs(fe);
 
       Vector<double> difference_per_cell(triangulation.n_active_cells());
 
       double L2error_ms, H1error_ms, L2error_coarse, H1error_coarse;
-
       {
         Functions::FEFieldFunction<dim> ms_solution_function(dof_handler,
                                                              ms_solution);
@@ -485,6 +483,7 @@ namespace Elasticity
                                           difference_per_cell,
                                           QGauss<dim>(fe.degree + 1),
                                           VectorTools::L2_norm);
+
         L2error_ms = VectorTools::compute_global_error(triangulation,
                                                        difference_per_cell,
                                                        VectorTools::L2_norm);
@@ -503,8 +502,6 @@ namespace Elasticity
       }
 
       {
-        DoFHandler<dim> dof_handler_coarse;
-        dof_handler_coarse.initialize(triangulation_coarse, fe);
         Vector<double> coarse_solution(locally_relevant_solution_coarse);
         Functions::FEFieldFunction<dim> coarse_solution_function(
           dof_handler_coarse, coarse_solution);
@@ -534,34 +531,34 @@ namespace Elasticity
                                             VectorTools::H1_seminorm);
       }
 
-      std::string header("+");
-      header += std::string(15, '-');
-      header += '+';
-      header += std::string(15, '-');
-      header += '+';
-      header += std::string(15, '-');
-      header += '+';
+      if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0)
+        {
+          std::string header("+");
+          header += std::string(15, '-');
+          header += '+';
+          header += std::string(15, '-');
+          header += '+';
+          header += std::string(15, '-');
+          header += '+';
 
 
-      pcout << header << std::endl;
-      pcout << "| " << std::left << std::setw(13) << "Error"
-            << " | " << std::left << std::setw(13) << "MsFEM"
-            << " | " << std::left << std::setw(13) << "Standard FEM"
-            << " |" << std::endl;
-      pcout << header << std::endl;
-      pcout << "| " << std::left << std::setw(13) << "L2-norm"
-            << " | " << std::right << std::setw(13) << L2error_ms << " | "
-            << std::right << std::setw(13) << L2error_coarse << " |"
-            << std::endl;
-      pcout << "| " << std::left << std::setw(13) << "H1-seminorm"
-            << " | " << std::right << std::setw(13) << H1error_ms << " | "
-            << std::right << std::setw(13) << H1error_coarse << " |"
-            << std::endl;
-      pcout << header << std::endl;
+          std::cout << "\n\n\n" << header << std::endl;
+          std::cout << "| " << std::left << std::setw(13) << "Error"
+                    << " | " << std::left << std::setw(13) << "MsFEM"
+                    << " | " << std::left << std::setw(13) << "Standard FEM"
+                    << " |" << std::endl;
+          std::cout << header << std::endl;
+          std::cout << "| " << std::left << std::setw(13) << "L2-norm"
+                    << " | " << std::right << std::setw(13) << L2error_ms
+                    << " | " << std::right << std::setw(13) << L2error_coarse
+                    << " |" << std::endl;
+          std::cout << "| " << std::left << std::setw(13) << "H1-seminorm"
+                    << " | " << std::right << std::setw(13) << H1error_ms
+                    << " | " << std::right << std::setw(13) << H1error_coarse
+                    << " |" << std::endl;
+          std::cout << header << std::endl;
+        }
     }
-
-    computing_timer.print_summary();
-    computing_timer.reset();
   }
 } // namespace Elasticity
 

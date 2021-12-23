@@ -13,7 +13,7 @@
 #include <deal.II/base/utilities.h>
 
 #include <deal.II/distributed/grid_refinement.h>
-#include <deal.II/distributed/tria.h>
+#include <deal.II/distributed/shared_tria.h>
 
 #include <deal.II/dofs/dof_handler.h>
 #include <deal.II/dofs/dof_tools.h>
@@ -23,6 +23,7 @@
 #include <deal.II/fe/fe_values.h>
 
 #include <deal.II/grid/grid_generator.h>
+#include <deal.II/grid/grid_refinement.h>
 #include <deal.II/grid/grid_tools.h>
 
 #include <deal.II/lac/affine_constraints.h>
@@ -126,7 +127,7 @@ namespace Elasticity
      * @brief Compares the MsFEM and the coarse solution to the fine solution
      */
     void
-    compare_solutions(const Vector<double> ms_solution);
+    compare_solutions(const Vector<double> &ms_solution);
 
   private:
     /**
@@ -181,21 +182,22 @@ namespace Elasticity
     void
     output_results(unsigned int cycle);
 
-    MPI_Comm                                  mpi_communicator;
-    parallel::distributed::Triangulation<dim> triangulation;
-    parallel::distributed::Triangulation<dim> triangulation_coarse;
-    FESystem<dim>                             fe;
-    DoFHandler<dim>                           dof_handler;
-    IndexSet                                  locally_owned_dofs;
-    IndexSet                                  locally_relevant_dofs;
-    AffineConstraints<double>                 constraints;
-    TrilinosWrappers::SparseMatrix            system_matrix;
-    TrilinosWrappers::SparseMatrix            preconditioner_matrix;
-    TrilinosWrappers::MPI::Vector             locally_relevant_solution;
-    TrilinosWrappers::MPI::Vector             locally_relevant_solution_coarse;
-    TrilinosWrappers::MPI::Vector             system_rhs;
-    const ElaParameters<dim>                  ela_parameters;
-    bool                                      processor_is_used;
+    MPI_Comm                             mpi_communicator;
+    parallel::shared::Triangulation<dim> triangulation;
+    parallel::shared::Triangulation<dim> triangulation_coarse;
+    FESystem<dim>                        fe;
+    DoFHandler<dim>                      dof_handler;
+    IndexSet                             locally_owned_dofs;
+    IndexSet                             locally_relevant_dofs;
+    AffineConstraints<double>            constraints;
+    TrilinosWrappers::SparseMatrix       system_matrix;
+    TrilinosWrappers::SparseMatrix       preconditioner_matrix;
+    TrilinosWrappers::MPI::Vector        locally_relevant_solution;
+    TrilinosWrappers::MPI::Vector        locally_relevant_solution_coarse;
+    TrilinosWrappers::MPI::Vector        system_rhs;
+    const Vector<double>                 ms_solution;
+    const ElaParameters<dim>             ela_parameters;
+    bool                                 processor_is_used;
     /**< True if this processor is assigned at least one coarse cell. */
 
     ConditionalOStream pcout;
