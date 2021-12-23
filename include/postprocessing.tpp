@@ -26,7 +26,7 @@ namespace Elasticity
   void
   StrainPostprocessor<dim>::evaluate_vector_field(
     const DataPostprocessorInputs::Vector<dim> &input_data,
-    std::vector<Vector<double>> &               computed_quantities) const
+    std::vector<Vector<double>>                &computed_quantities) const
   {
     AssertDimension(input_data.solution_gradients.size(),
                     computed_quantities.size());
@@ -114,10 +114,10 @@ namespace Elasticity
   }
 
 
-  template <int dim>
-  StressPostprocessor<dim>::StressPostprocessor()
-    : basis_str("")
-  {}
+  // template <int dim>
+  // StressPostprocessor<dim>::StressPostprocessor()
+  //   : basis_str("")
+  // {}
 
 
   template <int dim>
@@ -142,7 +142,7 @@ namespace Elasticity
   void
   StressPostprocessor<dim>::evaluate_vector_field(
     const DataPostprocessorInputs::Vector<dim> &input_data,
-    std::vector<Vector<double>> &               computed_quantities) const
+    std::vector<Vector<double>>                &computed_quantities) const
   {
     AssertDimension(input_data.solution_gradients.size(),
                     computed_quantities.size());

@@ -96,7 +96,7 @@ namespace Elasticity
      *                        processor that solves this problem.
      */
     ElaBasis(typename Triangulation<dim>::active_cell_iterator &global_cell,
-             const CellId &                                     first_cell_id,
+             const CellId                                      &first_cell_id,
              unsigned int                                       local_subdomain,
              MPI_Comm                  mpi_communicator,
              const ElaParameters<dim> &ela_parameters);
@@ -162,6 +162,13 @@ namespace Elasticity
      */
     const std::string
     get_filename() const;
+
+    /**
+     * @brief Get the local contribution to the solution vector
+     * on the fine scale.
+     */
+    const std::vector<Vector<double>>
+    get_global_solution();
 
   private:
     /**

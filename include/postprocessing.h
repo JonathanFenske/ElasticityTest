@@ -121,7 +121,8 @@ namespace Elasticity
     /**
      * @brief Construct a new (empty) StressPostprocessor object.
      */
-    StressPostprocessor();
+    StressPostprocessor()
+    {}
 
     /**
      * @brief Construct a new StressPostprocessor object for ElaBasis.
