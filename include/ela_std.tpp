@@ -18,6 +18,10 @@ namespace Elasticity
                     typename Triangulation<dim>::MeshSmoothing(
                       Triangulation<dim>::smoothing_on_refinement |
                       Triangulation<dim>::smoothing_on_coarsening))
+    , triangulation_coarse(mpi_communicator,
+                           typename Triangulation<dim>::MeshSmoothing(
+                             Triangulation<dim>::smoothing_on_refinement |
+                             Triangulation<dim>::smoothing_on_coarsening))
     , fe(FE_Q<dim>(1), dim)
     , dof_handler(triangulation)
     , ela_parameters(ela_parameters)
@@ -120,7 +124,6 @@ namespace Elasticity
 
     FullMatrix<double> cell_matrix(dofs_per_cell, dofs_per_cell);
     Vector<double>     cell_rhs(dofs_per_cell);
-    Vector<double>     cell_rhs_tmp(dofs_per_cell);
 
     std::vector<types::global_dof_index> local_dof_indices(dofs_per_cell);
 
@@ -166,7 +169,6 @@ namespace Elasticity
                       body_force_values[q_point][component_i] *
                       fe_values.JxW(q_point);
                   }
-                cell_rhs_tmp = cell_rhs;
               }
 
             cell->get_dof_indices(local_dof_indices);
@@ -218,8 +220,9 @@ namespace Elasticity
         TrilinosWrappers::MPI::Vector completely_distributed_solution(
           locally_owned_dofs, mpi_communicator);
 
-        unsigned int  n_iterations     = dof_handler.n_dofs();
-        const double  solver_tolerance = 1e-8 * system_rhs.l2_norm();
+        unsigned int n_iterations = dof_handler.n_dofs();
+        const double solver_tolerance =
+          std::max(1.e-10, 1.e-8 * system_rhs.l2_norm());
         SolverControl solver_control(
           /* n_max_iter */ n_iterations,
           solver_tolerance,
@@ -289,8 +292,10 @@ namespace Elasticity
       std::map<types::boundary_id, const Function<dim> *>(),
       locally_relevant_solution,
       estimated_error_per_cell);
-    parallel::distributed::GridRefinement::refine_and_coarsen_fixed_number(
-      triangulation, estimated_error_per_cell, 0.3, 0.03);
+    GridRefinement::refine_and_coarsen_fixed_number(triangulation,
+                                                    estimated_error_per_cell,
+                                                    0.3,
+                                                    0.03);
     triangulation.execute_coarsening_and_refinement();
   }
 
@@ -443,10 +448,117 @@ namespace Elasticity
           output_results(cycle);
         }
 
+        if (cycle == 0 && ela_parameters.compare)
+          {
+            triangulation_coarse.copy_triangulation(triangulation);
+
+            locally_relevant_solution_coarse.reinit(locally_relevant_solution);
+          }
+
         computing_timer.print_summary();
         computing_timer.reset();
         pcout << std::endl;
       }
+  }
+
+  template <int dim>
+  void
+  ElaStd<dim>::compare_solutions(const Vector<double> &ms_solution)
+  {
+    {
+      TimerOutput::Scope t(computing_timer, "comparing solution");
+      DoFHandler<dim>    dof_handler_coarse(triangulation_coarse);
+      dof_handler_coarse.distribute_dofs(fe);
+
+      Vector<double> difference_per_cell(triangulation.n_active_cells());
+
+      double L2error_ms, H1error_ms, L2error_coarse, H1error_coarse;
+      {
+        Functions::FEFieldFunction<dim> ms_solution_function(dof_handler,
+                                                             ms_solution);
+
+        VectorTools::integrate_difference(dof_handler,
+                                          locally_relevant_solution,
+                                          ms_solution_function,
+                                          difference_per_cell,
+                                          QGauss<dim>(fe.degree + 1),
+                                          VectorTools::L2_norm);
+
+        L2error_ms = VectorTools::compute_global_error(triangulation,
+                                                       difference_per_cell,
+                                                       VectorTools::L2_norm);
+
+        VectorTools::integrate_difference(dof_handler,
+                                          locally_relevant_solution,
+                                          ms_solution_function,
+                                          difference_per_cell,
+                                          QGauss<dim>(fe.degree + 1),
+                                          VectorTools::H1_seminorm);
+
+        H1error_ms =
+          VectorTools::compute_global_error(triangulation,
+                                            difference_per_cell,
+                                            VectorTools::H1_seminorm);
+      }
+
+      {
+        Vector<double> coarse_solution(locally_relevant_solution_coarse);
+        Functions::FEFieldFunction<dim> coarse_solution_function(
+          dof_handler_coarse, coarse_solution);
+
+        VectorTools::integrate_difference(dof_handler,
+                                          locally_relevant_solution,
+                                          coarse_solution_function,
+                                          difference_per_cell,
+                                          QGauss<dim>(fe.degree + 1),
+                                          VectorTools::L2_norm);
+
+        L2error_coarse =
+          VectorTools::compute_global_error(triangulation,
+                                            difference_per_cell,
+                                            VectorTools::L2_norm);
+
+        VectorTools::integrate_difference(dof_handler,
+                                          locally_relevant_solution,
+                                          coarse_solution_function,
+                                          difference_per_cell,
+                                          QGauss<dim>(fe.degree + 1),
+                                          VectorTools::H1_seminorm);
+
+        H1error_coarse =
+          VectorTools::compute_global_error(triangulation,
+                                            difference_per_cell,
+                                            VectorTools::H1_seminorm);
+      }
+
+      if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0)
+        {
+          std::string header("+");
+          header += std::string(15, '-');
+          header += '+';
+          header += std::string(15, '-');
+          header += '+';
+          header += std::string(15, '-');
+          header += '+';
+
+
+          std::cout << "\n\n\n" << header << std::endl;
+          std::cout << "| " << std::left << std::setw(13) << "Error"
+                    << " | " << std::left << std::setw(13) << "MsFEM"
+                    << " | " << std::left << std::setw(13) << "Standard FEM"
+                    << " |" << std::endl;
+          std::cout << header << std::endl;
+          std::cout << "| " << std::left << std::setw(13) << "L2-norm"
+                    << " | " << std::right << std::setw(13) << L2error_ms
+                    << " | " << std::right << std::setw(13) << L2error_coarse
+                    << " |" << std::endl;
+          std::cout << "| " << std::left << std::setw(13) << "H1-seminorm"
+                    << " | " << std::right << std::setw(13) << H1error_ms
+                    << " | " << std::right << std::setw(13) << H1error_coarse
+                    << " |" << std::endl;
+          std::cout << header << std::endl;
+        }
+    }
   }
 } // namespace Elasticity
 
