@@ -19,10 +19,6 @@ namespace Elasticity
                     typename Triangulation<dim>::MeshSmoothing(
                       Triangulation<dim>::smoothing_on_refinement |
                       Triangulation<dim>::smoothing_on_coarsening))
-    , triangulation_fine(mpi_communicator,
-                         typename Triangulation<dim>::MeshSmoothing(
-                           Triangulation<dim>::smoothing_on_refinement |
-                           Triangulation<dim>::smoothing_on_coarsening))
     , fe(FE_Q<dim>(1), dim)
     , dof_handler(triangulation)
     , first_cell_id()
@@ -356,8 +352,10 @@ namespace Elasticity
       std::map<types::boundary_id, const Function<dim> *>(),
       locally_relevant_solution,
       estimated_error_per_cell);
-    parallel::distributed::GridRefinement::refine_and_coarsen_fixed_number(
-      triangulation, estimated_error_per_cell, 0.3, 0.03);
+    GridRefinement::refine_and_coarsen_fixed_number(triangulation,
+                                                    estimated_error_per_cell,
+                                                    0.3,
+                                                    0.03);
     triangulation.execute_coarsening_and_refinement();
   }
 
@@ -454,6 +452,13 @@ namespace Elasticity
   const Vector<double>
   ElaMs<dim>::get_fine_solution()
   {
+    parallel::shared::Triangulation<dim> triangulation_fine(
+      mpi_communicator,
+      typename Triangulation<dim>::MeshSmoothing(
+        Triangulation<dim>::smoothing_on_refinement |
+        Triangulation<dim>::smoothing_on_coarsening));
+    triangulation_fine.copy_triangulation(triangulation);
+    triangulation_fine.refine_global(ela_parameters.fine_refinements);
     DoFHandler<dim> dof_handler_fine(triangulation_fine);
     dof_handler_fine.distribute_dofs(fe);
 
@@ -529,12 +534,7 @@ namespace Elasticity
       GridGenerator::subdivided_hyper_rectangle(
         triangulation, repetitions, p1, p2, true);
 
-      triangulation_fine.copy_triangulation(triangulation);
-
       triangulation.refine_global(ela_parameters.coarse_refinements);
-
-      triangulation_fine.refine_global(ela_parameters.coarse_refinements +
-                                       ela_parameters.fine_refinements);
     }
 
     setup_system();

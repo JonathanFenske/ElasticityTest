@@ -504,9 +504,9 @@ namespace Elasticity
       {
         cell->get_dof_indices(local_dof_indices);
         Vector<double> tmp_solution(dofs_per_cell);
-        for (unsigned int q_point = 0; q_point < dofs_per_cell; ++q_point)
+        for (unsigned int q_index = 0; q_index < dofs_per_cell; ++q_index)
           {
-            tmp_solution[q_point] = global_solution[local_dof_indices[q_point]];
+            tmp_solution[q_index] = global_solution[local_dof_indices[q_index]];
           }
         fine_cell_solutions.push_back(tmp_solution);
       }

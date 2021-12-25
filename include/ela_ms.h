@@ -11,8 +11,7 @@
 #include <deal.II/base/timer.h>
 #include <deal.II/base/utilities.h>
 
-#include <deal.II/distributed/grid_refinement.h>
-#include <deal.II/distributed/tria.h>
+#include <deal.II/distributed/shared_tria.h>
 
 #include <deal.II/dofs/dof_accessor.h>
 #include <deal.II/dofs/dof_handler.h>
@@ -23,6 +22,7 @@
 #include <deal.II/fe/fe_values.h>
 
 #include <deal.II/grid/grid_generator.h>
+#include <deal.II/grid/grid_refinement.h>
 #include <deal.II/grid/grid_tools.h>
 
 #include <deal.II/lac/affine_constraints.h>
@@ -187,22 +187,21 @@ namespace Elasticity
     void
     output_results();
 
-    MPI_Comm                                  mpi_communicator;
-    parallel::distributed::Triangulation<dim> triangulation;
-    parallel::distributed::Triangulation<dim> triangulation_fine;
-    FESystem<dim>                             fe;
-    DoFHandler<dim>                           dof_handler;
-    IndexSet                                  locally_owned_dofs;
-    IndexSet                                  locally_relevant_dofs;
-    AffineConstraints<double>                 constraints;
-    TrilinosWrappers::SparseMatrix            system_matrix;
-    TrilinosWrappers::SparseMatrix            preconditioner_matrix;
-    TrilinosWrappers::MPI::Vector             locally_relevant_solution;
-    TrilinosWrappers::MPI::Vector             system_rhs;
-    CellId                                    first_cell_id;
-    std::map<CellId, ElaBasis<dim>>           cell_basis_map;
-    const ElaParameters<dim>                  ela_parameters;
-    bool                                      processor_is_used;
+    MPI_Comm                             mpi_communicator;
+    parallel::shared::Triangulation<dim> triangulation;
+    FESystem<dim>                        fe;
+    DoFHandler<dim>                      dof_handler;
+    IndexSet                             locally_owned_dofs;
+    IndexSet                             locally_relevant_dofs;
+    AffineConstraints<double>            constraints;
+    TrilinosWrappers::SparseMatrix       system_matrix;
+    TrilinosWrappers::SparseMatrix       preconditioner_matrix;
+    TrilinosWrappers::MPI::Vector        locally_relevant_solution;
+    TrilinosWrappers::MPI::Vector        system_rhs;
+    CellId                               first_cell_id;
+    std::map<CellId, ElaBasis<dim>>      cell_basis_map;
+    const ElaParameters<dim>             ela_parameters;
+    bool                                 processor_is_used;
     /**< True if this processor is assigned at least one coarse cell. */
 
     ConditionalOStream pcout;
