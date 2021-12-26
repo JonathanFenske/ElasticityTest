@@ -472,9 +472,15 @@ namespace Elasticity
 
       Vector<double> difference_per_cell(triangulation.n_active_cells());
 
-      double L2error_ms, H1error_ms, L2error_coarse, H1error_coarse;
+      double L2error_ms, H1error_ms, L2error_coarse, H1error_coarse,
+        fine_solution_l2_inv;
 
-      double fine_solution_l2_inv = 1 / locally_relevant_solution.l2_norm();
+      {
+        Vector<double> fine_solution(locally_relevant_solution);
+
+        fine_solution_l2_inv = 1 / fine_solution.l2_norm();
+      }
+
       {
         Functions::FEFieldFunction<dim> ms_solution_function(dof_handler,
                                                              ms_solution);
