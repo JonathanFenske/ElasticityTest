@@ -392,7 +392,7 @@ namespace Elasticity
 
         // write the output files
         const std::string coarse_filename =
-          (std::string("ms_solution-") + "." +
+          (std::string("ms_solution.") +
            Utilities::int_to_string(triangulation.locally_owned_subdomain(),
                                     4) +
            std::string(".vtu"));
@@ -452,66 +452,70 @@ namespace Elasticity
   const Vector<double>
   ElaMs<dim>::get_fine_solution()
   {
-    parallel::shared::Triangulation<dim> triangulation_fine(
-      mpi_communicator,
-      typename Triangulation<dim>::MeshSmoothing(
-        Triangulation<dim>::smoothing_on_refinement |
-        Triangulation<dim>::smoothing_on_coarsening));
-    triangulation_fine.copy_triangulation(triangulation);
-    triangulation_fine.refine_global(ela_parameters.fine_refinements);
-    DoFHandler<dim> dof_handler_fine(triangulation_fine);
-    dof_handler_fine.distribute_dofs(fe);
+    {
+      TimerOutput::Scope t(computing_timer, "get fine MsFEM solution");
 
-    IndexSet locally_owned_dofs_fine;
-    locally_owned_dofs_fine = dof_handler_fine.locally_owned_dofs();
-    IndexSet locally_relevant_dofs_fine;
-    DoFTools::extract_locally_relevant_dofs(dof_handler_fine,
-                                            locally_relevant_dofs_fine);
+      parallel::shared::Triangulation<dim> triangulation_fine(
+        mpi_communicator,
+        typename Triangulation<dim>::MeshSmoothing(
+          Triangulation<dim>::smoothing_on_refinement |
+          Triangulation<dim>::smoothing_on_coarsening));
+      triangulation_fine.copy_triangulation(triangulation);
+      triangulation_fine.refine_global(ela_parameters.fine_refinements);
+      DoFHandler<dim> dof_handler_fine(triangulation_fine);
+      dof_handler_fine.distribute_dofs(fe);
 
-    TrilinosWrappers::MPI::Vector locally_relevant_solution_fine;
-    locally_relevant_solution_fine.reinit(locally_owned_dofs_fine,
-                                          mpi_communicator);
+      IndexSet locally_owned_dofs_fine;
+      locally_owned_dofs_fine = dof_handler_fine.locally_owned_dofs();
+      IndexSet locally_relevant_dofs_fine;
+      DoFTools::extract_locally_relevant_dofs(dof_handler_fine,
+                                              locally_relevant_dofs_fine);
 
-    unsigned int dofs_per_cell =
-      pow(fe.n_dofs_per_cell(), ela_parameters.fine_refinements);
+      TrilinosWrappers::MPI::Vector locally_relevant_solution_fine;
+      locally_relevant_solution_fine.reinit(locally_owned_dofs_fine,
+                                            mpi_communicator);
 
-    std::vector<types::global_dof_index> local_dof_indices(
-      fe.n_dofs_per_cell());
+      unsigned int dofs_per_cell =
+        pow(fe.n_dofs_per_cell(), ela_parameters.fine_refinements);
 
-    std::vector<types::global_dof_index> cell_dof_indices(dofs_per_cell);
+      std::vector<types::global_dof_index> local_dof_indices(
+        fe.n_dofs_per_cell());
 
-    for (const auto &cell : dof_handler_fine.cell_iterators())
-      {
-        if (cell_basis_map.find(cell->id()) != cell_basis_map.end())
-          {
-            typename std::map<CellId, ElaBasis<dim>>::iterator it_basis =
-              cell_basis_map.find(cell->id());
+      std::vector<types::global_dof_index> cell_dof_indices(dofs_per_cell);
 
-            std::vector<Vector<double>> local_solution =
-              (it_basis->second).get_global_solution();
+      for (const auto &cell : dof_handler_fine.cell_iterators())
+        {
+          if (cell_basis_map.find(cell->id()) != cell_basis_map.end())
+            {
+              typename std::map<CellId, ElaBasis<dim>>::iterator it_basis =
+                cell_basis_map.find(cell->id());
 
-            cell_dof_indices.clear();
+              std::vector<Vector<double>> local_solution =
+                (it_basis->second).get_global_solution();
 
-            unsigned int i = 0;
+              cell_dof_indices.clear();
 
-            for (const auto &fine_cell :
-                 GridTools::get_active_child_cells<DoFHandler<dim>>(cell))
-              {
-                if (fine_cell->is_locally_owned())
-                  {
-                    fine_cell->distribute_local_to_global(
-                      local_solution[i], locally_relevant_solution_fine);
-                  }
-                ++i;
-              }
-          }
-      }
+              unsigned int i = 0;
 
-    locally_relevant_solution_fine.compress(VectorOperation::add);
+              for (const auto &fine_cell :
+                   GridTools::get_active_child_cells<DoFHandler<dim>>(cell))
+                {
+                  if (fine_cell->is_locally_owned())
+                    {
+                      fine_cell->distribute_local_to_global(
+                        local_solution[i], locally_relevant_solution_fine);
+                    }
+                  ++i;
+                }
+            }
+        }
 
-    Vector<double> fine_scale_ms_solution(locally_relevant_solution_fine);
+      locally_relevant_solution_fine.compress(VectorOperation::add);
 
-    return fine_scale_ms_solution;
+      Vector<double> fine_scale_ms_solution(locally_relevant_solution_fine);
+
+      return fine_scale_ms_solution;
+    }
   }
 
 

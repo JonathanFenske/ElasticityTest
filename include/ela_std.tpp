@@ -466,7 +466,7 @@ namespace Elasticity
   ElaStd<dim>::compare_solutions(const Vector<double> &ms_solution)
   {
     {
-      TimerOutput::Scope t(computing_timer, "comparing solution");
+      TimerOutput::Scope t(computing_timer, "comparing solutions");
       DoFHandler<dim>    dof_handler_coarse(triangulation_coarse);
       dof_handler_coarse.distribute_dofs(fe);
 
