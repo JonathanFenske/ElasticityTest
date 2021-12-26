@@ -473,6 +473,8 @@ namespace Elasticity
       Vector<double> difference_per_cell(triangulation.n_active_cells());
 
       double L2error_ms, H1error_ms, L2error_coarse, H1error_coarse;
+
+      double fine_solution_l2_inv = 1 / locally_relevant_solution.l2_norm();
       {
         Functions::FEFieldFunction<dim> ms_solution_function(dof_handler,
                                                              ms_solution);
@@ -486,7 +488,8 @@ namespace Elasticity
 
         L2error_ms = VectorTools::compute_global_error(triangulation,
                                                        difference_per_cell,
-                                                       VectorTools::L2_norm);
+                                                       VectorTools::L2_norm) *
+                     fine_solution_l2_inv;
 
         VectorTools::integrate_difference(dof_handler,
                                           locally_relevant_solution,
@@ -498,7 +501,8 @@ namespace Elasticity
         H1error_ms =
           VectorTools::compute_global_error(triangulation,
                                             difference_per_cell,
-                                            VectorTools::H1_seminorm);
+                                            VectorTools::H1_seminorm) *
+          fine_solution_l2_inv;
       }
 
       {
@@ -516,7 +520,8 @@ namespace Elasticity
         L2error_coarse =
           VectorTools::compute_global_error(triangulation,
                                             difference_per_cell,
-                                            VectorTools::L2_norm);
+                                            VectorTools::L2_norm) *
+          fine_solution_l2_inv;
 
         VectorTools::integrate_difference(dof_handler,
                                           locally_relevant_solution,
@@ -528,7 +533,8 @@ namespace Elasticity
         H1error_coarse =
           VectorTools::compute_global_error(triangulation,
                                             difference_per_cell,
-                                            VectorTools::H1_seminorm);
+                                            VectorTools::H1_seminorm) *
+          fine_solution_l2_inv;
       }
 
       if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0)
