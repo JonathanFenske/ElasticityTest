@@ -467,7 +467,9 @@ namespace Elasticity
   {
     {
       TimerOutput::Scope t(computing_timer, "comparing solutions");
-      DoFHandler<dim>    dof_handler_coarse(triangulation_coarse);
+
+
+      DoFHandler<dim> dof_handler_coarse(triangulation_coarse);
       dof_handler_coarse.distribute_dofs(fe);
 
       Vector<double> difference_per_cell(triangulation.n_active_cells());
@@ -577,6 +579,8 @@ namespace Elasticity
           header += std::string(17, '-');
           header += '+';
 
+          std::ios oldState(nullptr);
+          oldState.copyfmt(std::cout);
 
           std::cout << "\n\n\n" << header << std::endl;
           std::cout << "| " << std::left << std::setw(15) << "relative Error"
@@ -598,6 +602,8 @@ namespace Elasticity
                     << std::scientific << L2error_compare << std::endl;
           std::cout << "H1-seminorm difference between MsFEM and standard FEM: "
                     << std::scientific << H1error_compare << std::endl;
+
+          std::cout.copyfmt(oldState);
         }
     }
   }
