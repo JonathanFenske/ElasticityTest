@@ -473,7 +473,7 @@ namespace Elasticity
       Vector<double> difference_per_cell(triangulation.n_active_cells());
 
       double L2error_ms, H1error_ms, L2error_coarse, H1error_coarse,
-        fine_solution_l2_inv;
+        fine_solution_l2_inv, L2error_compare, H1error_compare;
 
       {
         Vector<double> fine_solution(locally_relevant_solution);
@@ -541,34 +541,62 @@ namespace Elasticity
                                             difference_per_cell,
                                             VectorTools::H1_seminorm) *
           fine_solution_l2_inv;
+
+        VectorTools::integrate_difference(dof_handler,
+                                          ms_solution,
+                                          coarse_solution_function,
+                                          difference_per_cell,
+                                          QGauss<dim>(fe.degree + 1),
+                                          VectorTools::L2_norm);
+
+        L2error_compare =
+          VectorTools::compute_global_error(triangulation,
+                                            difference_per_cell,
+                                            VectorTools::L2_norm);
+
+        VectorTools::integrate_difference(dof_handler,
+                                          ms_solution,
+                                          coarse_solution_function,
+                                          difference_per_cell,
+                                          QGauss<dim>(fe.degree + 1),
+                                          VectorTools::H1_seminorm);
+
+        H1error_compare =
+          VectorTools::compute_global_error(triangulation,
+                                            difference_per_cell,
+                                            VectorTools::H1_seminorm);
       }
 
       if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0)
         {
           std::string header("+");
-          header += std::string(15, '-');
+          header += std::string(17, '-');
           header += '+';
-          header += std::string(15, '-');
+          header += std::string(17, '-');
           header += '+';
-          header += std::string(15, '-');
+          header += std::string(17, '-');
           header += '+';
 
 
           std::cout << "\n\n\n" << header << std::endl;
-          std::cout << "| " << std::left << std::setw(13) << "Error"
-                    << " | " << std::left << std::setw(13) << "MsFEM"
-                    << " | " << std::left << std::setw(13) << "Standard FEM"
+          std::cout << "| " << std::left << std::setw(15) << "relative Error"
+                    << " | " << std::right << std::setw(15) << "MsFEM"
+                    << " | " << std::right << std::setw(15) << "Standard FEM"
                     << " |" << std::endl;
           std::cout << header << std::endl;
-          std::cout << "| " << std::left << std::setw(13) << "L2-norm"
-                    << " | " << std::right << std::setw(13) << L2error_ms
-                    << " | " << std::right << std::setw(13) << L2error_coarse
+          std::cout << "| " << std::left << std::setw(15) << "L2-norm"
+                    << " | " << std::right << std::setw(15) << L2error_ms
+                    << " | " << std::right << std::setw(15) << L2error_coarse
                     << " |" << std::endl;
-          std::cout << "| " << std::left << std::setw(13) << "H1-seminorm"
-                    << " | " << std::right << std::setw(13) << H1error_ms
-                    << " | " << std::right << std::setw(13) << H1error_coarse
+          std::cout << "| " << std::left << std::setw(15) << "H1-seminorm"
+                    << " | " << std::right << std::setw(15) << H1error_ms
+                    << " | " << std::right << std::setw(15) << H1error_coarse
                     << " |" << std::endl;
           std::cout << header << std::endl;
+          std::cout << "L2 difference between MsFEM and standard FEM: "
+                    << L2error_compare << std::endl;
+          std::cout << "H1-seminorm difference between MsFEM and standard FEM: "
+                    << H1error_compare << std::endl;
         }
     }
   }
