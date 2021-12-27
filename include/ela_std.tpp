@@ -585,18 +585,19 @@ namespace Elasticity
                     << " |" << std::endl;
           std::cout << header << std::endl;
           std::cout << "| " << std::left << std::setw(15) << "L2-norm"
-                    << " | " << std::right << std::setw(15) << L2error_ms
-                    << " | " << std::right << std::setw(15) << L2error_coarse
-                    << " |" << std::endl;
-          std::cout << "| " << std::left << std::setw(15) << "H1-seminorm"
+                    << " | " << std::right << std::setw(15) << std::scientific
+                    << L2error_ms << " | " << std::right << std::setw(15)
+                    << L2error_coarse << " |" << std::endl;
+          std::cout << "| " << std::left << std::setw(15) << std::scientific
+                    << "H1-seminorm"
                     << " | " << std::right << std::setw(15) << H1error_ms
                     << " | " << std::right << std::setw(15) << H1error_coarse
                     << " |" << std::endl;
           std::cout << header << std::endl;
           std::cout << "L2 difference between MsFEM and standard FEM: "
-                    << L2error_compare << std::endl;
+                    << std::scientific << L2error_compare << std::endl;
           std::cout << "H1-seminorm difference between MsFEM and standard FEM: "
-                    << H1error_compare << std::endl;
+                    << std::scientific << H1error_compare << std::endl;
         }
     }
   }
