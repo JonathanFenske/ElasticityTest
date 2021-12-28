@@ -486,8 +486,10 @@ namespace Elasticity
 
       for (const auto &cell : dof_handler_fine.cell_iterators())
         {
+          std::cout << "hey i enter a coarse cell" << std::endl;
           if (cell_basis_map.find(cell->id()) != cell_basis_map.end())
             {
+              std::cout << "hey i have found a cell a cell" << std::endl;
               typename std::map<CellId, ElaBasis<dim>>::iterator it_basis =
                 cell_basis_map.find(cell->id());
 
