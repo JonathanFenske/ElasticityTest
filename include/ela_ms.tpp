@@ -488,7 +488,6 @@ namespace Elasticity
         {
           if (cell_basis_map.find(cell->id()) != cell_basis_map.end())
             {
-              std::cout << "hey i have found a cell" << std::endl;
               typename std::map<CellId, ElaBasis<dim>>::iterator it_basis =
                 cell_basis_map.find(cell->id());
 
@@ -502,6 +501,8 @@ namespace Elasticity
               for (const auto &fine_cell :
                    GridTools::get_active_child_cells<DoFHandler<dim>>(cell))
                 {
+                  std::cout << "hey i enter a fine cell" << std::endl;
+
                   if (fine_cell->is_locally_owned())
                     {
                       std::cout << "hey i enter a cell" << std::endl;
