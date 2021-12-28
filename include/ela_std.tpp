@@ -468,10 +468,6 @@ namespace Elasticity
     {
       TimerOutput::Scope t(computing_timer, "comparing solutions");
 
-
-      DoFHandler<dim> dof_handler_coarse(triangulation_coarse);
-      dof_handler_coarse.distribute_dofs(fe);
-
       Vector<double> difference_per_cell(triangulation.n_active_cells());
 
       double L2error_ms, H1error_ms, L2error_coarse, H1error_coarse,
@@ -514,6 +510,9 @@ namespace Elasticity
       }
 
       {
+        DoFHandler<dim> dof_handler_coarse(triangulation_coarse);
+        dof_handler_coarse.distribute_dofs(fe);
+
         Vector<double> coarse_solution(locally_relevant_solution_coarse);
         Functions::FEFieldFunction<dim> coarse_solution_function(
           dof_handler_coarse, coarse_solution);

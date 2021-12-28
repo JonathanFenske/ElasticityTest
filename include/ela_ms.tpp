@@ -167,6 +167,7 @@ namespace Elasticity
                                                          cell_basis_map.begin(),
                                                        it_endbasis =
                                                          cell_basis_map.end();
+
     for (; it_basis != it_endbasis; ++it_basis)
       {
         (it_basis->second).run();
