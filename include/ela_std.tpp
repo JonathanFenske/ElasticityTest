@@ -452,7 +452,8 @@ namespace Elasticity
           {
             triangulation_coarse.copy_triangulation(triangulation);
 
-            locally_relevant_solution_coarse.reinit(locally_relevant_solution);
+            locally_relevant_solution_coarse = locally_relevant_solution;
+            Vector<double> coarse_solution(locally_relevant_solution_coarse);
           }
 
         computing_timer.print_summary();
@@ -473,6 +474,10 @@ namespace Elasticity
       double L2error_ms, H1error_ms, L2error_coarse, H1error_coarse,
         fine_solution_l2_inv, L2error_compare, H1error_compare;
 
+      std::cout << "l2 norm of ms_solution " << ms_solution.l2_norm()
+                << " on rank "
+                << Utilities::MPI::this_mpi_process(mpi_communicator)
+                << std::endl;
       {
         Vector<double> fine_solution(locally_relevant_solution);
 
@@ -514,6 +519,10 @@ namespace Elasticity
         dof_handler_coarse.distribute_dofs(fe);
 
         Vector<double> coarse_solution(locally_relevant_solution_coarse);
+        std::cout << "l2 norm of coarse_solution " << coarse_solution.l2_norm()
+                  << " on rank "
+                  << Utilities::MPI::this_mpi_process(mpi_communicator)
+                  << std::endl;
         Functions::FEFieldFunction<dim> coarse_solution_function(
           dof_handler_coarse, coarse_solution);
 
