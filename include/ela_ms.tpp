@@ -503,6 +503,7 @@ namespace Elasticity
                 {
                   if (fine_cell->is_locally_owned())
                     {
+                      std::cout << "hey i enter a cell" << std::endl;
                       fine_cell->distribute_local_to_global(
                         local_solution[i], locally_relevant_solution_fine);
                     }
