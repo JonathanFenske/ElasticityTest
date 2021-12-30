@@ -473,11 +473,17 @@ namespace Elasticity
       double L2error_ms, H1error_ms, L2error_coarse, H1error_coarse,
         fine_solution_l2_inv;
 
-      fine_solution_l2_inv = 1 / fine_solution.l2_norm();
+      VectorTools::integrate_difference(dof_handler_fine,
+                                        fine_solution,
+                                        ms_solution_function,
+                                        difference_per_cell,
+                                        QGauss<dim>(fe.degree + 1),
+                                        VectorTools::L2_norm);
 
       {
         pcout << "Assembling the fine scale MsFEM solution..." << std::endl;
         Vector<double> ms_solution = get_fine_solution(dof_handler_fine);
+        output_fine_solution(triangulation_fine, dof_handler_fine, ms_solution);
 
         pcout << "Computing the L2-error of the MsFEM solution..." << std::endl;
         Functions::FEFieldFunction<dim> ms_solution_function(dof_handler_fine,
@@ -492,8 +498,7 @@ namespace Elasticity
 
         L2error_ms = VectorTools::compute_global_error(triangulation_fine,
                                                        difference_per_cell,
-                                                       VectorTools::L2_norm) *
-                     fine_solution_l2_inv;
+                                                       VectorTools::L2_norm);
 
         pcout
           << "Computing the error of the MsFEM solution in the H1-seminorm..."
@@ -508,8 +513,7 @@ namespace Elasticity
         H1error_ms =
           VectorTools::compute_global_error(triangulation_fine,
                                             difference_per_cell,
-                                            VectorTools::H1_seminorm) *
-          fine_solution_l2_inv;
+                                            VectorTools::H1_seminorm);
       }
 
       {
@@ -529,8 +533,7 @@ namespace Elasticity
         L2error_coarse =
           VectorTools::compute_global_error(triangulation_fine,
                                             difference_per_cell,
-                                            VectorTools::L2_norm) *
-          fine_solution_l2_inv;
+                                            VectorTools::L2_norm);
 
         pcout << "Computing the error of the coarse scale standard FEM"
                  " solution in the H1-seminorm..."
@@ -545,8 +548,7 @@ namespace Elasticity
         H1error_coarse =
           VectorTools::compute_global_error(triangulation_fine,
                                             difference_per_cell,
-                                            VectorTools::H1_seminorm) *
-          fine_solution_l2_inv;
+                                            VectorTools::H1_seminorm);
       }
 
       if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0)
@@ -563,7 +565,7 @@ namespace Elasticity
           oldState.copyfmt(std::cout);
 
           std::cout << "\n\n\n" << header << std::endl;
-          std::cout << "| " << std::left << std::setw(15) << "relative Error"
+          std::cout << "| " << std::left << std::setw(15) << "Error"
                     << " | " << std::right << std::setw(15) << "MsFEM"
                     << " | " << std::right << std::setw(15) << "Standard FEM"
                     << " |" << std::endl;
@@ -580,8 +582,6 @@ namespace Elasticity
           std::cout << header << std::endl;
 
           std::cout.copyfmt(oldState);
-
-          // output_fine_solution(dof_handler_fine, ms_solution);
         }
     }
   }
@@ -696,15 +696,6 @@ namespace Elasticity
                                     break;
                                 }
 
-                              if (Utilities::MPI::this_mpi_process(
-                                    mpi_communicator) == 1)
-                                std::cout << local_cleaned_solution.l2_norm()
-                                          << " , " << cell_dof_indices.size()
-                                          << std::endl;
-                              // fine_constraints.distribute_local_to_global(
-                              //   local_cleaned_solution,
-                              //   cell_dof_indices,
-                              //   locally_owned_solution_fine);
                               locally_owned_solution_fine.set(
                                 cell_dof_indices, local_cleaned_solution);
                             }
@@ -728,8 +719,10 @@ namespace Elasticity
 
   template <int dim>
   void
-  ElaMs<dim>::output_fine_solution(DoFHandler<dim>      &dof_handler_fine,
-                                   const Vector<double> &fine_solution)
+  ElaMs<dim>::output_fine_solution(
+    parallel::shared::Triangulation<dim> &triangulation_fine,
+    DoFHandler<dim>                      &dof_handler_fine,
+    const Vector<double>                 &fine_solution)
   {
     DataOut<dim> data_out;
     data_out.attach_dof_handler(dof_handler_fine);
@@ -758,7 +751,7 @@ namespace Elasticity
     // write the output files
     std::string filename = "output/fine_ms_partitioned/fine_scale_ms_solution";
     filename +=
-      Utilities::int_to_string(triangulation.locally_owned_subdomain(), 4);
+      Utilities::int_to_string(triangulation_fine.locally_owned_subdomain(), 4);
     filename += std::string(".vtu");
     std::ofstream output(filename);
     data_out.write_vtu(output);
