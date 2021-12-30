@@ -42,7 +42,9 @@ namespace BasisFun
   class BasisQ1 : public Function<dim>
   {
   public:
-    BasisQ1() = delete;
+    BasisQ1()
+      : Function<dim>(dim)
+    {}
 
     /*!
      * Constructor. Template specialization \f$dim=2\f$.
@@ -79,7 +81,7 @@ namespace BasisFun
      */
     virtual void
     vector_value(const Point<dim> &p,
-                 Vector<double> &  vector_value) const override;
+                 Vector<double>   &vector_value) const override;
 
     /*!
      * Evaluate a basis function with a preset index at given point list in 2D
@@ -91,7 +93,7 @@ namespace BasisFun
      */
     virtual void
     vector_value_list(const std::vector<Point<dim>> &points,
-                      std::vector<Vector<double>> &  values) const override;
+                      std::vector<Vector<double>>   &values) const override;
 
     // void
     // tensor_value_list(const std::vector<Point<dim>> &points,

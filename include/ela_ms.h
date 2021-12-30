@@ -11,8 +11,7 @@
 #include <deal.II/base/timer.h>
 #include <deal.II/base/utilities.h>
 
-#include <deal.II/distributed/grid_refinement.h>
-#include <deal.II/distributed/tria.h>
+#include <deal.II/distributed/shared_tria.h>
 
 #include <deal.II/dofs/dof_accessor.h>
 #include <deal.II/dofs/dof_handler.h>
@@ -23,6 +22,7 @@
 #include <deal.II/fe/fe_values.h>
 
 #include <deal.II/grid/grid_generator.h>
+#include <deal.II/grid/grid_refinement.h>
 #include <deal.II/grid/grid_tools.h>
 
 #include <deal.II/lac/affine_constraints.h>
@@ -45,6 +45,7 @@
 #include <deal.II/physics/transformations.h>
 
 #include "ela_basis.h"
+// #include "fine_ms_solution_function.h"
 #include "mytools.h"
 #include "postprocessing.h"
 #include "process_parameter_file.h"
@@ -52,6 +53,7 @@
 // include headers that implement a archive in simple text format
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
+#include <boost/serialization/array.hpp>
 
 // STL
 #include <cmath>
@@ -61,6 +63,7 @@
 #include <iostream>
 #include <map>
 #include <memory>
+#include <utility>
 
 
 namespace Elasticity
@@ -98,14 +101,16 @@ namespace Elasticity
     run();
 
     /**
-     * @brief Saves the fine scale solution
+     * @brief This function computes the errors of the MsFEM and the
+     * standard FEM solution. The fine scale standard FEM solution is
+     * used as reference.
      *
-     * This function saves the fine scale solution by getting all local
-     * contributions to the global solution vector that use linear
-     * finite elements on the fine scale.
+     * @param coarse_solution coarse scale standard FEM solution
+     * @param fine_solution fine scale standard FEM solution
      */
-    const Vector<double>
-    get_fine_solution();
+    void
+    compute_errors(Vector<double> &coarse_solution,
+                   Vector<double> &fine_solution);
 
   private:
     /**
@@ -187,22 +192,36 @@ namespace Elasticity
     void
     output_results();
 
-    MPI_Comm                                  mpi_communicator;
-    parallel::distributed::Triangulation<dim> triangulation;
-    parallel::distributed::Triangulation<dim> triangulation_fine;
-    FESystem<dim>                             fe;
-    DoFHandler<dim>                           dof_handler;
-    IndexSet                                  locally_owned_dofs;
-    IndexSet                                  locally_relevant_dofs;
-    AffineConstraints<double>                 constraints;
-    TrilinosWrappers::SparseMatrix            system_matrix;
-    TrilinosWrappers::SparseMatrix            preconditioner_matrix;
-    TrilinosWrappers::MPI::Vector             locally_relevant_solution;
-    TrilinosWrappers::MPI::Vector             system_rhs;
-    CellId                                    first_cell_id;
-    std::map<CellId, ElaBasis<dim>>           cell_basis_map;
-    const ElaParameters<dim>                  ela_parameters;
-    bool                                      processor_is_used;
+    /**
+     * @brief Outputs vtu files and a pvtu file for fine_solution which must
+     * live on dof_handler_fine.
+     */
+    void
+    output_fine_solution(DoFHandler<dim>      &dof_handler_fine,
+                         const Vector<double> &fine_solution);
+
+    /**
+     * @brief Assembles the solution vector of the MsFEM on the fine scale.
+     *
+     */
+    const Vector<double>
+    get_fine_solution(DoFHandler<dim> &dof_handler_fine);
+
+    MPI_Comm                             mpi_communicator;
+    parallel::shared::Triangulation<dim> triangulation;
+    FESystem<dim>                        fe;
+    DoFHandler<dim>                      dof_handler;
+    IndexSet                             locally_owned_dofs;
+    IndexSet                             locally_relevant_dofs;
+    AffineConstraints<double>            constraints;
+    TrilinosWrappers::SparseMatrix       system_matrix;
+    TrilinosWrappers::SparseMatrix       preconditioner_matrix;
+    TrilinosWrappers::MPI::Vector        locally_relevant_solution;
+    TrilinosWrappers::MPI::Vector        system_rhs;
+    CellId                               first_cell_id;
+    std::map<CellId, ElaBasis<dim>>      cell_basis_map;
+    const ElaParameters<dim>             ela_parameters;
+    bool                                 processor_is_used;
     /**< True if this processor is assigned at least one coarse cell. */
 
     ConditionalOStream pcout;

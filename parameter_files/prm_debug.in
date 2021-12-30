@@ -37,7 +37,7 @@ subsection Elasticity Parameters
     set no. of z-layers = 2
     
     # E and nu only need to be set if "use E and nu" is true.
-    set E = 210.e7
+    set E = 1.e6
     set nu = 0.3
 
     # mu and lambda only need to be set if E and nu are not used.
@@ -49,11 +49,11 @@ subsection Elasticity Parameters
     set mu frequency = 100
     set lambda frequency = 100
 
-    set rho = 1e3
+    set rho = 1.
   end
 
   subsection Other Parameters
-    set direct solver std = true
+    set direct solver std = false
     set direct solver ms = false
     set direct solver basis = false
     

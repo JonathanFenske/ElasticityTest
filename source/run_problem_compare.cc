@@ -8,20 +8,21 @@ namespace Elasticity
   {
     ElaParameters<2> ela_parameters(input_file, true);
 
-    dealii::Vector<double> ms_solution;
-
-    {
-      ElaMs<2> ela_ms(ela_parameters);
-      ela_ms.run();
-
-      ms_solution = ela_ms.get_fine_solution();
-    }
+    Vector<double> coarse_solution;
+    Vector<double> fine_solution;
 
     {
       ElaStd<2> ela_std(ela_parameters);
       ela_std.run();
 
-      ela_std.compare_solutions(ms_solution);
+      ela_std.get_solutions(coarse_solution, fine_solution);
+    }
+
+    {
+      ElaMs<2> ela_ms(ela_parameters);
+      ela_ms.run();
+
+      ela_ms.compute_errors(coarse_solution, fine_solution);
     }
   }
 
@@ -30,20 +31,21 @@ namespace Elasticity
   {
     ElaParameters<3> ela_parameters(input_file, true);
 
-    dealii::Vector<double> ms_solution;
-
-    {
-      ElaMs<3> ela_ms(ela_parameters);
-      ela_ms.run();
-
-      ms_solution = ela_ms.get_fine_solution();
-    }
+    Vector<double> coarse_solution;
+    Vector<double> fine_solution;
 
     {
       ElaStd<3> ela_std(ela_parameters);
       ela_std.run();
 
-      ela_std.compare_solutions(ms_solution);
+      ela_std.get_solutions(coarse_solution, fine_solution);
+    }
+
+    {
+      ElaMs<3> ela_ms(ela_parameters);
+      ela_ms.run();
+
+      ela_ms.compute_errors(coarse_solution, fine_solution);
     }
   }
 } // namespace Elasticity

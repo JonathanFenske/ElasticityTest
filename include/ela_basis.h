@@ -44,6 +44,7 @@
 
 #include <deal.II/numerics/data_out.h>
 #include <deal.II/numerics/error_estimator.h>
+#include <deal.II/numerics/fe_field_function.h>
 #include <deal.II/numerics/vector_tools.h>
 
 #include <deal.II/physics/transformations.h>
@@ -86,6 +87,11 @@ namespace Elasticity
   class ElaBasis
   {
   public:
+    ElaBasis()
+      : triangulation(typename Triangulation<dim>::MeshSmoothing(
+          Triangulation<dim>::smoothing_on_refinement |
+          Triangulation<dim>::smoothing_on_coarsening))
+    {}
     /**
      * @brief Construct a new ElaBasis object.
      *
@@ -106,7 +112,26 @@ namespace Elasticity
      *
      * @param other The ElaBasis object that we want to copy.
      */
-    ElaBasis(const ElaBasis<dim> &other);
+    ElaBasis(const ElaBasis<dim> &other)
+      : mpi_communicator(other.mpi_communicator)
+      , fe(FE_Q<dim>(1), dim)
+      , dof_handler(triangulation)
+      , constraints_vector(other.constraints_vector)
+      , corner_points(other.corner_points)
+      , solution_vector(other.solution_vector)
+      , global_element_rhs(other.global_element_rhs)
+      , global_element_matrix(other.global_element_matrix)
+      , global_weights(other.global_weights)
+      , global_cell_id(other.global_cell_id)
+      , first_cell_id(other.first_cell_id)
+      , local_subdomain(other.local_subdomain)
+      , ela_parameters(other.ela_parameters)
+      , basis_q1(other.basis_q1)
+    {
+      if (other.triangulation.n_global_active_cells() > 0)
+        triangulation.copy_triangulation(other.triangulation);
+      // solution_function = other.solution_function;
+    }
 
     /**
      * @brief Function that runs the problem.
@@ -163,12 +188,30 @@ namespace Elasticity
     const std::string
     get_filename() const;
 
-    /**
-     * @brief Get the local contribution to the solution vector
-     * on the fine scale.
-     */
     const std::vector<Vector<double>>
     get_global_solution();
+
+    /**
+     * @brief Get the local solution function
+     */
+    Functions::FEFieldFunction<dim>
+    get_solution_function() const
+    {
+      return Functions::FEFieldFunction<dim>(dof_handler, global_solution);
+      ;
+    }
+
+    const Vector<double>
+    get_solution_vector() const
+    {
+      return global_solution;
+    }
+
+    const std::vector<Point<dim>>
+    get_corner_points() const
+    {
+      return corner_points;
+    }
 
   private:
     /**
@@ -179,8 +222,8 @@ namespace Elasticity
      *
      * Moreover, it creates the constraint vector that contains the Dirichlet
      * boundary conditions (,which are, in this case, the point values of the
-     * basis functions on the coarse mesh at the quadrature points of this cell)
-     * and the hanging node constraints.
+     * basis functions on the coarse mesh at the quadrature points of this
+     * cell) and the hanging node constraints.
      */
     void
     setup_system();
@@ -243,12 +286,15 @@ namespace Elasticity
     Vector<double>                         system_rhs;
     SparseMatrix<double>                   system_matrix;
     Vector<double>                         global_solution;
-    const CellId                           global_cell_id;
-    const CellId                           first_cell_id;
-    const unsigned int                     local_subdomain;
-    const ElaParameters<dim>               ela_parameters;
+    CellId                                 global_cell_id;
+    CellId                                 first_cell_id;
+    unsigned int                           local_subdomain;
+    ElaParameters<dim>                     ela_parameters;
     std::string                            filename;
     BasisFun::BasisQ1<dim>                 basis_q1;
+
+    // public:
+    //   Function<dim> *solution_function;
   };
 } // namespace Elasticity
 

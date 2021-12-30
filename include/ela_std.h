@@ -12,7 +12,6 @@
 #include <deal.II/base/timer.h>
 #include <deal.II/base/utilities.h>
 
-#include <deal.II/distributed/grid_refinement.h>
 #include <deal.II/distributed/shared_tria.h>
 
 #include <deal.II/dofs/dof_handler.h>
@@ -124,10 +123,15 @@ namespace Elasticity
     run();
 
     /**
-     * @brief Compares the MsFEM and the coarse solution to the fine solution
+     * @brief Return the coarse and fine scale solutions of the standard
+     * FEM for the two vectors given as arguments
+     *
+     * @param coarse_solution coarse scale solution vector
+     * @param fine_solution fine scale solution vector
      */
     void
-    compare_solutions(const Vector<double> &ms_solution);
+    get_solutions(Vector<double> &coarse_solution,
+                  Vector<double> &fine_solution) const;
 
   private:
     /**
@@ -141,7 +145,7 @@ namespace Elasticity
      * and the hanging node constraints.
      */
     void
-    setup_system();
+    setup_system(unsigned int cycle);
 
     /**
      * @brief Assembles the system.
@@ -150,7 +154,7 @@ namespace Elasticity
      * for linear elasticity problems.
      */
     void
-    assemble_system();
+    assemble_system(unsigned int cycle);
 
     /**
      * @brief Solves the problem.
@@ -162,13 +166,13 @@ namespace Elasticity
      * be used.
      */
     void
-    solve();
+    solve(unsigned int cycle);
 
     /**
      * @brief Adaptively refines grid.
      */
     void
-    refine_grid();
+    refine_grid(unsigned int cycle);
 
     /**
      * @brief Outputs the solutions in pvtu files.
@@ -183,10 +187,10 @@ namespace Elasticity
     output_results(unsigned int cycle);
 
     MPI_Comm                             mpi_communicator;
-    parallel::shared::Triangulation<dim> triangulation;
+    parallel::shared::Triangulation<dim> triangulation_fine;
     parallel::shared::Triangulation<dim> triangulation_coarse;
     FESystem<dim>                        fe;
-    DoFHandler<dim>                      dof_handler;
+    std::vector<DoFHandler<dim>>         dof_handlers;
     IndexSet                             locally_owned_dofs;
     IndexSet                             locally_relevant_dofs;
     AffineConstraints<double>            constraints;
