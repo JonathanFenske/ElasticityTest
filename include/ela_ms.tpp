@@ -470,15 +470,7 @@ namespace Elasticity
 
       Vector<double> difference_per_cell(triangulation_fine.n_active_cells());
 
-      double L2error_ms, H1error_ms, L2error_coarse, H1error_coarse,
-        fine_solution_l2_inv;
-
-      VectorTools::integrate_difference(dof_handler_fine,
-                                        fine_solution,
-                                        ms_solution_function,
-                                        difference_per_cell,
-                                        QGauss<dim>(fe.degree + 1),
-                                        VectorTools::L2_norm);
+      double L2error_ms, H1error_ms, L2error_coarse, H1error_coarse;
 
       {
         pcout << "Assembling the fine scale MsFEM solution..." << std::endl;
