@@ -94,6 +94,7 @@ namespace Elasticity
         MyTools::create_data_directory("output/basis_output/");
         MyTools::create_data_directory("output/global_basis_output/");
         MyTools::create_data_directory("output/coarse/");
+        MyTools::create_data_directory("output/fine_ms_partitioned");
       }
     catch (std::runtime_error &e)
       {
@@ -450,11 +451,12 @@ namespace Elasticity
 
 
   template <int dim>
-  const Vector<double>
-  ElaMs<dim>::get_fine_solution()
+  void
+  ElaMs<dim>::compute_errors(Vector<double> &coarse_solution,
+                             Vector<double> &fine_solution)
   {
     {
-      TimerOutput::Scope t(computing_timer, "get fine MsFEM solution");
+      TimerOutput::Scope t(computing_timer, "computing errors");
 
       parallel::shared::Triangulation<dim> triangulation_fine(
         mpi_communicator,
@@ -463,63 +465,323 @@ namespace Elasticity
           Triangulation<dim>::smoothing_on_coarsening));
       triangulation_fine.copy_triangulation(triangulation);
       triangulation_fine.refine_global(ela_parameters.fine_refinements);
-      DoFHandler<dim> dof_handler_fine(triangulation_fine);
-      dof_handler_fine.distribute_dofs(fe);
+      DoFHandler<dim> dof_handler_fine;
+      dof_handler_fine.initialize(triangulation_fine, fe);
 
-      IndexSet locally_owned_dofs_fine;
-      locally_owned_dofs_fine = dof_handler_fine.locally_owned_dofs();
-      IndexSet locally_relevant_dofs_fine;
-      DoFTools::extract_locally_relevant_dofs(dof_handler_fine,
-                                              locally_relevant_dofs_fine);
+      Vector<double> difference_per_cell(triangulation_fine.n_active_cells());
 
-      TrilinosWrappers::MPI::Vector locally_relevant_solution_fine;
-      locally_relevant_solution_fine.reinit(locally_owned_dofs_fine,
-                                            mpi_communicator);
+      double L2error_ms, H1error_ms, L2error_coarse, H1error_coarse,
+        fine_solution_l2_inv;
 
-      unsigned int dofs_per_cell =
-        pow(fe.n_dofs_per_cell(), ela_parameters.fine_refinements);
+      fine_solution_l2_inv = 1 / fine_solution.l2_norm();
 
-      std::vector<types::global_dof_index> local_dof_indices(
-        fe.n_dofs_per_cell());
+      {
+        pcout << "Assembling the fine scale MsFEM solution..." << std::endl;
+        Vector<double> ms_solution = get_fine_solution(dof_handler_fine);
 
-      std::vector<types::global_dof_index> cell_dof_indices(dofs_per_cell);
+        pcout << "Computing the L2-error of the MsFEM solution..." << std::endl;
+        Functions::FEFieldFunction<dim> ms_solution_function(dof_handler_fine,
+                                                             ms_solution);
 
-      for (const auto &cell : dof_handler_fine.cell_iterators())
+        VectorTools::integrate_difference(dof_handler_fine,
+                                          fine_solution,
+                                          ms_solution_function,
+                                          difference_per_cell,
+                                          QGauss<dim>(fe.degree + 1),
+                                          VectorTools::L2_norm);
+
+        L2error_ms = VectorTools::compute_global_error(triangulation_fine,
+                                                       difference_per_cell,
+                                                       VectorTools::L2_norm) *
+                     fine_solution_l2_inv;
+
+        pcout
+          << "Computing the error of the MsFEM solution in the H1-seminorm..."
+          << std::endl;
+        VectorTools::integrate_difference(dof_handler_fine,
+                                          fine_solution,
+                                          ms_solution_function,
+                                          difference_per_cell,
+                                          QGauss<dim>(fe.degree + 1),
+                                          VectorTools::H1_seminorm);
+
+        H1error_ms =
+          VectorTools::compute_global_error(triangulation_fine,
+                                            difference_per_cell,
+                                            VectorTools::H1_seminorm) *
+          fine_solution_l2_inv;
+      }
+
+      {
+        pcout << "Computing the L2-error of the coarse scale standard FEM"
+                 " solution..."
+              << std::endl;
+        Functions::FEFieldFunction<dim> coarse_solution_function(
+          dof_handler, coarse_solution);
+
+        VectorTools::integrate_difference(dof_handler_fine,
+                                          fine_solution,
+                                          coarse_solution_function,
+                                          difference_per_cell,
+                                          QGauss<dim>(fe.degree + 1),
+                                          VectorTools::L2_norm);
+
+        L2error_coarse =
+          VectorTools::compute_global_error(triangulation_fine,
+                                            difference_per_cell,
+                                            VectorTools::L2_norm) *
+          fine_solution_l2_inv;
+
+        pcout << "Computing the error of the coarse scale standard FEM"
+                 " solution in the H1-seminorm..."
+              << std::endl;
+        VectorTools::integrate_difference(dof_handler_fine,
+                                          fine_solution,
+                                          coarse_solution_function,
+                                          difference_per_cell,
+                                          QGauss<dim>(fe.degree + 1),
+                                          VectorTools::H1_seminorm);
+
+        H1error_coarse =
+          VectorTools::compute_global_error(triangulation_fine,
+                                            difference_per_cell,
+                                            VectorTools::H1_seminorm) *
+          fine_solution_l2_inv;
+      }
+
+      if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0)
         {
-          if (cell_basis_map.find(cell->id()) != cell_basis_map.end())
-            {
-              typename std::map<CellId, ElaBasis<dim>>::iterator it_basis =
-                cell_basis_map.find(cell->id());
+          std::string header("+");
+          header += std::string(17, '-');
+          header += '+';
+          header += std::string(17, '-');
+          header += '+';
+          header += std::string(17, '-');
+          header += '+';
 
-              std::vector<Vector<double>> local_solution =
-                (it_basis->second).get_global_solution();
+          std::ios oldState(nullptr);
+          oldState.copyfmt(std::cout);
 
-              cell_dof_indices.clear();
+          std::cout << "\n\n\n" << header << std::endl;
+          std::cout << "| " << std::left << std::setw(15) << "relative Error"
+                    << " | " << std::right << std::setw(15) << "MsFEM"
+                    << " | " << std::right << std::setw(15) << "Standard FEM"
+                    << " |" << std::endl;
+          std::cout << header << std::endl;
+          std::cout << "| " << std::left << std::setw(15) << "L2-norm"
+                    << " | " << std::right << std::setw(15) << std::scientific
+                    << L2error_ms << " | " << std::right << std::setw(15)
+                    << L2error_coarse << " |" << std::endl;
+          std::cout << "| " << std::left << std::setw(15) << std::scientific
+                    << "H1-seminorm"
+                    << " | " << std::right << std::setw(15) << H1error_ms
+                    << " | " << std::right << std::setw(15) << H1error_coarse
+                    << " |" << std::endl;
+          std::cout << header << std::endl;
 
-              unsigned int i = 0;
+          std::cout.copyfmt(oldState);
 
-              for (const auto &fine_cell :
-                   GridTools::get_active_child_cells<DoFHandler<dim>>(cell))
-                {
-                  std::cout << "hey i enter a fine cell" << std::endl;
-
-                  if (fine_cell->is_locally_owned())
-                    {
-                      std::cout << "hey i enter a cell" << std::endl;
-                      fine_cell->distribute_local_to_global(
-                        local_solution[i], locally_relevant_solution_fine);
-                    }
-                  ++i;
-                }
-            }
+          // output_fine_solution(dof_handler_fine, ms_solution);
         }
-
-      locally_relevant_solution_fine.compress(VectorOperation::add);
-
-      Vector<double> fine_scale_ms_solution(locally_relevant_solution_fine);
-
-      return fine_scale_ms_solution;
     }
+  }
+
+
+  template <int dim>
+  const Vector<double>
+  ElaMs<dim>::get_fine_solution(DoFHandler<dim> &dof_handler_fine)
+  {
+    IndexSet locally_relevant_dofs_fine;
+    DoFTools::extract_locally_relevant_dofs(dof_handler_fine,
+                                            locally_relevant_dofs_fine);
+
+    IndexSet locally_owned_dofs_fine;
+    locally_owned_dofs_fine = dof_handler_fine.locally_owned_dofs();
+
+    TrilinosWrappers::MPI::Vector locally_owned_solution_fine;
+    locally_owned_solution_fine.reinit(locally_owned_dofs_fine,
+                                       mpi_communicator);
+
+    std::vector<types::global_dof_index> local_dof_indices(
+      fe.n_dofs_per_cell());
+
+    std::vector<types::global_dof_index> cell_dof_indices;
+
+    std::vector<bool> dof_index_indicator(dof_handler_fine.n_dofs(), false);
+
+    std::map<unsigned int, IndexSet> index_set_to_send;
+    for (unsigned int i =
+           Utilities::MPI::this_mpi_process(mpi_communicator) + 1;
+         i < Utilities::MPI::n_mpi_processes(mpi_communicator);
+         ++i)
+      {
+        index_set_to_send.insert(std::make_pair(i, locally_owned_dofs_fine));
+      }
+
+    std::map<unsigned int, IndexSet> locally_owned_dofs_map_other(
+      Utilities::MPI::some_to_some(mpi_communicator, index_set_to_send));
+
+    for (const auto &cell : dof_handler_fine.cell_iterators())
+      {
+        if (cell_basis_map.find(cell->id()) != cell_basis_map.end())
+          {
+            for (const auto &coarse_cell : dof_handler.active_cell_iterators())
+              if (coarse_cell->id() == cell->id())
+                {
+                  if (coarse_cell->is_locally_owned())
+                    {
+                      typename std::map<CellId, ElaBasis<dim>>::iterator
+                        it_basis = cell_basis_map.find(cell->id());
+
+                      std::vector<Vector<double>> local_solution =
+                        (it_basis->second).get_global_solution();
+
+                      unsigned int i = 0;
+
+                      for (const auto &fine_cell :
+                           GridTools::get_active_child_cells<DoFHandler<dim>>(
+                             cell))
+                        {
+                          cell_dof_indices.clear();
+                          fine_cell->get_dof_indices(local_dof_indices);
+
+                          for (unsigned k = 0; k < local_dof_indices.size();
+                               ++k)
+                            {
+                              if (!dof_index_indicator[local_dof_indices[k]])
+                                {
+                                  bool is_on_other_proc = false;
+
+                                  for (unsigned int m = 0;
+                                       m < Utilities::MPI::this_mpi_process(
+                                             mpi_communicator);
+                                       ++m)
+                                    {
+                                      if ((locally_owned_dofs_map_other.at(m))
+                                            .is_element(local_dof_indices[k]))
+                                        {
+                                          is_on_other_proc = true;
+                                          break;
+                                        }
+                                    }
+                                  if (!is_on_other_proc)
+                                    {
+                                      cell_dof_indices.push_back(
+                                        local_dof_indices[k]);
+                                    }
+
+                                  dof_index_indicator[local_dof_indices[k]] =
+                                    true;
+                                }
+                            }
+
+                          if (cell_dof_indices.size() != 0)
+                            {
+                              Vector<double> local_cleaned_solution(
+                                cell_dof_indices.size());
+
+                              unsigned int l = 0;
+
+                              for (unsigned k = 0; k < local_dof_indices.size();
+                                   ++k)
+                                {
+                                  if (local_dof_indices[k] ==
+                                      cell_dof_indices[l])
+                                    {
+                                      local_cleaned_solution(l) =
+                                        local_solution[i](k);
+                                      ++l;
+                                    }
+                                  if (l >= cell_dof_indices.size())
+                                    break;
+                                }
+
+                              if (Utilities::MPI::this_mpi_process(
+                                    mpi_communicator) == 1)
+                                std::cout << local_cleaned_solution.l2_norm()
+                                          << " , " << cell_dof_indices.size()
+                                          << std::endl;
+                              // fine_constraints.distribute_local_to_global(
+                              //   local_cleaned_solution,
+                              //   cell_dof_indices,
+                              //   locally_owned_solution_fine);
+                              locally_owned_solution_fine.set(
+                                cell_dof_indices, local_cleaned_solution);
+                            }
+
+                          ++i;
+                        }
+                    }
+                }
+          }
+      }
+
+    locally_owned_solution_fine.compress(VectorOperation::insert);
+
+    Vector<double> fine_scale_ms_solution(locally_owned_solution_fine);
+
+    //   output_fine_solution(dof_handler_fine, fine_scale_ms_solution);
+
+    return fine_scale_ms_solution;
+  }
+
+
+  template <int dim>
+  void
+  ElaMs<dim>::output_fine_solution(DoFHandler<dim>      &dof_handler_fine,
+                                   const Vector<double> &fine_solution)
+  {
+    DataOut<dim> data_out;
+    data_out.attach_dof_handler(dof_handler_fine);
+
+    // add the displacement to the output
+    std::vector<std::string> solution_name(dim, "displacement");
+    std::vector<DataComponentInterpretation::DataComponentInterpretation>
+      interpretation(dim,
+                     DataComponentInterpretation::component_is_part_of_vector);
+
+    data_out.add_data_vector(fine_solution,
+                             solution_name,
+                             DataOut<dim>::type_dof_data,
+                             interpretation);
+
+    // add the linearized strain tensor to the output
+    StrainPostprocessor<dim> strain_postproc;
+    data_out.add_data_vector(fine_solution, strain_postproc);
+
+    // add the linearized stress tensor to the output
+    StressPostprocessor<dim> stress_postproc(ela_parameters);
+    data_out.add_data_vector(fine_solution, stress_postproc);
+
+    data_out.build_patches();
+
+    // write the output files
+    std::string filename = "output/fine_ms_partitioned/fine_scale_ms_solution";
+    filename +=
+      Utilities::int_to_string(triangulation.locally_owned_subdomain(), 4);
+    filename += std::string(".vtu");
+    std::ofstream output(filename);
+    data_out.write_vtu(output);
+
+    if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0)
+      {
+        std::vector<std::string> filenames;
+        std::string              filename;
+        for (unsigned int i = 0;
+             i < Utilities::MPI::n_mpi_processes(mpi_communicator);
+             ++i)
+          {
+            filename = "fine_ms_partitioned/fine_scale_ms_solution";
+            filename += Utilities::int_to_string(i, 4);
+            filename += std::string(".vtu");
+            filenames.push_back(filename);
+          }
+
+        std::string master_file("output/fine_scale_ms_solution");
+        master_file += std::string(".pvtu");
+        std::ofstream master_output(master_file);
+        data_out.write_pvtu_record(master_output, filenames);
+      }
   }
 
 

@@ -45,6 +45,7 @@
 #include <deal.II/physics/transformations.h>
 
 #include "ela_basis.h"
+// #include "fine_ms_solution_function.h"
 #include "mytools.h"
 #include "postprocessing.h"
 #include "process_parameter_file.h"
@@ -52,6 +53,7 @@
 // include headers that implement a archive in simple text format
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
+#include <boost/serialization/array.hpp>
 
 // STL
 #include <cmath>
@@ -61,6 +63,7 @@
 #include <iostream>
 #include <map>
 #include <memory>
+#include <utility>
 
 
 namespace Elasticity
@@ -98,14 +101,16 @@ namespace Elasticity
     run();
 
     /**
-     * @brief Saves the fine scale solution
+     * @brief This function computes the errors of the MsFEM and the
+     * standard FEM solution. The fine scale standard FEM solution is
+     * used as reference.
      *
-     * This function saves the fine scale solution by getting all local
-     * contributions to the global solution vector that use linear
-     * finite elements on the fine scale.
+     * @param coarse_solution coarse scale standard FEM solution
+     * @param fine_solution fine scale standard FEM solution
      */
-    const Vector<double>
-    get_fine_solution();
+    void
+    compute_errors(Vector<double> &coarse_solution,
+                   Vector<double> &fine_solution);
 
   private:
     /**
@@ -186,6 +191,21 @@ namespace Elasticity
      */
     void
     output_results();
+
+    /**
+     * @brief Outputs vtu files and a pvtu file for fine_solution which must
+     * live on dof_handler_fine.
+     */
+    void
+    output_fine_solution(DoFHandler<dim>      &dof_handler_fine,
+                         const Vector<double> &fine_solution);
+
+    /**
+     * @brief Assembles the solution vector of the MsFEM on the fine scale.
+     *
+     */
+    const Vector<double>
+    get_fine_solution(DoFHandler<dim> &dof_handler_fine);
 
     MPI_Comm                             mpi_communicator;
     parallel::shared::Triangulation<dim> triangulation;

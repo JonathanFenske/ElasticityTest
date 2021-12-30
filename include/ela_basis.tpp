@@ -21,7 +21,9 @@ namespace Elasticity
     MPI_Comm                                           mpi_communicator,
     const ElaParameters<dim>                          &ela_parameters)
     : mpi_communicator(mpi_communicator)
-    , triangulation()
+    , triangulation(typename Triangulation<dim>::MeshSmoothing(
+        Triangulation<dim>::smoothing_on_refinement |
+        Triangulation<dim>::smoothing_on_coarsening))
     , fe(FE_Q<dim>(1), dim)
     , dof_handler(triangulation)
     , constraints_vector(fe.dofs_per_cell)
@@ -46,24 +48,26 @@ namespace Elasticity
   }
 
 
-  template <int dim>
-  ElaBasis<dim>::ElaBasis(const ElaBasis<dim> &other)
-    : mpi_communicator(other.mpi_communicator)
-    , triangulation()
-    , fe(FE_Q<dim>(1), dim)
-    , dof_handler(triangulation)
-    , constraints_vector(other.constraints_vector)
-    , corner_points(other.corner_points)
-    , solution_vector(other.solution_vector)
-    , global_element_rhs(other.global_element_rhs)
-    , global_element_matrix(other.global_element_matrix)
-    , global_weights(other.global_weights)
-    , global_cell_id(other.global_cell_id)
-    , first_cell_id(other.first_cell_id)
-    , local_subdomain(other.local_subdomain)
-    , ela_parameters(other.ela_parameters)
-    , basis_q1(other.basis_q1)
-  {}
+  // template <int dim>
+  // ElaBasis<dim>::ElaBasis(const ElaBasis<dim> &other)
+  //   : mpi_communicator(other.mpi_communicator)
+  //   , fe(FE_Q<dim>(1), dim)
+  //   , dof_handler(triangulation)
+  //   , constraints_vector(other.constraints_vector)
+  //   , corner_points(other.corner_points)
+  //   , solution_vector(other.solution_vector)
+  //   , global_element_rhs(other.global_element_rhs)
+  //   , global_element_matrix(other.global_element_matrix)
+  //   , global_weights(other.global_weights)
+  //   , global_cell_id(other.global_cell_id)
+  //   , first_cell_id(other.first_cell_id)
+  //   , local_subdomain(other.local_subdomain)
+  //   , ela_parameters(other.ela_parameters)
+  //   , basis_q1(other.basis_q1)
+  // {
+  //   triangulation.copy_triangulation(other.triangulation);
+  //   solution_function = other.solution_function;
+  // }
 
 
   template <int dim>
@@ -388,6 +392,12 @@ namespace Elasticity
                              global_weights[index_basis],
                              solution_vector[index_basis]);
       }
+
+    // if (ela_parameters.compare)
+    //   {
+    //     solution_function =
+    //       new Functions::FEFieldFunction<dim>(dof_handler, global_solution);
+    //   }
   }
 
 
@@ -512,6 +522,15 @@ namespace Elasticity
       }
     return fine_cell_solutions;
   }
+
+
+  // template <int dim>
+  // void
+  // ElaBasis<dim>::get_solution_function(
+  //   Function<dim> *other_solution_function) const
+  // {
+  //   *other_solution_function = *solution_function;
+  // }
 } // namespace Elasticity
 
 #endif // _INCLUDE_ELA_BASIS_TPP_
