@@ -14,11 +14,11 @@ subsection Elasticity Parameters
 
   # The subsection 3D will only be used if dim == 3.
   subsection 3D
-    set init p1[0] = -20.
+    set init p1[0] = -10.
     set init p1[1] = 0.
     set init p1[2] = 0.
 
-    set init p2[0] = 20.
+    set init p2[0] = 10.
     set init p2[1] = 2.
     set init p2[2] = 2.
   end
@@ -59,8 +59,8 @@ subsection Elasticity Parameters
     
     set prevent basis output = true
 
-    set coarse refinements = 2
-    set fine refinements = 3
+    set coarse refinements = 0
+    set fine refinements = 5
 
     set rotate = false
     set rotation angle = 0.05 # * pi
