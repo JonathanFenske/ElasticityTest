@@ -19,8 +19,8 @@ subsection Elasticity Parameters
     set init p1[2] = 0.
 
     set init p2[0] = 10.
-    set init p2[1] = 2.
-    set init p2[2] = 2.
+    set init p2[1] = 1.
+    set init p2[2] = 1.
   end
 
   subsection Material Parameters
