@@ -93,8 +93,8 @@ namespace Elasticity
         MyTools::create_data_directory("output/");
         MyTools::create_data_directory("output/basis_output/");
         MyTools::create_data_directory("output/global_basis_output/");
-        MyTools::create_data_directory("output/coarse/");
-        MyTools::create_data_directory("output/fine_ms_partitioned");
+        MyTools::create_data_directory("output/coarse_ms_partitioned/");
+        MyTools::create_data_directory("output/other_partitioned/");
       }
     catch (std::runtime_error &e)
       {
@@ -394,11 +394,11 @@ namespace Elasticity
 
         // write the output files
         const std::string coarse_filename =
-          (std::string("ms_solution.") +
+          (std::string("coarse_ms_solution.") +
            Utilities::int_to_string(triangulation.locally_owned_subdomain(),
                                     4) +
            std::string(".vtu"));
-        std::ofstream output("output/coarse/" + coarse_filename);
+        std::ofstream output("output/coarse_ms_partitioned/" + coarse_filename);
         data_out.write_vtu(output);
       }
 
@@ -435,11 +435,11 @@ namespace Elasticity
              i < Utilities::MPI::n_mpi_processes(mpi_communicator);
              ++i)
           if (used_processors[i])
-            coarse_filenames.push_back(std::string("coarse/ms_solution-") +
-                                       "." + Utilities::int_to_string(i, 4) +
-                                       std::string(".vtu"));
+            coarse_filenames.push_back(
+              std::string("coarse_ms_partitioned/coarse_ms_solution-") + "." +
+              Utilities::int_to_string(i, 4) + std::string(".vtu"));
 
-        std::ofstream master_output(std::string("output/ms_solution") +
+        std::ofstream master_output(std::string("output/coarse_ms_solution") +
                                     std::string(".pvtu"));
         data_out.write_pvtu_record(master_output, coarse_filenames);
 
@@ -475,7 +475,10 @@ namespace Elasticity
       {
         pcout << "Assembling the fine scale MsFEM solution..." << std::endl;
         Vector<double> ms_solution = get_fine_solution(dof_handler_fine);
-        output_fine_solution(triangulation_fine, dof_handler_fine, ms_solution);
+        output_fine_solution(triangulation_fine,
+                             dof_handler_fine,
+                             ms_solution,
+                             "fine_ms_assembled");
 
         pcout << "Computing the L2-error of the MsFEM solution..." << std::endl;
         Functions::FEFieldFunction<dim> ms_solution_function(dof_handler_fine,
@@ -541,6 +544,16 @@ namespace Elasticity
           VectorTools::compute_global_error(triangulation_fine,
                                             difference_per_cell,
                                             VectorTools::H1_seminorm);
+
+        pcout << "output solutions..." << std::endl;
+        output_fine_solution(triangulation_fine,
+                             dof_handler_fine,
+                             fine_solution,
+                             "fine_std");
+        output_fine_solution(triangulation,
+                             dof_handler,
+                             coarse_solution,
+                             "coarse_std");
       }
 
       if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0)
@@ -714,7 +727,8 @@ namespace Elasticity
   ElaMs<dim>::output_fine_solution(
     parallel::shared::Triangulation<dim> &triangulation_fine,
     DoFHandler<dim>                      &dof_handler_fine,
-    const Vector<double>                 &fine_solution)
+    const Vector<double>                 &fine_solution,
+    std::string                           name)
   {
     DataOut<dim> data_out;
     data_out.attach_dof_handler(dof_handler_fine);
@@ -741,7 +755,9 @@ namespace Elasticity
     data_out.build_patches();
 
     // write the output files
-    std::string filename = "output/fine_ms_partitioned/fine_scale_ms_solution";
+    std::string filename = "output/other_partitioned/";
+    filename += name;
+    filename += std::string("_solution");
     filename +=
       Utilities::int_to_string(triangulation_fine.locally_owned_subdomain(), 4);
     filename += std::string(".vtu");
@@ -751,18 +767,21 @@ namespace Elasticity
     if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0)
       {
         std::vector<std::string> filenames;
-        std::string              filename;
         for (unsigned int i = 0;
              i < Utilities::MPI::n_mpi_processes(mpi_communicator);
              ++i)
           {
-            filename = "fine_ms_partitioned/fine_scale_ms_solution";
+            filename = "other_partitioned/";
+            filename += name;
+            filename += std::string("_solution");
             filename += Utilities::int_to_string(i, 4);
             filename += std::string(".vtu");
             filenames.push_back(filename);
           }
 
-        std::string master_file("output/fine_scale_ms_solution");
+        std::string master_file("output/");
+        master_file += name;
+        master_file += std::string("_solution");
         master_file += std::string(".pvtu");
         std::ofstream master_output(master_file);
         data_out.write_pvtu_record(master_output, filenames);

@@ -200,7 +200,8 @@ namespace Elasticity
     output_fine_solution(
       parallel::shared::Triangulation<dim> &triangulation_fine,
       DoFHandler<dim>                      &dof_handler_fine,
-      const Vector<double>                 &fine_solution);
+      const Vector<double>                 &fine_solution,
+      std::string                           name);
 
     /**
      * @brief Assembles the solution vector of the MsFEM on the fine scale.
