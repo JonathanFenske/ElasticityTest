@@ -72,13 +72,16 @@ already existing parameter files, like e.g. `debug.in`. Note that a parameter fi
 
 The results are then stored in a new folder called `output` and can be visualized with *Paraview* or *Visit*.
 
-If you want to compare the coarse solution of the error of the standard FEM to the error MsFEM solution in the L2-norm and H1-seminorm, you can run
+If you want to compare the coarse solution of the error of the standard FEM to the error MsFEM solution in the 
+L2-norm and H1-seminorm, you can run
 
 ```
 mpirun -n N source/compare_ela -p ../ElasticityTest/parameter_files/PARAMETER_FILE
 ```
 
-This does, however, slow down the runtime. So only use this executable if you want to have the values for these errors.
+This does, however, slows down the runtime significantly. Moreover, the computation of the errors only gives the 
+correct result the application is not run in parallel. So only use this executable if you want to have the values 
+for these errors.
 
 ### Building the documentation
 
