@@ -475,10 +475,10 @@ namespace Elasticity
       {
         pcout << "Assembling the fine scale MsFEM solution..." << std::endl;
         Vector<double> ms_solution = get_fine_solution(dof_handler_fine);
-        output_fine_solution(triangulation_fine,
-                             dof_handler_fine,
-                             ms_solution,
-                             "fine_ms_assembled");
+        // output_fine_solution(triangulation_fine,
+        //                      dof_handler_fine,
+        //                      ms_solution,
+        //                      "fine_ms_assembled");
 
         pcout << "Computing the L2-error of the MsFEM solution..." << std::endl;
         Functions::FEFieldFunction<dim> ms_solution_function(dof_handler_fine,
@@ -545,15 +545,15 @@ namespace Elasticity
                                             difference_per_cell,
                                             VectorTools::H1_seminorm);
 
-        pcout << "output solutions..." << std::endl;
-        output_fine_solution(triangulation_fine,
-                             dof_handler_fine,
-                             fine_solution,
-                             "fine_std");
-        output_fine_solution(triangulation,
-                             dof_handler,
-                             coarse_solution,
-                             "coarse_std");
+        // pcout << "output solutions..." << std::endl;
+        // output_fine_solution(triangulation_fine,
+        //                      dof_handler_fine,
+        //                      fine_solution,
+        //                      "fine_std");
+        // output_fine_solution(triangulation,
+        //                      dof_handler,
+        //                      coarse_solution,
+        //                      "coarse_std");
       }
 
       if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0)
