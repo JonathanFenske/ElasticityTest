@@ -161,12 +161,12 @@ namespace Elasticity
 
     cell = dof_handler.begin_active();
 
-    pcout << "third iterating..." << std::endl;
+    // pcout << "third iterating..." << std::endl;
     for (; cell != endc; ++cell)
       {
         if (cell->is_locally_owned())
           {
-            pcout << "initializing cell problem" << std::endl;
+            // pcout << "initializing cell problem" << std::endl;
             ElaBasis<dim> current_cell_problem(
               cell,
               first_cell_id,
@@ -174,11 +174,11 @@ namespace Elasticity
               mpi_communicator,
               ela_parameters);
 
-            std::cout << "make pair" << std::endl;
+            // std::cout << "make pair" << std::endl;
             std::pair<typename std::map<CellId, ElaBasis<dim>>::iterator, bool>
               result;
 
-            std::cout << "insert" << std::endl;
+            // std::cout << "insert" << std::endl;
             result = cell_basis_map.insert(
               std::make_pair(cell->id(), current_cell_problem));
 
