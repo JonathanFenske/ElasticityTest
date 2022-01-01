@@ -122,7 +122,7 @@ namespace Elasticity
                                                                .begin_active(),
                                                       endc = dof_handler.end();
 
-    pcout << "iterating..." << std::endl;
+    pcout << "iterating..." << cell->id() << std::endl;
 
     for (; cell != endc; ++cell)
       {
