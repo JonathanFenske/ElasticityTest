@@ -146,6 +146,10 @@ namespace Elasticity
         std::cout << "before gathering" << std::endl;
         // first_cells = Utilities::MPI::all_gather(mpi_communicator, tmp_pair);
       }
+    else
+      {
+        first_cell_id = cell->id();
+      }
 
 
     // pcout << "second iterating..." << std::endl;
@@ -161,7 +165,7 @@ namespace Elasticity
       {
         std::cout << "before first cell" << std::endl;
       }
-    first_cell_id = cell->id();
+
 
     cell = dof_handler.begin_active();
 
