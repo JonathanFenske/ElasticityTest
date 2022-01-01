@@ -133,15 +133,21 @@ namespace Elasticity
           }
       }
 
-    pcout << "pairing" << std::endl;
-    std::pair<CellId, bool> tmp_pair(cell->id(), processor_is_used);
-    pcout << "allocating" << std::endl;
-    std::vector<std::pair<CellId, bool>> first_cells(
-      Utilities::MPI::n_mpi_processes(mpi_communicator));
-    pcout << "before gathering" << std::endl;
-    // first_cells = Utilities::MPI::all_gather(mpi_communicator, tmp_pair);
+    if (!processor_is_used)
+      {
+        pcout << Utilities::MPI::this_mpi_process(mpi_communicator)
+              << " not used" << std::endl;
+        pcout << "pairing" << std::endl;
+        std::pair<CellId, bool> tmp_pair(cell->id(), processor_is_used);
+        pcout << "allocating" << std::endl;
+        std::vector<std::pair<CellId, bool>> first_cells(
+          Utilities::MPI::n_mpi_processes(mpi_communicator));
+        pcout << "before gathering" << std::endl;
+        // first_cells = Utilities::MPI::all_gather(mpi_communicator, tmp_pair);
+      }
 
-    pcout << "second iterating..." << std::endl;
+
+    // pcout << "second iterating..." << std::endl;
     // for (auto &first_cell_it : first_cells)
     //   {
     //     if (first_cell_it.second)
