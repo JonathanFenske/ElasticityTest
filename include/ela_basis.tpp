@@ -303,11 +303,10 @@ namespace Elasticity
     MPI_Get_processor_name(processor_name, &name_len);
     std::string proc_name(processor_name, name_len);
 
-    // std::cout << "	Solving for basis in cell   " <<
-    // global_cell_id.to_string()
-    //           << "   [machine: " << proc_name
-    //           << " | rank: " << Utilities::MPI::this_mpi_process(MPI_COMM_WORLD)
-    //           << "]   ..... " << std::endl;
+    std::cout << "	Solving for basis in cell   " << global_cell_id.to_string()
+              << "   [machine: " << proc_name
+              << " | rank: " << Utilities::MPI::this_mpi_process(MPI_COMM_WORLD)
+              << "]   ..... ";
 
     timer.restart();
 
@@ -348,8 +347,8 @@ namespace Elasticity
 
       timer.stop();
 
-      // std::cout << "done in   " << timer.cpu_time() << "   seconds."
-      //           << std::endl;
+      std::cout << "done in   " << timer.cpu_time() << "   seconds."
+                << std::endl;
     }
   }
 
@@ -387,18 +386,10 @@ namespace Elasticity
     for (unsigned int index_basis = 0; index_basis < dofs_per_cell;
          ++index_basis)
       {
-        // global_solution = 1*global_solution +
-        // global_weights[index_basis]*solution_vector[index_basis]
         global_solution.sadd(1,
                              global_weights[index_basis],
                              solution_vector[index_basis]);
       }
-
-    // if (ela_parameters.compare)
-    //   {
-    //     solution_function =
-    //       new Functions::FEFieldFunction<dim>(dof_handler, global_solution);
-    //   }
   }
 
 

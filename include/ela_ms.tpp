@@ -114,15 +114,11 @@ namespace Elasticity
     TimerOutput::Scope t(computing_timer,
                          "basis initialization and computation");
 
-    pcout << "cell_basis_map.clear();" << std::endl;
     cell_basis_map.clear();
 
-    pcout << "create iterators" << std::endl;
     typename Triangulation<dim>::active_cell_iterator cell = dof_handler
                                                                .begin_active(),
                                                       endc = dof_handler.end();
-
-    pcout << "iterating..." << std::endl;
 
     for (; cell != endc; ++cell)
       {
@@ -135,46 +131,33 @@ namespace Elasticity
 
     if (!processor_is_used)
       {
-        std::cout << Utilities::MPI::this_mpi_process(mpi_communicator)
-                  << " not used" << std::endl;
-        std::cout << "pairing" << std::endl;
-        std::pair<CellId, bool> tmp_pair((dof_handler.begin_active())->id(),
-                                         processor_is_used);
-        std::cout << "allocating" << std::endl;
-        std::vector<std::pair<CellId, bool>> first_cells(
-          Utilities::MPI::n_mpi_processes(mpi_communicator));
-        std::cout << "before gathering" << std::endl;
-        // first_cells = Utilities::MPI::all_gather(mpi_communicator, tmp_pair);
+        first_cell_id = (dof_handler.begin_active())->id();
       }
     else
       {
         first_cell_id = cell->id();
       }
 
+    std::vector<std::pair<CellId, bool>> first_cells =
+      Utilities::MPI::all_gather(mpi_communicator,
+                                 std::make_pair(first_cell_id,
+                                                processor_is_used));
 
-    // pcout << "second iterating..." << std::endl;
-    // for (auto &first_cell_it : first_cells)
-    //   {
-    //     if (first_cell_it.second)
-    //       {
-    //         first_cell_id = first_cell_it.first;
-    //         break;
-    //       }
-    //   }
-    if (!processor_is_used)
+    for (auto &first_cell_it : first_cells)
       {
-        std::cout << "before first cell" << std::endl;
+        if (first_cell_it.second)
+          {
+            first_cell_id = first_cell_it.first;
+            break;
+          }
       }
-
 
     cell = dof_handler.begin_active();
 
-    // pcout << "third iterating..." << std::endl;
     for (; cell != endc; ++cell)
       {
         if (cell->is_locally_owned())
           {
-            // pcout << "initializing cell problem" << std::endl;
             ElaBasis<dim> current_cell_problem(
               cell,
               first_cell_id,
@@ -182,11 +165,9 @@ namespace Elasticity
               mpi_communicator,
               ela_parameters);
 
-            // std::cout << "make pair" << std::endl;
             std::pair<typename std::map<CellId, ElaBasis<dim>>::iterator, bool>
               result;
 
-            // std::cout << "insert" << std::endl;
             result = cell_basis_map.insert(
               std::make_pair(cell->id(), current_cell_problem));
 
@@ -650,7 +631,6 @@ namespace Elasticity
     const Vector<double>  &solution_vector,
     const std::map<CellId, std::vector<types::global_dof_index>> &dof_map)
   {
-    pcout << solution_vector.size() << std::endl;
     IndexSet current_locally_owned_dofs;
     current_locally_owned_dofs = local_dof_handler.locally_owned_dofs();
     TrilinosWrappers::MPI::Vector vector_parallel(current_locally_owned_dofs,
@@ -837,20 +817,18 @@ namespace Elasticity
           << std::endl;
 
     initialize_and_compute_basis();
-    pcout << "assemble" << std::endl;
+
     assemble_system();
-    pcout << "solve" << std::endl;
+
     solve();
 
     send_global_weights_to_cell();
 
     {
       TimerOutput::Scope t(computing_timer, "output");
-      pcout << "really" << std::endl;
+
       output_results();
     }
-
-    pcout << "done" << std::endl;
 
     computing_timer.print_summary();
     computing_timer.reset();
