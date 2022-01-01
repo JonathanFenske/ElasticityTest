@@ -114,18 +114,26 @@ namespace Elasticity
     TimerOutput::Scope t(computing_timer,
                          "basis initialization and computation");
 
+    pcout << "cell_basis_map.clear();" << std::endl;
     cell_basis_map.clear();
 
+    pcout << "create iterators" << std::endl;
     typename Triangulation<dim>::active_cell_iterator cell = dof_handler
                                                                .begin_active(),
                                                       endc = dof_handler.end();
 
+    pcout << "iterating..." << std::endl;
     for (; cell != endc; ++cell)
       {
+        pcout << cell->id() << std::endl;
         if (cell->is_locally_owned())
           {
+            pcout << "is locally owned" << std::endl;
             if (!processor_is_used)
               {
+                std::cout << "Rank "
+                          << Utilities::MPI::this_mpi_process(mpi_communicator)
+                          << std::endl;
                 processor_is_used = true;
                 std::vector<CellId> first_cells =
                   Utilities::MPI::all_gather(mpi_communicator, cell->id());
@@ -138,6 +146,7 @@ namespace Elasticity
                        ExcMessage("first cell id not initialized"));
               }
 
+            pcout << "initializing cell problem" << std::endl;
             ElaBasis<dim> current_cell_problem(
               cell,
               first_cell_id,
@@ -145,9 +154,11 @@ namespace Elasticity
               mpi_communicator,
               ela_parameters);
 
+            std::cout << "make pair" << std::endl;
             std::pair<typename std::map<CellId, ElaBasis<dim>>::iterator, bool>
               result;
 
+            std::cout << "insert" << std::endl;
             result = cell_basis_map.insert(
               std::make_pair(cell->id(), current_cell_problem));
 
@@ -694,8 +705,6 @@ namespace Elasticity
     locally_owned_solution_fine.compress(VectorOperation::insert);
 
     Vector<double> fine_scale_ms_solution(locally_owned_solution_fine);
-
-    output_fine_solution(dof_handler_fine, fine_scale_ms_solution);
 
     return fine_scale_ms_solution;
   }

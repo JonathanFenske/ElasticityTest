@@ -130,12 +130,12 @@ namespace Elasticity
      * @param fine_solution fine scale solution vector
      */
     void
-    get_solutions(Vector<double> &coarse_solution,
-                  Vector<double> &fine_solution,
-                  std::map<CellId, std::vector<types::global_dof_index>>
-                    &out_dof_map_coarse,
-                  std::map<CellId, std::vector<types::global_dof_index>>
-                    &out_dof_map_fine) const;
+    get_solutions(
+      Vector<double> &coarse_solution,
+      Vector<double> &fine_solution,
+      std::map<CellId, std::vector<types::global_dof_index>>
+        &out_dof_map_coarse,
+      std::map<CellId, std::vector<types::global_dof_index>> &out_dof_map_fine);
 
   private:
     /**

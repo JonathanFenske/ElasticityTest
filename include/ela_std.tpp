@@ -520,8 +520,12 @@ namespace Elasticity
     Vector<double>                                         &coarse_solution,
     Vector<double>                                         &fine_solution,
     std::map<CellId, std::vector<types::global_dof_index>> &dof_map_coarse,
-    std::map<CellId, std::vector<types::global_dof_index>> &dof_map_fine) const
+    std::map<CellId, std::vector<types::global_dof_index>> &dof_map_fine)
   {
+    TimerOutput::Scope t(computing_timer,
+                         "getting solutions of the standard FEM");
+
+    pcout << "Getting the solutions of the standard FEM" << std::endl;
     std::map<CellId, std::vector<types::global_dof_index>> local_dof_map_coarse;
     std::vector<types::global_dof_index>                   local_dof_indices(
       fe.n_dofs_per_cell());

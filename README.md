@@ -79,8 +79,7 @@ L2-norm and H1-seminorm, you can run
 mpirun -n N source/compare_ela -p ../ElasticityTest/parameter_files/PARAMETER_FILE
 ```
 
-This does, however, slows down the runtime significantly. Moreover, the computation of the errors only gives the 
-correct result the application is not run in parallel. So only use this executable if you want to have the values 
+This does, however, slows down the runtime. So only use this executable if you want to have the values 
 for these errors.
 
 ### Building the documentation
