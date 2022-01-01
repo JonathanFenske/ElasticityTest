@@ -128,11 +128,8 @@ namespace Elasticity
       {
         if (cell->is_locally_owned())
           {
-            if (!processor_is_used)
-              {
-                processor_is_used = true;
-                break;
-              }
+            processor_is_used = true;
+            break;
           }
       }
 
@@ -142,17 +139,19 @@ namespace Elasticity
     std::vector<std::pair<CellId, bool>> first_cells(
       Utilities::MPI::n_mpi_processes(mpi_communicator));
     pcout << "before gathering" << std::endl;
-    first_cells = Utilities::MPI::all_gather(mpi_communicator, tmp_pair);
+    // first_cells = Utilities::MPI::all_gather(mpi_communicator, tmp_pair);
 
     pcout << "second iterating..." << std::endl;
-    for (auto &first_cell_it : first_cells)
-      {
-        if (first_cell_it.second)
-          {
-            first_cell_id = first_cell_it.first;
-            break;
-          }
-      }
+    // for (auto &first_cell_it : first_cells)
+    //   {
+    //     if (first_cell_it.second)
+    //       {
+    //         first_cell_id = first_cell_it.first;
+    //         break;
+    //       }
+    //   }
+
+    first_cell_id = cell->id();
 
     cell = dof_handler.begin_active();
 
