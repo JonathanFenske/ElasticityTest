@@ -827,9 +827,9 @@ namespace Elasticity
           << std::endl;
 
     initialize_and_compute_basis();
-
+    pcout << "assemble" << std::endl;
     assemble_system();
-
+    pcout << "solve" << std::endl;
     solve();
 
     send_global_weights_to_cell();
