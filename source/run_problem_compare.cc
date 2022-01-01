@@ -54,6 +54,7 @@ namespace Elasticity
                             fine_solution,
                             dof_map_coarse,
                             dof_map_fine);
+      std::cout << "copying done" << std::endl;
     }
 
     {
