@@ -41,6 +41,8 @@ namespace Elasticity
   {
     TimerOutput::Scope t(computing_timer, "setup");
 
+    processor_is_used = false;
+
     if (cycle == 0)
       {
         dof_handlers[0].initialize(triangulation_coarse, fe);
