@@ -136,6 +136,7 @@ namespace Elasticity
           }
       }
 
+    pcout << "before gathering" << std::endl;
     std::vector<std::pair<CellId, bool>> first_cells =
       Utilities::MPI::all_gather(mpi_communicator,
                                  std::make_pair(cell->id(), processor_is_used));
