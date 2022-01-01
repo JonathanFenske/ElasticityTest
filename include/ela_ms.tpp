@@ -140,6 +140,7 @@ namespace Elasticity
       Utilities::MPI::all_gather(mpi_communicator,
                                  std::make_pair(cell->id(), processor_is_used));
 
+    pcout << "second iterating..." << std::endl;
     for (auto &first_cell_it : first_cells)
       {
         if (first_cell_it.second)
@@ -151,6 +152,7 @@ namespace Elasticity
 
     cell = dof_handler.begin_active();
 
+    pcout << "third iterating..." << std::endl;
     for (; cell != endc; ++cell)
       {
         if (cell->is_locally_owned())
