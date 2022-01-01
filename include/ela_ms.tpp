@@ -135,14 +135,14 @@ namespace Elasticity
 
     if (!processor_is_used)
       {
-        pcout << Utilities::MPI::this_mpi_process(mpi_communicator)
-              << " not used" << std::endl;
-        pcout << "pairing" << std::endl;
+        std::cout << Utilities::MPI::this_mpi_process(mpi_communicator)
+                  << " not used" << std::endl;
+        std::cout << "pairing" << std::endl;
         std::pair<CellId, bool> tmp_pair(cell->id(), processor_is_used);
-        pcout << "allocating" << std::endl;
+        std::cout << "allocating" << std::endl;
         std::vector<std::pair<CellId, bool>> first_cells(
           Utilities::MPI::n_mpi_processes(mpi_communicator));
-        pcout << "before gathering" << std::endl;
+        std::cout << "before gathering" << std::endl;
         // first_cells = Utilities::MPI::all_gather(mpi_communicator, tmp_pair);
       }
 
