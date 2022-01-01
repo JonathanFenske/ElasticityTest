@@ -156,7 +156,10 @@ namespace Elasticity
     //         break;
     //       }
     //   }
-
+    if (!processor_is_used)
+      {
+        std::cout << "before first cell" << std::endl;
+      }
     first_cell_id = cell->id();
 
     cell = dof_handler.begin_active();
@@ -194,14 +197,16 @@ namespace Elasticity
      * We need to compute them on each node and do so in
      * a locally threaded way.
      */
-    typename std::map<CellId, ElaBasis<dim>>::iterator it_basis =
-                                                         cell_basis_map.begin(),
-                                                       it_endbasis =
-                                                         cell_basis_map.end();
-
-    for (; it_basis != it_endbasis; ++it_basis)
+    if (processor_is_used)
       {
-        (it_basis->second).run();
+        typename std::map<CellId, ElaBasis<dim>>::iterator
+          it_basis    = cell_basis_map.begin(),
+          it_endbasis = cell_basis_map.end();
+
+        for (; it_basis != it_endbasis; ++it_basis)
+          {
+            (it_basis->second).run();
+          }
       }
   }
 
