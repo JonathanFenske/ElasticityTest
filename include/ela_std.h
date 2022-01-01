@@ -131,7 +131,11 @@ namespace Elasticity
      */
     void
     get_solutions(Vector<double> &coarse_solution,
-                  Vector<double> &fine_solution) const;
+                  Vector<double> &fine_solution,
+                  std::map<CellId, std::vector<types::global_dof_index>>
+                    &out_dof_map_coarse,
+                  std::map<CellId, std::vector<types::global_dof_index>>
+                    &out_dof_map_fine) const;
 
   private:
     /**
@@ -199,7 +203,6 @@ namespace Elasticity
     TrilinosWrappers::MPI::Vector        locally_relevant_solution;
     TrilinosWrappers::MPI::Vector        locally_relevant_solution_coarse;
     TrilinosWrappers::MPI::Vector        system_rhs;
-    const Vector<double>                 ms_solution;
     const ElaParameters<dim>             ela_parameters;
     bool                                 processor_is_used;
     /**< True if this processor is assigned at least one coarse cell. */

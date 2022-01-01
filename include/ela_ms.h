@@ -64,6 +64,7 @@
 #include <map>
 #include <memory>
 #include <utility>
+#include <vector>
 
 
 namespace Elasticity
@@ -109,8 +110,11 @@ namespace Elasticity
      * @param fine_solution fine scale standard FEM solution
      */
     void
-    compute_errors(Vector<double> &coarse_solution,
-                   Vector<double> &fine_solution);
+    compute_errors(
+      Vector<double>                                         &coarse_solution,
+      Vector<double>                                         &fine_solution,
+      std::map<CellId, std::vector<types::global_dof_index>> &dof_map_coarse,
+      std::map<CellId, std::vector<types::global_dof_index>> &dof_map_fine);
 
   private:
     /**
@@ -202,6 +206,15 @@ namespace Elasticity
       DoFHandler<dim>                      &dof_handler_fine,
       const Vector<double>                 &fine_solution,
       std::string                           name);
+
+    /**
+     * Maps a solution from another mesh to the desired mesh.
+     */
+    Vector<double>
+    map_to_local_mesh(
+      const DoFHandler<dim> &local_dof_handler,
+      const Vector<double>  &solution_vector,
+      const std::map<CellId, std::vector<types::global_dof_index>> &dof_map);
 
     /**
      * @brief Assembles the solution vector of the MsFEM on the fine scale.

@@ -452,8 +452,11 @@ namespace Elasticity
 
   template <int dim>
   void
-  ElaMs<dim>::compute_errors(Vector<double> &coarse_solution,
-                             Vector<double> &fine_solution)
+  ElaMs<dim>::compute_errors(
+    Vector<double>                                         &coarse_solution,
+    Vector<double>                                         &fine_solution,
+    std::map<CellId, std::vector<types::global_dof_index>> &dof_map_coarse,
+    std::map<CellId, std::vector<types::global_dof_index>> &dof_map_fine)
   {
     {
       TimerOutput::Scope t(computing_timer, "computing errors");
@@ -475,12 +478,13 @@ namespace Elasticity
       {
         pcout << "Assembling the fine scale MsFEM solution..." << std::endl;
         Vector<double> ms_solution = get_fine_solution(dof_handler_fine);
-        // output_fine_solution(triangulation_fine,
-        //                      dof_handler_fine,
-        //                      ms_solution,
-        //                      "fine_ms_assembled");
+        output_fine_solution(triangulation_fine,
+                             dof_handler_fine,
+                             ms_solution,
+                             "fine_ms_assembled");
 
-        pcout << "Computing the L2-error of the MsFEM solution..." << std::endl;
+        pcout << "\nComputing the L2-error of the MsFEM solution..."
+              << std::endl;
         Functions::FEFieldFunction<dim> ms_solution_function(dof_handler_fine,
                                                              ms_solution);
 
@@ -512,7 +516,14 @@ namespace Elasticity
       }
 
       {
-        pcout << "Computing the L2-error of the coarse scale standard FEM"
+        pcout << "\nReordering coarse scale standard FEM solution..."
+              << std::endl;
+        coarse_solution =
+          map_to_local_mesh(dof_handler, coarse_solution, dof_map_coarse);
+        pcout << "Reordering coarse fine standard FEM solution..." << std::endl;
+        fine_solution =
+          map_to_local_mesh(dof_handler_fine, fine_solution, dof_map_fine);
+        pcout << "\nComputing the L2-error of the coarse scale standard FEM"
                  " solution..."
               << std::endl;
         Functions::FEFieldFunction<dim> coarse_solution_function(
@@ -545,15 +556,15 @@ namespace Elasticity
                                             difference_per_cell,
                                             VectorTools::H1_seminorm);
 
-        // pcout << "output solutions..." << std::endl;
-        // output_fine_solution(triangulation_fine,
-        //                      dof_handler_fine,
-        //                      fine_solution,
-        //                      "fine_std");
-        // output_fine_solution(triangulation,
-        //                      dof_handler,
-        //                      coarse_solution,
-        //                      "coarse_std");
+        pcout << "output solutions..." << std::endl;
+        output_fine_solution(triangulation_fine,
+                             dof_handler_fine,
+                             fine_solution,
+                             "fine_std");
+        output_fine_solution(triangulation,
+                             dof_handler,
+                             coarse_solution,
+                             "coarse_std");
       }
 
       if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0)
@@ -593,6 +604,44 @@ namespace Elasticity
 
 
   template <int dim>
+  Vector<double>
+  ElaMs<dim>::map_to_local_mesh(
+    const DoFHandler<dim> &local_dof_handler,
+    const Vector<double>  &solution_vector,
+    const std::map<CellId, std::vector<types::global_dof_index>> &dof_map)
+  {
+    IndexSet current_locally_owned_dofs;
+    current_locally_owned_dofs = local_dof_handler.locally_owned_dofs();
+    TrilinosWrappers::MPI::Vector vector_parallel(current_locally_owned_dofs,
+                                                  mpi_communicator);
+
+    unsigned int dofs_per_cell = fe.n_dofs_per_cell();
+
+    std::vector<types::global_dof_index> local_dof_indices(dofs_per_cell);
+    std::vector<double>                  local_solution(dofs_per_cell);
+    std::vector<types::global_dof_index> other_local_dof_indices;
+
+
+    for (auto &cell : local_dof_handler.active_cell_iterators())
+      {
+        if (cell->is_locally_owned())
+          {
+            other_local_dof_indices = dof_map.at(cell->id());
+            solution_vector.extract_subvector_to(other_local_dof_indices,
+                                                 local_solution);
+            cell->get_dof_indices(local_dof_indices);
+
+            vector_parallel.set(local_dof_indices, local_solution);
+          }
+      }
+
+    vector_parallel.compress(VectorOperation::insert);
+
+    return Vector<double>(vector_parallel);
+  }
+
+
+  template <int dim>
   const Vector<double>
   ElaMs<dim>::get_fine_solution(DoFHandler<dim> &dof_handler_fine)
   {
@@ -610,105 +659,35 @@ namespace Elasticity
     std::vector<types::global_dof_index> local_dof_indices(
       fe.n_dofs_per_cell());
 
-    std::vector<types::global_dof_index> cell_dof_indices;
-
-    std::vector<bool> dof_index_indicator(dof_handler_fine.n_dofs(), false);
-
-    std::map<unsigned int, IndexSet> index_set_to_send;
-    for (unsigned int i =
-           Utilities::MPI::this_mpi_process(mpi_communicator) + 1;
-         i < Utilities::MPI::n_mpi_processes(mpi_communicator);
-         ++i)
+    for (const auto &coarse_cell : dof_handler.active_cell_iterators())
       {
-        index_set_to_send.insert(std::make_pair(i, locally_owned_dofs_fine));
-      }
-
-    std::map<unsigned int, IndexSet> locally_owned_dofs_map_other(
-      Utilities::MPI::some_to_some(mpi_communicator, index_set_to_send));
-
-    for (const auto &cell : dof_handler_fine.cell_iterators())
-      {
-        if (cell_basis_map.find(cell->id()) != cell_basis_map.end())
+        if (coarse_cell->is_locally_owned())
           {
-            for (const auto &coarse_cell : dof_handler.active_cell_iterators())
-              if (coarse_cell->id() == cell->id())
-                {
-                  if (coarse_cell->is_locally_owned())
-                    {
-                      typename std::map<CellId, ElaBasis<dim>>::iterator
-                        it_basis = cell_basis_map.find(cell->id());
+            for (const auto &cell : dof_handler_fine.cell_iterators())
+              {
+                if (coarse_cell->id() == cell->id())
+                  {
+                    typename std::map<CellId, ElaBasis<dim>>::iterator
+                      it_basis = cell_basis_map.find(cell->id());
 
-                      std::vector<Vector<double>> local_solution =
-                        (it_basis->second).get_global_solution();
+                    std::vector<Vector<double>> local_solution =
+                      (it_basis->second).get_global_solution();
 
-                      unsigned int i = 0;
+                    unsigned int i = 0;
 
-                      for (const auto &fine_cell :
-                           GridTools::get_active_child_cells<DoFHandler<dim>>(
-                             cell))
-                        {
-                          cell_dof_indices.clear();
-                          fine_cell->get_dof_indices(local_dof_indices);
+                    for (const auto &fine_cell :
+                         GridTools::get_active_child_cells<DoFHandler<dim>>(
+                           cell))
+                      {
+                        fine_cell->get_dof_indices(local_dof_indices);
 
-                          for (unsigned k = 0; k < local_dof_indices.size();
-                               ++k)
-                            {
-                              if (!dof_index_indicator[local_dof_indices[k]])
-                                {
-                                  bool is_on_other_proc = false;
+                        locally_owned_solution_fine.set(local_dof_indices,
+                                                        local_solution[i]);
 
-                                  for (unsigned int m = 0;
-                                       m < Utilities::MPI::this_mpi_process(
-                                             mpi_communicator);
-                                       ++m)
-                                    {
-                                      if ((locally_owned_dofs_map_other.at(m))
-                                            .is_element(local_dof_indices[k]))
-                                        {
-                                          is_on_other_proc = true;
-                                          break;
-                                        }
-                                    }
-                                  if (!is_on_other_proc)
-                                    {
-                                      cell_dof_indices.push_back(
-                                        local_dof_indices[k]);
-                                    }
-
-                                  dof_index_indicator[local_dof_indices[k]] =
-                                    true;
-                                }
-                            }
-
-                          if (cell_dof_indices.size() != 0)
-                            {
-                              Vector<double> local_cleaned_solution(
-                                cell_dof_indices.size());
-
-                              unsigned int l = 0;
-
-                              for (unsigned k = 0; k < local_dof_indices.size();
-                                   ++k)
-                                {
-                                  if (local_dof_indices[k] ==
-                                      cell_dof_indices[l])
-                                    {
-                                      local_cleaned_solution(l) =
-                                        local_solution[i](k);
-                                      ++l;
-                                    }
-                                  if (l >= cell_dof_indices.size())
-                                    break;
-                                }
-
-                              locally_owned_solution_fine.set(
-                                cell_dof_indices, local_cleaned_solution);
-                            }
-
-                          ++i;
-                        }
-                    }
-                }
+                        ++i;
+                      }
+                  }
+              }
           }
       }
 
@@ -716,7 +695,7 @@ namespace Elasticity
 
     Vector<double> fine_scale_ms_solution(locally_owned_solution_fine);
 
-    //   output_fine_solution(dof_handler_fine, fine_scale_ms_solution);
+    output_fine_solution(dof_handler_fine, fine_scale_ms_solution);
 
     return fine_scale_ms_solution;
   }

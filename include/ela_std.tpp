@@ -516,9 +516,51 @@ namespace Elasticity
 
   template <int dim>
   void
-  ElaStd<dim>::get_solutions(Vector<double> &coarse_solution,
-                             Vector<double> &fine_solution) const
+  ElaStd<dim>::get_solutions(
+    Vector<double>                                         &coarse_solution,
+    Vector<double>                                         &fine_solution,
+    std::map<CellId, std::vector<types::global_dof_index>> &dof_map_coarse,
+    std::map<CellId, std::vector<types::global_dof_index>> &dof_map_fine) const
   {
+    std::map<CellId, std::vector<types::global_dof_index>> local_dof_map_coarse;
+    std::vector<types::global_dof_index>                   local_dof_indices(
+      fe.n_dofs_per_cell());
+    for (const auto &cell : dof_handlers[0].active_cell_iterators())
+      {
+        cell->get_dof_indices(local_dof_indices);
+        local_dof_map_coarse.insert(
+          std::make_pair(cell->id(), local_dof_indices));
+      }
+    std::map<CellId, std::vector<types::global_dof_index>> local_dof_map_fine;
+    for (const auto &cell : dof_handlers[1].active_cell_iterators())
+      {
+        cell->get_dof_indices(local_dof_indices);
+        local_dof_map_fine.insert(
+          std::make_pair(cell->id(), local_dof_indices));
+      }
+    std::vector<std::map<CellId, std::vector<types::global_dof_index>>>
+      assembled_dof_map_coarse =
+        Utilities::MPI::all_gather(mpi_communicator, local_dof_map_coarse);
+    std::vector<std::map<CellId, std::vector<types::global_dof_index>>>
+      assembled_dof_map_fine =
+        Utilities::MPI::all_gather(mpi_communicator, local_dof_map_fine);
+
+    for (unsigned int i = 0;
+         i < Utilities::MPI::n_mpi_processes(mpi_communicator);
+         ++i)
+      {
+        if (Utilities::MPI::this_mpi_process(mpi_communicator) != i)
+          {
+            local_dof_map_coarse.insert(assembled_dof_map_coarse[i].begin(),
+                                        assembled_dof_map_coarse[i].end());
+            local_dof_map_fine.insert(assembled_dof_map_fine[i].begin(),
+                                      assembled_dof_map_fine[i].end());
+          }
+      }
+
+    dof_map_coarse = local_dof_map_coarse;
+    dof_map_fine   = local_dof_map_fine;
+
     coarse_solution = Vector<double>(locally_relevant_solution_coarse);
     fine_solution   = Vector<double>(locally_relevant_solution);
   }
