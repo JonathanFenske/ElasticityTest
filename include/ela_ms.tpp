@@ -122,7 +122,7 @@ namespace Elasticity
                                                                .begin_active(),
                                                       endc = dof_handler.end();
 
-    pcout << "iterating..." << cell->id() << std::endl;
+    pcout << "iterating..." << std::endl;
 
     for (; cell != endc; ++cell)
       {
@@ -138,7 +138,8 @@ namespace Elasticity
         std::cout << Utilities::MPI::this_mpi_process(mpi_communicator)
                   << " not used" << std::endl;
         std::cout << "pairing" << std::endl;
-        std::pair<CellId, bool> tmp_pair(cell->id(), processor_is_used);
+        std::pair<CellId, bool> tmp_pair(dof_handler.begin_active(),
+                                         processor_is_used);
         std::cout << "allocating" << std::endl;
         std::vector<std::pair<CellId, bool>> first_cells(
           Utilities::MPI::n_mpi_processes(mpi_communicator));
