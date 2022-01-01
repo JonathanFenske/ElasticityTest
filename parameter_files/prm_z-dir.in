@@ -60,10 +60,10 @@ subsection Elasticity Parameters
     set prevent basis output = true
 
     # number of refinements on the coarse level
-    set coarse refinements = 1
+    set coarse refinements = 2
 
     # additional refinements on the fine level
-    set fine refinements = 4
+    set fine refinements = 3
 
     set rotate = false
     set rotation angle = 0.05 # * pi
