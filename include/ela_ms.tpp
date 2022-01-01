@@ -123,29 +123,38 @@ namespace Elasticity
                                                       endc = dof_handler.end();
 
     pcout << "iterating..." << std::endl;
+
     for (; cell != endc; ++cell)
       {
-        pcout << cell->id() << std::endl;
         if (cell->is_locally_owned())
           {
-            pcout << "is locally owned" << std::endl;
             if (!processor_is_used)
               {
-                std::cout << "Rank "
-                          << Utilities::MPI::this_mpi_process(mpi_communicator)
-                          << std::endl;
                 processor_is_used = true;
-                std::vector<CellId> first_cells =
-                  Utilities::MPI::all_gather(mpi_communicator, cell->id());
-                first_cell_id = first_cells[1];
+                break;
               }
-            else
-              {
-                Assert(first_cell_id.get_coarse_cell_id() !=
-                         numbers::invalid_coarse_cell_id,
-                       ExcMessage("first cell id not initialized"));
-              }
+          }
+      }
 
+    std::vector<std::pair<CellId, bool>> first_cells =
+      Utilities::MPI::all_gather(mpi_communicator,
+                                 std::make_pair(cell->id(), processor_is_used));
+
+    for (auto &first_cell_it : first_cells)
+      {
+        if (first_cell_it.second)
+          {
+            first_cell_id = first_cell_it.first;
+            break;
+          }
+      }
+
+    cell = dof_handler.begin_active();
+
+    for (; cell != endc; ++cell)
+      {
+        if (cell->is_locally_owned())
+          {
             pcout << "initializing cell problem" << std::endl;
             ElaBasis<dim> current_cell_problem(
               cell,
@@ -168,7 +177,6 @@ namespace Elasticity
                      "Problem with copy constructor?"));
           }
       } // end ++cell
-
 
     /*
      * Now each node possesses a set of basis objects.
@@ -621,6 +629,7 @@ namespace Elasticity
     const Vector<double>  &solution_vector,
     const std::map<CellId, std::vector<types::global_dof_index>> &dof_map)
   {
+    pcout << solution_vector.size() << std::endl;
     IndexSet current_locally_owned_dofs;
     current_locally_owned_dofs = local_dof_handler.locally_owned_dofs();
     TrilinosWrappers::MPI::Vector vector_parallel(current_locally_owned_dofs,
@@ -816,8 +825,11 @@ namespace Elasticity
 
     {
       TimerOutput::Scope t(computing_timer, "output");
+      pcout << "really" << std::endl;
       output_results();
     }
+
+    pcout << "done" << std::endl;
 
     computing_timer.print_summary();
     computing_timer.reset();
