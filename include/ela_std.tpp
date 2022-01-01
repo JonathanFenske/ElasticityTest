@@ -551,34 +551,34 @@ namespace Elasticity
         local_dof_map_fine.insert(
           std::make_pair(cell->id(), local_dof_indices));
       }
-    std::cout << "first allgather on rank "
-              << Utilities::MPI::this_mpi_process(mpi_communicator)
-              << std::endl;
-    std::vector<std::map<CellId, std::vector<types::global_dof_index>>>
-      assembled_dof_map_coarse =
-        Utilities::MPI::all_gather(mpi_communicator, local_dof_map_coarse);
-    std::cout << "second allgather on rank "
-              << Utilities::MPI::this_mpi_process(mpi_communicator)
-              << std::endl;
-    std::vector<std::map<CellId, std::vector<types::global_dof_index>>>
-      assembled_dof_map_fine =
-        Utilities::MPI::all_gather(mpi_communicator, local_dof_map_fine);
+    // std::cout << "first allgather on rank "
+    //           << Utilities::MPI::this_mpi_process(mpi_communicator)
+    //           << std::endl;
+    // std::vector<std::map<CellId, std::vector<types::global_dof_index>>>
+    //   assembled_dof_map_coarse =
+    //     Utilities::MPI::all_gather(mpi_communicator, local_dof_map_coarse);
+    // std::cout << "second allgather on rank "
+    //           << Utilities::MPI::this_mpi_process(mpi_communicator)
+    //           << std::endl;
+    // std::vector<std::map<CellId, std::vector<types::global_dof_index>>>
+    //   assembled_dof_map_fine =
+    //     Utilities::MPI::all_gather(mpi_communicator, local_dof_map_fine);
 
-    std::cout << "inserting on rank "
-              << Utilities::MPI::this_mpi_process(mpi_communicator)
-              << std::endl;
-    for (unsigned int i = 0;
-         i < Utilities::MPI::n_mpi_processes(mpi_communicator);
-         ++i)
-      {
-        if (Utilities::MPI::this_mpi_process(mpi_communicator) != i)
-          {
-            local_dof_map_coarse.insert(assembled_dof_map_coarse[i].begin(),
-                                        assembled_dof_map_coarse[i].end());
-            local_dof_map_fine.insert(assembled_dof_map_fine[i].begin(),
-                                      assembled_dof_map_fine[i].end());
-          }
-      }
+    // std::cout << "inserting on rank "
+    //           << Utilities::MPI::this_mpi_process(mpi_communicator)
+    //           << std::endl;
+    // for (unsigned int i = 0;
+    //      i < Utilities::MPI::n_mpi_processes(mpi_communicator);
+    //      ++i)
+    //   {
+    //     if (Utilities::MPI::this_mpi_process(mpi_communicator) != i)
+    //       {
+    //         local_dof_map_coarse.insert(assembled_dof_map_coarse[i].begin(),
+    //                                     assembled_dof_map_coarse[i].end());
+    //         local_dof_map_fine.insert(assembled_dof_map_fine[i].begin(),
+    //                                   assembled_dof_map_fine[i].end());
+    //       }
+    //   }
 
     std::cout << "copying on rank "
               << Utilities::MPI::this_mpi_process(mpi_communicator)
