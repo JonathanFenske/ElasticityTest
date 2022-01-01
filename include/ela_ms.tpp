@@ -138,7 +138,7 @@ namespace Elasticity
         std::cout << Utilities::MPI::this_mpi_process(mpi_communicator)
                   << " not used" << std::endl;
         std::cout << "pairing" << std::endl;
-        std::pair<CellId, bool> tmp_pair(dof_handler.begin_active(),
+        std::pair<CellId, bool> tmp_pair((dof_handler.begin_active())->id(),
                                          processor_is_used);
         std::cout << "allocating" << std::endl;
         std::vector<std::pair<CellId, bool>> first_cells(
