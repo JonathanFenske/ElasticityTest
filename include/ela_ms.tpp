@@ -93,8 +93,8 @@ namespace Elasticity
         MyTools::create_data_directory("output/");
         MyTools::create_data_directory("output/basis_output/");
         MyTools::create_data_directory("output/global_basis_output/");
-        MyTools::create_data_directory("output/coarse/");
-        MyTools::create_data_directory("output/fine_ms_partitioned");
+        MyTools::create_data_directory("output/coarse_ms_partitioned/");
+        MyTools::create_data_directory("output/other_partitioned/");
       }
     catch (std::runtime_error &e)
       {
@@ -124,20 +124,40 @@ namespace Elasticity
       {
         if (cell->is_locally_owned())
           {
-            if (!processor_is_used)
-              {
-                processor_is_used = true;
-                std::vector<CellId> first_cells =
-                  Utilities::MPI::all_gather(mpi_communicator, cell->id());
-                first_cell_id = first_cells[1];
-              }
-            else
-              {
-                Assert(first_cell_id.get_coarse_cell_id() !=
-                         numbers::invalid_coarse_cell_id,
-                       ExcMessage("first cell id not initialized"));
-              }
+            processor_is_used = true;
+            break;
+          }
+      }
 
+    if (!processor_is_used)
+      {
+        first_cell_id = (dof_handler.begin_active())->id();
+      }
+    else
+      {
+        first_cell_id = cell->id();
+      }
+
+    std::vector<std::pair<CellId, bool>> first_cells =
+      Utilities::MPI::all_gather(mpi_communicator,
+                                 std::make_pair(first_cell_id,
+                                                processor_is_used));
+
+    for (auto &first_cell_it : first_cells)
+      {
+        if (first_cell_it.second)
+          {
+            first_cell_id = first_cell_it.first;
+            break;
+          }
+      }
+
+    cell = dof_handler.begin_active();
+
+    for (; cell != endc; ++cell)
+      {
+        if (cell->is_locally_owned())
+          {
             ElaBasis<dim> current_cell_problem(
               cell,
               first_cell_id,
@@ -158,20 +178,21 @@ namespace Elasticity
           }
       } // end ++cell
 
-
     /*
      * Now each node possesses a set of basis objects.
      * We need to compute them on each node and do so in
      * a locally threaded way.
      */
-    typename std::map<CellId, ElaBasis<dim>>::iterator it_basis =
-                                                         cell_basis_map.begin(),
-                                                       it_endbasis =
-                                                         cell_basis_map.end();
-
-    for (; it_basis != it_endbasis; ++it_basis)
+    if (processor_is_used)
       {
-        (it_basis->second).run();
+        typename std::map<CellId, ElaBasis<dim>>::iterator
+          it_basis    = cell_basis_map.begin(),
+          it_endbasis = cell_basis_map.end();
+
+        for (; it_basis != it_endbasis; ++it_basis)
+          {
+            (it_basis->second).run();
+          }
       }
   }
 
@@ -394,11 +415,11 @@ namespace Elasticity
 
         // write the output files
         const std::string coarse_filename =
-          (std::string("ms_solution.") +
+          (std::string("coarse_ms_solution.") +
            Utilities::int_to_string(triangulation.locally_owned_subdomain(),
                                     4) +
            std::string(".vtu"));
-        std::ofstream output("output/coarse/" + coarse_filename);
+        std::ofstream output("output/coarse_ms_partitioned/" + coarse_filename);
         data_out.write_vtu(output);
       }
 
@@ -435,11 +456,11 @@ namespace Elasticity
              i < Utilities::MPI::n_mpi_processes(mpi_communicator);
              ++i)
           if (used_processors[i])
-            coarse_filenames.push_back(std::string("coarse/ms_solution-") +
-                                       "." + Utilities::int_to_string(i, 4) +
-                                       std::string(".vtu"));
+            coarse_filenames.push_back(
+              std::string("coarse_ms_partitioned/coarse_ms_solution-") + "." +
+              Utilities::int_to_string(i, 4) + std::string(".vtu"));
 
-        std::ofstream master_output(std::string("output/ms_solution") +
+        std::ofstream master_output(std::string("output/coarse_ms_solution") +
                                     std::string(".pvtu"));
         data_out.write_pvtu_record(master_output, coarse_filenames);
 
@@ -452,8 +473,11 @@ namespace Elasticity
 
   template <int dim>
   void
-  ElaMs<dim>::compute_errors(Vector<double> &coarse_solution,
-                             Vector<double> &fine_solution)
+  ElaMs<dim>::compute_errors(
+    Vector<double>                                         &coarse_solution,
+    Vector<double>                                         &fine_solution,
+    std::map<CellId, std::vector<types::global_dof_index>> &dof_map_coarse,
+    std::map<CellId, std::vector<types::global_dof_index>> &dof_map_fine)
   {
     {
       TimerOutput::Scope t(computing_timer, "computing errors");
@@ -470,22 +494,22 @@ namespace Elasticity
 
       Vector<double> difference_per_cell(triangulation_fine.n_active_cells());
 
-      double L2error_ms, H1error_ms, L2error_coarse, H1error_coarse,
-        fine_solution_l2_inv;
+      double L2error_ms, H1error_ms, L2error_coarse, H1error_coarse;
 
-      VectorTools::integrate_difference(dof_handler_fine,
-                                        fine_solution,
-                                        ms_solution_function,
-                                        difference_per_cell,
-                                        QGauss<dim>(fe.degree + 1),
-                                        VectorTools::L2_norm);
+      pcout << "Reordering coarse fine standard FEM solution..." << std::endl;
+      fine_solution =
+        map_to_local_mesh(dof_handler_fine, fine_solution, dof_map_fine);
 
       {
         pcout << "Assembling the fine scale MsFEM solution..." << std::endl;
         Vector<double> ms_solution = get_fine_solution(dof_handler_fine);
-        output_fine_solution(triangulation_fine, dof_handler_fine, ms_solution);
+        // output_fine_solution(triangulation_fine,
+        //                      dof_handler_fine,
+        //                      ms_solution,
+        //                      "fine_ms_assembled");
 
-        pcout << "Computing the L2-error of the MsFEM solution..." << std::endl;
+        pcout << "\nComputing the L2-error of the MsFEM solution..."
+              << std::endl;
         Functions::FEFieldFunction<dim> ms_solution_function(dof_handler_fine,
                                                              ms_solution);
 
@@ -517,7 +541,12 @@ namespace Elasticity
       }
 
       {
-        pcout << "Computing the L2-error of the coarse scale standard FEM"
+        pcout << "\nReordering coarse scale standard FEM solution..."
+              << std::endl;
+        coarse_solution =
+          map_to_local_mesh(dof_handler, coarse_solution, dof_map_coarse);
+
+        pcout << "\nComputing the L2-error of the coarse scale standard FEM"
                  " solution..."
               << std::endl;
         Functions::FEFieldFunction<dim> coarse_solution_function(
@@ -549,6 +578,16 @@ namespace Elasticity
           VectorTools::compute_global_error(triangulation_fine,
                                             difference_per_cell,
                                             VectorTools::H1_seminorm);
+
+        // pcout << "output solutions..." << std::endl;
+        // output_fine_solution(triangulation_fine,
+        //                      dof_handler_fine,
+        //                      fine_solution,
+        //                      "fine_std");
+        // output_fine_solution(triangulation,
+        //                      dof_handler,
+        //                      coarse_solution,
+        //                      "coarse_std");
       }
 
       if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0)
@@ -588,6 +627,44 @@ namespace Elasticity
 
 
   template <int dim>
+  Vector<double>
+  ElaMs<dim>::map_to_local_mesh(
+    const DoFHandler<dim> &local_dof_handler,
+    const Vector<double>  &solution_vector,
+    const std::map<CellId, std::vector<types::global_dof_index>> &dof_map)
+  {
+    IndexSet current_locally_owned_dofs;
+    current_locally_owned_dofs = local_dof_handler.locally_owned_dofs();
+    TrilinosWrappers::MPI::Vector vector_parallel(current_locally_owned_dofs,
+                                                  mpi_communicator);
+
+    unsigned int dofs_per_cell = fe.n_dofs_per_cell();
+
+    std::vector<types::global_dof_index> local_dof_indices(dofs_per_cell);
+    std::vector<double>                  local_solution(dofs_per_cell);
+    std::vector<types::global_dof_index> other_local_dof_indices;
+
+
+    for (auto &cell : local_dof_handler.active_cell_iterators())
+      {
+        if (cell->is_locally_owned())
+          {
+            other_local_dof_indices = dof_map.at(cell->id());
+            solution_vector.extract_subvector_to(other_local_dof_indices,
+                                                 local_solution);
+            cell->get_dof_indices(local_dof_indices);
+
+            vector_parallel.set(local_dof_indices, local_solution);
+          }
+      }
+
+    vector_parallel.compress(VectorOperation::insert);
+
+    return Vector<double>(vector_parallel);
+  }
+
+
+  template <int dim>
   const Vector<double>
   ElaMs<dim>::get_fine_solution(DoFHandler<dim> &dof_handler_fine)
   {
@@ -605,113 +682,41 @@ namespace Elasticity
     std::vector<types::global_dof_index> local_dof_indices(
       fe.n_dofs_per_cell());
 
-    std::vector<types::global_dof_index> cell_dof_indices;
-
-    std::vector<bool> dof_index_indicator(dof_handler_fine.n_dofs(), false);
-
-    std::map<unsigned int, IndexSet> index_set_to_send;
-    for (unsigned int i =
-           Utilities::MPI::this_mpi_process(mpi_communicator) + 1;
-         i < Utilities::MPI::n_mpi_processes(mpi_communicator);
-         ++i)
+    for (const auto &coarse_cell : dof_handler.active_cell_iterators())
       {
-        index_set_to_send.insert(std::make_pair(i, locally_owned_dofs_fine));
-      }
-
-    std::map<unsigned int, IndexSet> locally_owned_dofs_map_other(
-      Utilities::MPI::some_to_some(mpi_communicator, index_set_to_send));
-
-    for (const auto &cell : dof_handler_fine.cell_iterators())
-      {
-        if (cell_basis_map.find(cell->id()) != cell_basis_map.end())
+        if (coarse_cell->is_locally_owned())
           {
-            for (const auto &coarse_cell : dof_handler.active_cell_iterators())
-              if (coarse_cell->id() == cell->id())
-                {
-                  if (coarse_cell->is_locally_owned())
-                    {
-                      typename std::map<CellId, ElaBasis<dim>>::iterator
-                        it_basis = cell_basis_map.find(cell->id());
+            for (const auto &cell : dof_handler_fine.cell_iterators())
+              {
+                if (coarse_cell->id() == cell->id())
+                  {
+                    typename std::map<CellId, ElaBasis<dim>>::iterator
+                      it_basis = cell_basis_map.find(cell->id());
 
-                      std::vector<Vector<double>> local_solution =
-                        (it_basis->second).get_global_solution();
+                    std::vector<Vector<double>> local_solution =
+                      (it_basis->second).get_global_solution();
 
-                      unsigned int i = 0;
+                    unsigned int i = 0;
 
-                      for (const auto &fine_cell :
-                           GridTools::get_active_child_cells<DoFHandler<dim>>(
-                             cell))
-                        {
-                          cell_dof_indices.clear();
-                          fine_cell->get_dof_indices(local_dof_indices);
+                    for (const auto &fine_cell :
+                         GridTools::get_active_child_cells<DoFHandler<dim>>(
+                           cell))
+                      {
+                        fine_cell->get_dof_indices(local_dof_indices);
 
-                          for (unsigned k = 0; k < local_dof_indices.size();
-                               ++k)
-                            {
-                              if (!dof_index_indicator[local_dof_indices[k]])
-                                {
-                                  bool is_on_other_proc = false;
+                        locally_owned_solution_fine.set(local_dof_indices,
+                                                        local_solution[i]);
 
-                                  for (unsigned int m = 0;
-                                       m < Utilities::MPI::this_mpi_process(
-                                             mpi_communicator);
-                                       ++m)
-                                    {
-                                      if ((locally_owned_dofs_map_other.at(m))
-                                            .is_element(local_dof_indices[k]))
-                                        {
-                                          is_on_other_proc = true;
-                                          break;
-                                        }
-                                    }
-                                  if (!is_on_other_proc)
-                                    {
-                                      cell_dof_indices.push_back(
-                                        local_dof_indices[k]);
-                                    }
-
-                                  dof_index_indicator[local_dof_indices[k]] =
-                                    true;
-                                }
-                            }
-
-                          if (cell_dof_indices.size() != 0)
-                            {
-                              Vector<double> local_cleaned_solution(
-                                cell_dof_indices.size());
-
-                              unsigned int l = 0;
-
-                              for (unsigned k = 0; k < local_dof_indices.size();
-                                   ++k)
-                                {
-                                  if (local_dof_indices[k] ==
-                                      cell_dof_indices[l])
-                                    {
-                                      local_cleaned_solution(l) =
-                                        local_solution[i](k);
-                                      ++l;
-                                    }
-                                  if (l >= cell_dof_indices.size())
-                                    break;
-                                }
-
-                              locally_owned_solution_fine.set(
-                                cell_dof_indices, local_cleaned_solution);
-                            }
-
-                          ++i;
-                        }
-                    }
-                }
+                        ++i;
+                      }
+                  }
+              }
           }
       }
 
     locally_owned_solution_fine.compress(VectorOperation::insert);
 
     Vector<double> fine_scale_ms_solution(locally_owned_solution_fine);
-
-    //   output_fine_solution(dof_handler_fine, fine_scale_ms_solution);
 
     return fine_scale_ms_solution;
   }
@@ -722,7 +727,8 @@ namespace Elasticity
   ElaMs<dim>::output_fine_solution(
     parallel::shared::Triangulation<dim> &triangulation_fine,
     DoFHandler<dim>                      &dof_handler_fine,
-    const Vector<double>                 &fine_solution)
+    const Vector<double>                 &fine_solution,
+    std::string                           name)
   {
     DataOut<dim> data_out;
     data_out.attach_dof_handler(dof_handler_fine);
@@ -749,7 +755,9 @@ namespace Elasticity
     data_out.build_patches();
 
     // write the output files
-    std::string filename = "output/fine_ms_partitioned/fine_scale_ms_solution";
+    std::string filename = "output/other_partitioned/";
+    filename += name;
+    filename += std::string("_solution");
     filename +=
       Utilities::int_to_string(triangulation_fine.locally_owned_subdomain(), 4);
     filename += std::string(".vtu");
@@ -759,18 +767,21 @@ namespace Elasticity
     if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0)
       {
         std::vector<std::string> filenames;
-        std::string              filename;
         for (unsigned int i = 0;
              i < Utilities::MPI::n_mpi_processes(mpi_communicator);
              ++i)
           {
-            filename = "fine_ms_partitioned/fine_scale_ms_solution";
+            filename = "other_partitioned/";
+            filename += name;
+            filename += std::string("_solution");
             filename += Utilities::int_to_string(i, 4);
             filename += std::string(".vtu");
             filenames.push_back(filename);
           }
 
-        std::string master_file("output/fine_scale_ms_solution");
+        std::string master_file("output/");
+        master_file += name;
+        master_file += std::string("_solution");
         master_file += std::string(".pvtu");
         std::ofstream master_output(master_file);
         data_out.write_pvtu_record(master_output, filenames);
@@ -817,6 +828,7 @@ namespace Elasticity
 
     {
       TimerOutput::Scope t(computing_timer, "output");
+
       output_results();
     }
 

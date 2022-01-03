@@ -8,8 +8,8 @@ subsection Elasticity Parameters
     set init p1[0] = -10.
     set init p1[1] = 0.
 
-    set init p2[0] = 10.
-    set init p2[1] = 1.
+    set init p2[0] = 1.
+    set init p2[1] = 10.
   end
 
   # The subsection 3D will only be used if dim == 3.
@@ -26,7 +26,7 @@ subsection Elasticity Parameters
   subsection Material Parameters
     set use E and nu = true
 
-    set oscillations = false
+    set oscillations = true
     set x-layers = true
     set y-layers = true
     set z-layers = true
@@ -46,8 +46,8 @@ subsection Elasticity Parameters
 
     # These frequencies (no. of oscillations per length of the body)
     # only need to be set if "oscillations" is true.
-    set mu frequency = 100
-    set lambda frequency = 100
+    set mu frequency = 4
+    set lambda frequency = 4
 
     set rho = 1.
   end

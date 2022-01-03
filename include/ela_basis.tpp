@@ -386,18 +386,10 @@ namespace Elasticity
     for (unsigned int index_basis = 0; index_basis < dofs_per_cell;
          ++index_basis)
       {
-        // global_solution = 1*global_solution +
-        // global_weights[index_basis]*solution_vector[index_basis]
         global_solution.sadd(1,
                              global_weights[index_basis],
                              solution_vector[index_basis]);
       }
-
-    // if (ela_parameters.compare)
-    //   {
-    //     solution_function =
-    //       new Functions::FEFieldFunction<dim>(dof_handler, global_solution);
-    //   }
   }
 
 

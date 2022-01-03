@@ -11,18 +11,27 @@ namespace Elasticity
     Vector<double> coarse_solution;
     Vector<double> fine_solution;
 
+    std::map<CellId, std::vector<types::global_dof_index>> dof_map_coarse;
+    std::map<CellId, std::vector<types::global_dof_index>> dof_map_fine;
+
     {
       ElaStd<2> ela_std(ela_parameters);
       ela_std.run();
 
-      ela_std.get_solutions(coarse_solution, fine_solution);
+      ela_std.get_solutions(coarse_solution,
+                            fine_solution,
+                            dof_map_coarse,
+                            dof_map_fine);
     }
 
     {
       ElaMs<2> ela_ms(ela_parameters);
       ela_ms.run();
 
-      ela_ms.compute_errors(coarse_solution, fine_solution);
+      ela_ms.compute_errors(coarse_solution,
+                            fine_solution,
+                            dof_map_coarse,
+                            dof_map_fine);
     }
   }
 
@@ -34,18 +43,27 @@ namespace Elasticity
     Vector<double> coarse_solution;
     Vector<double> fine_solution;
 
+    std::map<CellId, std::vector<types::global_dof_index>> dof_map_coarse;
+    std::map<CellId, std::vector<types::global_dof_index>> dof_map_fine;
+
     {
       ElaStd<3> ela_std(ela_parameters);
       ela_std.run();
 
-      ela_std.get_solutions(coarse_solution, fine_solution);
+      ela_std.get_solutions(coarse_solution,
+                            fine_solution,
+                            dof_map_coarse,
+                            dof_map_fine);
     }
 
     {
       ElaMs<3> ela_ms(ela_parameters);
       ela_ms.run();
 
-      ela_ms.compute_errors(coarse_solution, fine_solution);
+      ela_ms.compute_errors(coarse_solution,
+                            fine_solution,
+                            dof_map_coarse,
+                            dof_map_fine);
     }
   }
 } // namespace Elasticity
