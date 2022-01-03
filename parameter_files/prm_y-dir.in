@@ -14,13 +14,13 @@ subsection Elasticity Parameters
 
   # The subsection 3D will only be used if dim == 3.
   subsection 3D
-    set init p1[0] = -10.
+    set init p1[0] = -20.
     set init p1[1] = 0.
     set init p1[2] = 0.
 
-    set init p2[0] = 10.
-    set init p2[1] = 2.
-    set init p2[2] = 2.
+    set init p2[0] = 20.
+    set init p2[1] = 1.
+    set init p2[2] = 1.
   end
 
   subsection Material Parameters
@@ -33,7 +33,7 @@ subsection Elasticity Parameters
 
     # Only need to be set if the corresponding flag is true.
     set no. of x-layers = 1
-    set no. of y-layers = 10
+    set no. of y-layers = 20
     set no. of z-layers = 1
     
     # E and nu only need to be set if "use E and nu" is true.
@@ -63,7 +63,7 @@ subsection Elasticity Parameters
     set coarse refinements = 1
 
     # additional refinements on the fine level
-    set fine refinements = 4
+    set fine refinements = 5
 
     set rotate = false
     set rotation angle = 0.05 # * pi
