@@ -303,10 +303,11 @@ namespace Elasticity
     MPI_Get_processor_name(processor_name, &name_len);
     std::string proc_name(processor_name, name_len);
 
-    std::cout << "	Solving for basis in cell   " << global_cell_id.to_string()
-              << "   [machine: " << proc_name
-              << " | rank: " << Utilities::MPI::this_mpi_process(MPI_COMM_WORLD)
-              << "]   ..... ";
+    // std::cout << "	Solving for basis in cell   " <<
+    // global_cell_id.to_string()
+    //           << "   [machine: " << proc_name
+    //           << " | rank: " << Utilities::MPI::this_mpi_process(MPI_COMM_WORLD)
+    //           << "]   ..... ";
 
     timer.restart();
 
@@ -347,8 +348,8 @@ namespace Elasticity
 
       timer.stop();
 
-      std::cout << "done in   " << timer.cpu_time() << "   seconds."
-                << std::endl;
+      // std::cout << "done in   " << timer.cpu_time() << "   seconds."
+      //           << std::endl;
     }
   }
 
