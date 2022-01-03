@@ -14,13 +14,13 @@ subsection Elasticity Parameters
 
   # The subsection 3D will only be used if dim == 3.
   subsection 3D
-    set init p1[0] = -20.
+    set init p1[0] = -10.
     set init p1[1] = 0.
     set init p1[2] = 0.
 
-    set init p2[0] = 20.
-    set init p2[1] = 2.
-    set init p2[2] = 2.
+    set init p2[0] = 10.
+    set init p2[1] = 1.
+    set init p2[2] = 1.
   end
 
   subsection Material Parameters
@@ -37,7 +37,7 @@ subsection Elasticity Parameters
     set no. of z-layers = 10
     
     # E and nu only need to be set if "use E and nu" is true.
-    set E = 1.e7
+    set E = 1.e6
     set nu = 0.3
 
     # mu and lambda only need to be set if E and nu are not used.
