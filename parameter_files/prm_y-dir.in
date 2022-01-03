@@ -37,7 +37,7 @@ subsection Elasticity Parameters
     set no. of z-layers = 1
     
     # E and nu only need to be set if "use E and nu" is true.
-    set E = 1.e6
+    set E = 3.e5
     set nu = 0.3
 
     # mu and lambda only need to be set if E and nu are not used.
@@ -60,10 +60,10 @@ subsection Elasticity Parameters
     set prevent basis output = true
 
     # number of refinements on the coarse level
-    set coarse refinements = 1
+    set coarse refinements = 0
 
     # additional refinements on the fine level
-    set fine refinements = 5
+    set fine refinements = 6
 
     set rotate = false
     set rotation angle = 0.05 # * pi
