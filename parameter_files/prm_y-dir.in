@@ -33,11 +33,11 @@ subsection Elasticity Parameters
 
     # Only need to be set if the corresponding flag is true.
     set no. of x-layers = 1
-    set no. of y-layers = 00
+    set no. of y-layers = 20
     set no. of z-layers = 1
     
     # E and nu only need to be set if "use E and nu" is true.
-    set E = 1.e6
+    set E = 3.e5
     set nu = 0.3
 
     # mu and lambda only need to be set if E and nu are not used.
@@ -60,7 +60,7 @@ subsection Elasticity Parameters
     set prevent basis output = true
 
     # number of refinements on the coarse level
-    set coarse refinements = 2
+    set coarse refinements = 3
 
     # additional refinements on the fine level
     set fine refinements = 3
